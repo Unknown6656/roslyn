@@ -41,17 +41,17 @@ Times have changed: not just Haskell anymore…
  
  We represent Haskell type classes as Generic interfaces.
 
-'''Haskell
+```Haskell
     class Eq a where 
     (==)                  :: a -> a -> Bool
-'''
+```
 
-'''csharp
+```csharp
   interface Eq<A>
   {
     bool Equals(A a, A b);
   }
-'''Haskell
+```
 
 #Haskell Overloads
 
