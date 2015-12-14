@@ -50,7 +50,7 @@ Why wasn’t this adopted?
 This approach requires *no* changes to CLR or BCL (compiler changes + conventions only).
 It's *sound by construction*.
 
-## Haskell “Type Classes”
+## Haskell Type Classes
  
 We represent Haskell type classes as Generic interfaces.
 
@@ -387,8 +387,7 @@ After:
 ##Take Home
 
 *	Haskell 98’s type classes have a type preserving .NET representation.
-*	Dictionaries must be manually constructed and provided 
-(a modified C#/F# compiler could do this for the user.)
+*	Dictionaries must be manually constructed and provided  (a modified C#/F# compiler could do this for the user.)
 *	Generated code is efficient:
     * Dictionaries are empty (stack-allocated) structs. 
     * Dictionary allocation has zero runtime cost.
