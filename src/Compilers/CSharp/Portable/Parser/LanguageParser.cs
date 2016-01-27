@@ -1579,7 +1579,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             Debug.Assert(!IsInAsync);
 
             cancellationToken.ThrowIfCancellationRequested();
-
+            
             switch (this.CurrentToken.Kind)
             {
                 case SyntaxKind.ClassKeyword:
@@ -1596,6 +1596,20 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
 
                 case SyntaxKind.StructKeyword:
                 case SyntaxKind.InterfaceKeyword:
+                    //if (this.CurrentToken.Text == "concept") //@crusso
+                        {
+                          var attrs = _pool.AllocateSeparated<AttributeSyntax>();
+                          attrs.Add(_syntaxFactory.Attribute(
+                                       new IdentifierNameSyntax(SyntaxKind.IdentifierName, SyntaxToken.Identifier("Concept")),
+                                       _syntaxFactory.AttributeArgumentList(new SyntaxToken(SyntaxKind.OpenParenToken),
+                                                                            new SeparatedSyntaxList<AttributeArgumentSyntax>(null),
+                                                                            new SyntaxToken(SyntaxKind.CloseParenToken))));
+                          var al =_syntaxFactory.AttributeList(new SyntaxToken(SyntaxKind.OpenBracketToken),
+                                                       null, // target:
+                                                       attrs,
+                                                       new SyntaxToken(SyntaxKind.CloseBracketToken));
+                          attributes.Add(al);
+                        }
                     return this.ParseClassOrStructOrInterfaceDeclaration(attributes, modifiers);
 
                 case SyntaxKind.DelegateKeyword:

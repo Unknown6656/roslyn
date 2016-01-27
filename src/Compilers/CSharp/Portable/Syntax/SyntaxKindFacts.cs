@@ -918,6 +918,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return SyntaxKind.ClassKeyword;
                 case "struct":
                     return SyntaxKind.StructKeyword;
+                case "concept": //@crusso
                 case "interface":
                     return SyntaxKind.InterfaceKeyword;
                 case "enum":
