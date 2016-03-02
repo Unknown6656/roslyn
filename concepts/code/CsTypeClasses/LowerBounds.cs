@@ -10,7 +10,7 @@ namespace CsTypeClasses
 
     interface Below<in A, out B> {
         // note that A must be contra-variant for List<out A> to type check.
-        // interestingly this typechecks even if B is invariant, no covariant.
+        // interestingly this typechecks even if B is invariant, not covariant.
 
         B Cast(A a);
     }
