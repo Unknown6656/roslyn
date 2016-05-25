@@ -489,6 +489,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             switch (typeKind)
             {
+                //@t-mawind TODO: add Concept here
                 case TypeKind.Module:
                 case TypeKind.Class:
                     return SyntaxKind.ClassKeyword;

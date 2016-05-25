@@ -763,6 +763,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return SyntaxKind.ClassDeclaration;
                 case SyntaxKind.StructKeyword:
                     return SyntaxKind.StructDeclaration;
+                case SyntaxKind.ConceptKeyword: //@t-mawind
+                // Temporary: this should probably become ConceptDeclaration.
                 case SyntaxKind.InterfaceKeyword:
                     return SyntaxKind.InterfaceDeclaration;
                 default:
@@ -918,7 +920,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return SyntaxKind.ClassKeyword;
                 case "struct":
                     return SyntaxKind.StructKeyword;
-                case "concept": //@crusso
+                case "concept": //@crusso, @t-mawind
+                    return SyntaxKind.ConceptKeyword;
                 case "interface":
                     return SyntaxKind.InterfaceKeyword;
                 case "enum":
@@ -1455,6 +1458,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return "class";
                 case SyntaxKind.StructKeyword:
                     return "struct";
+                case SyntaxKind.ConceptKeyword: //@t-mawind
+                    return "concept";
                 case SyntaxKind.InterfaceKeyword:
                     return "interface";
                 case SyntaxKind.EnumKeyword:

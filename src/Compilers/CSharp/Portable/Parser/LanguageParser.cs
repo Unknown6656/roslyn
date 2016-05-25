@@ -522,6 +522,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 case SyntaxKind.DelegateKeyword:
                 case SyntaxKind.ClassKeyword:
                 case SyntaxKind.InterfaceKeyword:
+                case SyntaxKind.ConceptKeyword: //@t-mawind
                 case SyntaxKind.StructKeyword:
                 case SyntaxKind.AbstractKeyword:
                 case SyntaxKind.InternalKeyword:
@@ -1496,6 +1497,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             {
                 case SyntaxKind.StructKeyword:
                 case SyntaxKind.ClassKeyword:
+                case SyntaxKind.ConceptKeyword: //@t-mawind
                 case SyntaxKind.InterfaceKeyword:
                     return true;
             }
@@ -1594,22 +1596,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
 
                     return this.ParseClassOrStructOrInterfaceDeclaration(attributes, modifiers);
 
+                case SyntaxKind.ConceptKeyword: //@t-mawind
                 case SyntaxKind.StructKeyword:
                 case SyntaxKind.InterfaceKeyword:
-                    //if (this.CurrentToken.Text == "concept") //@crusso
-                        {
-                          var attrs = _pool.AllocateSeparated<AttributeSyntax>();
-                          attrs.Add(_syntaxFactory.Attribute(
-                                       new IdentifierNameSyntax(SyntaxKind.IdentifierName, SyntaxToken.Identifier("Concept")),
-                                       _syntaxFactory.AttributeArgumentList(new SyntaxToken(SyntaxKind.OpenParenToken),
-                                                                            new SeparatedSyntaxList<AttributeArgumentSyntax>(null),
-                                                                            new SyntaxToken(SyntaxKind.CloseParenToken))));
-                          var al =_syntaxFactory.AttributeList(new SyntaxToken(SyntaxKind.OpenBracketToken),
-                                                       null, // target:
-                                                       attrs,
-                                                       new SyntaxToken(SyntaxKind.CloseBracketToken));
-                          attributes.Add(al);
-                        }
                     return this.ParseClassOrStructOrInterfaceDeclaration(attributes, modifiers);
 
                 case SyntaxKind.DelegateKeyword:
@@ -1631,7 +1620,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
 
         private TypeDeclarationSyntax ParseClassOrStructOrInterfaceDeclaration(SyntaxListBuilder<AttributeListSyntax> attributes, SyntaxListBuilder modifiers)
         {
-            Debug.Assert(this.CurrentToken.Kind == SyntaxKind.ClassKeyword || this.CurrentToken.Kind == SyntaxKind.StructKeyword || this.CurrentToken.Kind == SyntaxKind.InterfaceKeyword);
+            Debug.Assert(this.CurrentToken.Kind == SyntaxKind.ConceptKeyword /*@t-mawind*/ || this.CurrentToken.Kind == SyntaxKind.ClassKeyword || this.CurrentToken.Kind == SyntaxKind.StructKeyword || this.CurrentToken.Kind == SyntaxKind.InterfaceKeyword);
 
             // "top-level" expressions and statements should never occur inside an asynchronous context
             Debug.Assert(!IsInAsync);
@@ -1747,6 +1736,38 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                             attributes,
                             modifiers.ToTokenList(),
                             classOrStructOrInterface,
+                            name,
+                            typeParameters,
+                            baseList,
+                            constraints,
+                            openBrace,
+                            members,
+                            closeBrace,
+                            semicolon);
+                    case SyntaxKind.ConceptKeyword: //@t-mawind
+                        // For now, mark as interface with attribute
+                        // We may need to push this further down the pipeline later.
+                        var attrs = _pool.AllocateSeparated<AttributeSyntax>();
+                        attrs.Add(_syntaxFactory.Attribute(
+                                     new IdentifierNameSyntax(SyntaxKind.IdentifierName, SyntaxToken.Identifier("Concept")),
+                                     _syntaxFactory.AttributeArgumentList(new SyntaxToken(SyntaxKind.OpenParenToken),
+                                                                          new SeparatedSyntaxList<AttributeArgumentSyntax>(null),
+                                                                          new SyntaxToken(SyntaxKind.CloseParenToken))));
+                        var al = _syntaxFactory.AttributeList(new SyntaxToken(SyntaxKind.OpenBracketToken),
+                                                     null, // target:
+                                                     attrs,
+                                                     new SyntaxToken(SyntaxKind.CloseBracketToken));
+                        attributes.Add(al);
+
+                        var intTok = SyntaxToken.Create(
+                            SyntaxKind.InterfaceKeyword,
+                            classOrStructOrInterface.GetLeadingTrivia(),
+                            classOrStructOrInterface.GetTrailingTrivia());
+
+                        return _syntaxFactory.InterfaceDeclaration(
+                            attributes,
+                            modifiers.ToTokenList(),
+                            intTok,
                             name,
                             typeParameters,
                             baseList,
@@ -2039,6 +2060,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 case SyntaxKind.ClassKeyword:
                 case SyntaxKind.StructKeyword:
                     return true;
+                //@t-mawind TODO: add ConceptKeyword here?
                 case SyntaxKind.IdentifierToken:
                     return this.IsTrueIdentifier();
                 default:
@@ -2065,6 +2087,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                     }
 
                     return _syntaxFactory.ConstructorConstraint(newToken, open, close);
+                //@t-mawind TODO: add ConceptKeyword here?
                 case SyntaxKind.StructKeyword:
                     isStruct = true;
                     goto case SyntaxKind.ClassKeyword;
@@ -2123,6 +2146,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 case SyntaxKind.BoolKeyword:
                 case SyntaxKind.ByteKeyword:
                 case SyntaxKind.CharKeyword:
+                case SyntaxKind.ConceptKeyword: //@t-mawind TODO: correct?
                 case SyntaxKind.ClassKeyword:
                 case SyntaxKind.ConstKeyword:
                 case SyntaxKind.DecimalKeyword:
@@ -2173,6 +2197,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
         {
             switch (kind)
             {
+                case SyntaxKind.ConceptKeyword: //@t-mawind
                 case SyntaxKind.ClassKeyword:
                 case SyntaxKind.DelegateKeyword:
                 case SyntaxKind.EnumKeyword:
