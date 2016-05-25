@@ -1,7 +1,7 @@
 
 using System;
 
-class ConcepptAttribute : System.Attribute {}
+class ConceptAttribute : System.Attribute {}
 
 interface I { 
 }
