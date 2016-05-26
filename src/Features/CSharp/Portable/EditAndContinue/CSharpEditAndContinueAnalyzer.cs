@@ -1088,6 +1088,7 @@ namespace Microsoft.CodeAnalysis.CSharp.EditAndContinue
                     var ns = (NamespaceDeclarationSyntax)node;
                     return TextSpan.FromBounds(ns.NamespaceKeyword.SpanStart, ns.Name.Span.End);
 
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
@@ -1410,6 +1411,9 @@ namespace Microsoft.CodeAnalysis.CSharp.EditAndContinue
                 case SyntaxKind.StructDeclaration:
                     return CSharpFeaturesResources.Struct;
 
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
+                    return CSharpFeaturesResources.Concept;
+
                 case SyntaxKind.InterfaceDeclaration:
                     return FeaturesResources.Interface;
 
@@ -1705,6 +1709,7 @@ namespace Microsoft.CodeAnalysis.CSharp.EditAndContinue
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.EnumDeclaration:
                     case SyntaxKind.DelegateDeclaration:
                     case SyntaxKind.VariableDeclaration:
@@ -1774,6 +1779,7 @@ namespace Microsoft.CodeAnalysis.CSharp.EditAndContinue
                         ClassifyTypeWithPossibleExternMembersInsert((TypeDeclarationSyntax)node);
                         return;
 
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind ???
                     case SyntaxKind.InterfaceDeclaration:
                     case SyntaxKind.EnumDeclaration:
                     case SyntaxKind.DelegateDeclaration:
@@ -1952,6 +1958,7 @@ namespace Microsoft.CodeAnalysis.CSharp.EditAndContinue
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.EnumDeclaration:
                     case SyntaxKind.DelegateDeclaration:
                     case SyntaxKind.MethodDeclaration:
@@ -2063,6 +2070,7 @@ namespace Microsoft.CodeAnalysis.CSharp.EditAndContinue
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                         ClassifyUpdate((TypeDeclarationSyntax)oldNode, (TypeDeclarationSyntax)newNode);
                         return;
 

@@ -480,6 +480,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case SyntaxKind.CompilationUnit:
                     return (((Syntax.InternalSyntax.CompilationUnitSyntax)member).AttributeLists).Any();
 
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
                 case SyntaxKind.InterfaceDeclaration:

@@ -209,7 +209,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 kind == SyntaxKind.StructDeclaration ||
                 kind == SyntaxKind.InterfaceDeclaration ||
                 kind == SyntaxKind.EnumDeclaration ||
-                kind == SyntaxKind.DelegateDeclaration);
+                kind == SyntaxKind.DelegateDeclaration ||
+                kind == SyntaxKind.ConceptDeclaration /*@t-mawind*/);
 
             TypeKind typeKind = kind.ToDeclarationKind().ToTypeKind();
 

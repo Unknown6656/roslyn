@@ -195,7 +195,18 @@ namespace Microsoft.CodeAnalysis.CSharp {
                 return ResourceManager.GetString("CheckedStatement", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Looks up a localized string similar to concept.
+        /// </summary>
+        internal static string Concept //@t-mawind
+        {
+            get
+            {
+                return ResourceManager.GetString("Concept", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Looks up a localized string similar to Conflict(s) detected..
         /// </summary>

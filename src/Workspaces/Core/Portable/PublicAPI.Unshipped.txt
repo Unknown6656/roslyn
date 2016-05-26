@@ -1,2 +1,4 @@
+Microsoft.CodeAnalysis.Editing.DeclarationKind.Concept = 29 -> Microsoft.CodeAnalysis.Editing.DeclarationKind
 abstract Microsoft.CodeAnalysis.Editing.SyntaxGenerator.NameOfExpression(Microsoft.CodeAnalysis.SyntaxNode expression) -> Microsoft.CodeAnalysis.SyntaxNode
+const Microsoft.CodeAnalysis.Classification.ClassificationTypeNames.ConceptName = "concept name" -> string
 static Microsoft.CodeAnalysis.Editing.DeclarationModifiers.TryParse(string value, out Microsoft.CodeAnalysis.Editing.DeclarationModifiers modifiers) -> bool

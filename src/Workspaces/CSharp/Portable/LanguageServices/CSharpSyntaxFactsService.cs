@@ -802,6 +802,14 @@ namespace Microsoft.CodeAnalysis.CSharp
                         DeclaredSymbolInfoKind.Indexer, indexerDecl.ThisKeyword.Span,
                         inheritanceNames: ImmutableArray<string>.Empty);
                     return true;
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
+                    var conceptDecl = (ConceptDeclarationSyntax)node;
+                    declaredSymbolInfo = new DeclaredSymbolInfo(conceptDecl.Identifier.ValueText,
+                        GetContainerDisplayName(node.Parent),
+                        GetFullyQualifiedContainerName(node.Parent),
+                        DeclaredSymbolInfoKind.Concept, conceptDecl.Identifier.Span,
+                        GetInheritanceNames(conceptDecl.BaseList));
+                    return true;
                 case SyntaxKind.InterfaceDeclaration:
                     var interfaceDecl = (InterfaceDeclarationSyntax)node;
                     declaredSymbolInfo = new DeclaredSymbolInfo(interfaceDecl.Identifier.ValueText,

@@ -22,6 +22,7 @@ namespace Microsoft.CodeAnalysis.Classification
         public const string ClassName = "class name";
         public const string DelegateName = "delegate name";
         public const string EnumName = "enum name";
+        public const string ConceptName = "concept name"; //@t-mawind
         public const string InterfaceName = "interface name";
         public const string ModuleName = "module name";
         public const string StructName = "struct name";

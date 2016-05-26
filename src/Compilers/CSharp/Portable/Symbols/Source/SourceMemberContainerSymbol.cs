@@ -2310,6 +2310,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                         AddNonTypeMembers(builder, classDecl.Members, diagnostics);
                         break;
 
+                    //@t-mawind TODO: is this the correct thing to do here?
+                    case SyntaxKind.ConceptDeclaration:
+                        AddNonTypeMembers(builder, ((ConceptDeclarationSyntax)syntax).Members, diagnostics);
+                        break;
+
                     case SyntaxKind.InterfaceDeclaration:
                         AddNonTypeMembers(builder, ((InterfaceDeclarationSyntax)syntax).Members, diagnostics);
                         break;

@@ -77,6 +77,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                          declaration.Kind == DeclarationKind.Interface ||
                          declaration.Kind == DeclarationKind.Enum ||
                          declaration.Kind == DeclarationKind.Delegate ||
+                         declaration.Kind == DeclarationKind.Concept /*@ta-mawind*/ ||
                          declaration.Kind == DeclarationKind.Class);
 
             if (containingSymbol.Kind == SymbolKind.NamedType)
@@ -96,6 +97,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     return ((EnumDeclarationSyntax)node).Identifier;
                 case SyntaxKind.DelegateDeclaration:
                     return ((DelegateDeclarationSyntax)node).Identifier;
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
                 case SyntaxKind.StructDeclaration:
@@ -134,6 +136,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 TypeParameterListSyntax tpl;
                 switch (typeDecl.Kind())
                 {
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
@@ -301,6 +304,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             switch (node.Kind())
             {
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
                 case SyntaxKind.InterfaceDeclaration:

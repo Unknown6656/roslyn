@@ -25,7 +25,8 @@ namespace Microsoft.CodeAnalysis.FindSymbols
         Method,
         Module,
         Property,
-        Struct
+        Struct,
+        Concept //@t-mawind
     }
 
     internal struct DeclaredSymbolInfo
