@@ -266,6 +266,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             return VisitTypeDeclaration(node, DeclarationKind.Interface);
         }
 
+        public override SingleNamespaceOrTypeDeclaration VisitConceptDeclaration(ConceptDeclarationSyntax node)
+        {
+            //@t-mawind
+            return VisitTypeDeclaration(node, DeclarationKind.Concept);
+        }
+
         private SingleNamespaceOrTypeDeclaration VisitTypeDeclaration(TypeDeclarationSyntax node, DeclarationKind kind)
         {
             SingleTypeDeclaration.TypeDeclarationFlags declFlags = node.AttributeLists.Any() ?

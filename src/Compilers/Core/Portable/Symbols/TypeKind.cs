@@ -79,5 +79,10 @@ namespace Microsoft.CodeAnalysis
         /// Type is an interactive submission.
         /// </summary>
         Submission = 12,
+
+        /// <summary>
+        /// Type is a concept.
+        /// </summary>
+        Concept = 13, //@t-mawind Should this just be interface?
     }
 }
