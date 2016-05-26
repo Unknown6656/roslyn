@@ -29,6 +29,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             switch (kind)
             {
+                //@t-mawind TODO: add concepts here?
                 case DeclarationKind.Class:
                     return SyntaxKind.ClassKeyword;
                 case DeclarationKind.Struct:
@@ -44,6 +45,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             switch (kind)
             {
+                //@t-mawind TODO: add concepts here?
                 case SyntaxKind.ClassDeclaration:
                     return SyntaxKind.ClassKeyword;
                 case SyntaxKind.StructDeclaration:

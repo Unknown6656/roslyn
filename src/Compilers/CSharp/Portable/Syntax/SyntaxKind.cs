@@ -157,6 +157,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         OperatorKeyword = 8382,
         ExplicitKeyword = 8383,
         ImplicitKeyword = 8384,
+        ConceptKeyword = 8385, //@t-mawind
 
         // contextual keywords
         YieldKeyword = 8405,
