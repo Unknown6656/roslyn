@@ -490,6 +490,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         InterfaceDeclaration = 8857,
         EnumDeclaration = 8858,
         DelegateDeclaration = 8859,
+        ConceptDeclaration = 8860, //@t-mawind
 
         BaseList = 8864,
         SimpleBaseType = 8865,

@@ -308,6 +308,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case SyntaxKind.EnumDeclaration:
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
                 case SyntaxKind.InterfaceDeclaration:
                     return true;
 
@@ -340,6 +341,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
                 case SyntaxKind.InterfaceDeclaration:
                 case SyntaxKind.DelegateDeclaration:
                 case SyntaxKind.EnumDeclaration:
@@ -764,7 +766,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case SyntaxKind.StructKeyword:
                     return SyntaxKind.StructDeclaration;
                 case SyntaxKind.ConceptKeyword: //@t-mawind
-                // Temporary: this should probably become ConceptDeclaration.
+                    return SyntaxKind.ConceptDeclaration;
                 case SyntaxKind.InterfaceKeyword:
                     return SyntaxKind.InterfaceDeclaration;
                 default:
