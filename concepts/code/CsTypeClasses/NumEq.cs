@@ -15,7 +15,7 @@ namespace NumEq {
     public bool Equals(int a, int b) { return default(EqInt).Equals(a, b); }
     public int Add(int a, int b) { return a + b; }
     public int Mult(int a, int b) { return a * b; }
-    public int Neg(int a) { return ~a; }
+    public int Neg(int a) { return -a; }
   }
 
   class Test {

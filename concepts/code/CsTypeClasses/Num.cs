@@ -25,7 +25,7 @@ namespace Num {
   struct NumInt : Num<int> {
     int Num<int>.Add(int a, int b) { return a + b; }
     int Num<int>.Mult(int a, int b) { return a * b; }
-    int Num<int>.Neg(int a) { return ~a; }
+    int Num<int>.Neg(int a) { return -a; }
   }
 
   class Test {

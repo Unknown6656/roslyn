@@ -49,6 +49,7 @@
     <Compile Include="Num.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="NumEqWithDefaults.cs" />
     <Compile Include="Perf.cs" />
     <Compile Include="Eq.cs" />
     <Compile Include="Exp.cs" />
