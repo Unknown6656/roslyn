@@ -29,7 +29,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             switch (kind)
             {
-                //@t-mawind TODO: add concepts here?
+                case DeclarationKind.Concept: //@t-mawind
+                    return SyntaxKind.ConceptKeyword;
                 case DeclarationKind.Class:
                     return SyntaxKind.ClassKeyword;
                 case DeclarationKind.Struct:
@@ -45,7 +46,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             switch (kind)
             {
-                //@t-mawind TODO: add concepts here?
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
+                    return SyntaxKind.ConceptKeyword;
                 case SyntaxKind.ClassDeclaration:
                     return SyntaxKind.ClassKeyword;
                 case SyntaxKind.StructDeclaration:
@@ -83,6 +85,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             switch (kind)
             {
+                case SyntaxKind.ConceptDeclaration: //@t-mawind
+                    return SyntaxFactory.ConceptDeclaration(attributes, modifiers, keyword, identifier, typeParameterList, baseList, constraintClauses, openBraceToken, members, closeBraceToken, semicolonToken);
                 case SyntaxKind.ClassDeclaration:
                     return SyntaxFactory.ClassDeclaration(attributes, modifiers, keyword, identifier, typeParameterList, baseList, constraintClauses, openBraceToken, members, closeBraceToken, semicolonToken);
                 case SyntaxKind.StructDeclaration:

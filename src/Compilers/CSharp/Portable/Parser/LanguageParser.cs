@@ -1565,6 +1565,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 {
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.InterfaceDeclaration:
                     case SyntaxKind.EnumDeclaration:
                     case SyntaxKind.DelegateDeclaration:
@@ -1744,30 +1745,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                             members,
                             closeBrace,
                             semicolon);
+
                     case SyntaxKind.ConceptKeyword: //@t-mawind
-                        // For now, mark as interface with attribute
-                        // We may need to push this further down the pipeline later.
-                        var attrs = _pool.AllocateSeparated<AttributeSyntax>();
-                        attrs.Add(_syntaxFactory.Attribute(
-                                     new IdentifierNameSyntax(SyntaxKind.IdentifierName, SyntaxToken.Identifier("Concept")),
-                                     _syntaxFactory.AttributeArgumentList(new SyntaxToken(SyntaxKind.OpenParenToken),
-                                                                          new SeparatedSyntaxList<AttributeArgumentSyntax>(null),
-                                                                          new SyntaxToken(SyntaxKind.CloseParenToken))));
-                        var al = _syntaxFactory.AttributeList(new SyntaxToken(SyntaxKind.OpenBracketToken),
-                                                     null, // target:
-                                                     attrs,
-                                                     new SyntaxToken(SyntaxKind.CloseBracketToken));
-                        attributes.Add(al);
-
-                        var intTok = SyntaxToken.Create(
-                            SyntaxKind.InterfaceKeyword,
-                            classOrStructOrInterface.GetLeadingTrivia(),
-                            classOrStructOrInterface.GetTrailingTrivia());
-
-                        return _syntaxFactory.InterfaceDeclaration(
+                        return _syntaxFactory.ConceptDeclaration(
                             attributes,
                             modifiers.ToTokenList(),
-                            intTok,
+                            classOrStructOrInterface,
                             name,
                             typeParameters,
                             baseList,
@@ -2219,6 +2202,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 {
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.InterfaceDeclaration:
                     case SyntaxKind.EnumDeclaration:
                     case SyntaxKind.DelegateDeclaration:
@@ -4627,6 +4611,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                     case SyntaxKind.GetAccessorDeclaration:
                     case SyntaxKind.SetAccessorDeclaration:
                         return ((CSharp.Syntax.AccessorDeclarationSyntax)decl).Modifiers;
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
