@@ -280,6 +280,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             switch (typeKind)
             {
+                case TypeKind.Concept: //@t-mawind???
                 case TypeKind.Interface:
                     mods |= DeclarationModifiers.Abstract;
                     break;

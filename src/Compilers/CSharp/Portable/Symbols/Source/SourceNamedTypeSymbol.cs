@@ -431,6 +431,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                     case TypeKind.Enum:
                     case TypeKind.Interface:
+                    case TypeKind.Concept: //@t-mawind
                         return AttributeLocation.Type;
 
                     case TypeKind.Struct:

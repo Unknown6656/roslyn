@@ -268,7 +268,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         public override SingleNamespaceOrTypeDeclaration VisitConceptDeclaration(ConceptDeclarationSyntax node)
         {
-            //@t-mawind
+            //@t-mawind (Don't do syntax manipulation here, it breaks Roslyn!)
             return VisitTypeDeclaration(node, DeclarationKind.Concept);
         }
 
