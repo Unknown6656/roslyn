@@ -645,7 +645,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             get
             {
                 // TypeKind is computed eagerly, so this is cheap.
-                return this.TypeKind == TypeKind.Interface;
+                return this.TypeKind == TypeKind.Interface ||
+                       this.TypeKind == TypeKind.Concept; //@t-mawind: concepts become interfaces in IL.
             }
         }
 
