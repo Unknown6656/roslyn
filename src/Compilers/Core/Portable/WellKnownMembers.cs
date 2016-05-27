@@ -2533,6 +2533,12 @@ namespace Microsoft.CodeAnalysis
                 (byte)WellKnownType.ConceptAttribute,                                                                       // DeclaringTypeId
                 0,                                                                                                          // Arity
                     0,                                                                                                      // Method Signature
+                    (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void,
+                // ConceptInstanceAttribute__ctor @t-mawind
+                (byte)MemberFlags.Constructor,                                                                              // Flags
+                (byte)WellKnownType.ConceptInstanceAttribute,                                                               // DeclaringTypeId
+                0,                                                                                                          // Arity
+                    0,                                                                                                      // Method Signature
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void
             };
 
@@ -2833,6 +2839,7 @@ namespace Microsoft.CodeAnalysis
                 "SustainedLowLatency",                      // System_Runtime_GCLatencyMode__SustainedLowLatency
                 "Format",                                   // System_String__Format_IFormatProvider
                 ".ctor",                                    // ConceptAttribute
+                ".ctor",                                    // ConceptInstanceAttribute
             };
 
             s_descriptors = MemberDescriptor.InitializeFromStream(new System.IO.MemoryStream(initializationBytes, writable: false), allNames);

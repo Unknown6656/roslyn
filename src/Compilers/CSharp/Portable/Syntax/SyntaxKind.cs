@@ -158,6 +158,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         ExplicitKeyword = 8383,
         ImplicitKeyword = 8384,
         ConceptKeyword = 8385, //@t-mawind
+        InstanceKeyword = 8386, //@t-mawind
 
         // contextual keywords
         YieldKeyword = 8405,
@@ -491,6 +492,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         EnumDeclaration = 8858,
         DelegateDeclaration = 8859,
         ConceptDeclaration = 8860, //@t-mawind
+        InstanceDeclaration = 8861, //@t-mawind
 
         BaseList = 8864,
         SimpleBaseType = 8865,

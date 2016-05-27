@@ -77,6 +77,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                          declaration.Kind == DeclarationKind.Interface ||
                          declaration.Kind == DeclarationKind.Enum ||
                          declaration.Kind == DeclarationKind.Delegate ||
+                         declaration.Kind == DeclarationKind.Instance /*@ta-mawind*/ ||
                          declaration.Kind == DeclarationKind.Concept /*@ta-mawind*/ ||
                          declaration.Kind == DeclarationKind.Class);
 
@@ -98,6 +99,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 case SyntaxKind.DelegateDeclaration:
                     return ((DelegateDeclarationSyntax)node).Identifier;
                 case SyntaxKind.ConceptDeclaration: //@t-mawind
+                case SyntaxKind.InstanceDeclaration: //@t-mawind
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
                 case SyntaxKind.StructDeclaration:
@@ -137,6 +139,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 switch (typeDecl.Kind())
                 {
                     case SyntaxKind.ConceptDeclaration: //@t-mawind
+                    case SyntaxKind.InstanceDeclaration: //@t-mawind
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
@@ -305,6 +308,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             switch (node.Kind())
             {
                 case SyntaxKind.ConceptDeclaration: //@t-mawind
+                case SyntaxKind.InstanceDeclaration: //@t-mawind
                 case SyntaxKind.ClassDeclaration:
                 case SyntaxKind.StructDeclaration:
                 case SyntaxKind.InterfaceDeclaration:
@@ -1091,6 +1095,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             if (declaration.Kind == DeclarationKind.Concept)
             {
                 AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptAttribute__ctor));
+            }
+            // @t-mawind
+            if (declaration.Kind == DeclarationKind.Instance)
+            {
+                AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptInstanceAttribute__ctor));
             }
         }
 

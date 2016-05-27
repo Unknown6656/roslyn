@@ -28,6 +28,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 case DeclarationKind.Interface:
                     return TypeKind.Interface;
 
+                case DeclarationKind.Instance: //@t-mawind
                 case DeclarationKind.Struct:
                     return TypeKind.Struct;
 

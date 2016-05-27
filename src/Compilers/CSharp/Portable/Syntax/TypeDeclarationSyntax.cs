@@ -48,6 +48,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 case SyntaxKind.ConceptDeclaration: //@t-mawind
                     return SyntaxKind.ConceptKeyword;
+                case SyntaxKind.InstanceDeclaration: //@t-mawind
+                    return SyntaxKind.InstanceKeyword;
                 case SyntaxKind.ClassDeclaration:
                     return SyntaxKind.ClassKeyword;
                 case SyntaxKind.StructDeclaration:
@@ -87,6 +89,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 case SyntaxKind.ConceptDeclaration: //@t-mawind
                     return SyntaxFactory.ConceptDeclaration(attributes, modifiers, keyword, identifier, typeParameterList, baseList, constraintClauses, openBraceToken, members, closeBraceToken, semicolonToken);
+                case SyntaxKind.InstanceDeclaration: //@t-mawind
+                    return SyntaxFactory.InstanceDeclaration(attributes, modifiers, keyword, identifier, typeParameterList, baseList, constraintClauses, openBraceToken, members, closeBraceToken, semicolonToken);
                 case SyntaxKind.ClassDeclaration:
                     return SyntaxFactory.ClassDeclaration(attributes, modifiers, keyword, identifier, typeParameterList, baseList, constraintClauses, openBraceToken, members, closeBraceToken, semicolonToken);
                 case SyntaxKind.StructDeclaration:

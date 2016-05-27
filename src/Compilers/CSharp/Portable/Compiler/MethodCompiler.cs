@@ -1727,6 +1727,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 case SyntaxKind.ClassDeclaration:
                     return ((ClassDeclarationSyntax)containerNode).OpenBraceToken;
+                case SyntaxKind.InstanceDeclaration: //@t-mawind ??
+                    return ((InstanceDeclarationSyntax)containerNode).OpenBraceToken;
                 case SyntaxKind.StructDeclaration:
                     return ((StructDeclarationSyntax)containerNode).OpenBraceToken;
                 case SyntaxKind.EnumDeclaration:

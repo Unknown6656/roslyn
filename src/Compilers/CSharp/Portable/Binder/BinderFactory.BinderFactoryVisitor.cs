@@ -700,6 +700,16 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 return VisitTypeDeclarationCore(node);
             }
+            public override Binder VisitInstanceDeclaration(InstanceDeclarationSyntax node)
+            {
+                //@t-mawind
+                return VisitTypeDeclarationCore(node);
+            }
+            public override Binder VisitConceptDeclaration(ConceptDeclarationSyntax node)
+            {
+                //@t-mawind
+                return VisitTypeDeclarationCore(node);
+            }
 
             public override Binder VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
             {

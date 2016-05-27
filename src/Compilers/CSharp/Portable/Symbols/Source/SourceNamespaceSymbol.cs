@@ -400,6 +400,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     return new SourceNamespaceSymbol(_module, this, (MergedNamespaceDeclaration)declaration);
 
                 case DeclarationKind.Concept: //@t-mawind
+                case DeclarationKind.Instance: //@t-mawind
                 case DeclarationKind.Struct:
                 case DeclarationKind.Interface:
                 case DeclarationKind.Enum:
