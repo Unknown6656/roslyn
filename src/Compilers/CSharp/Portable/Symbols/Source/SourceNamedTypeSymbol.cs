@@ -407,26 +407,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         internal ImmutableArray<SyntaxList<AttributeListSyntax>> GetAttributeDeclarations()
         {
-            //@t-mawind
-            // TODO: doing this here is insanely hacky, ideally we want to stamp the attribute on
-            // concepts at a later pass.
-            var ads = declaration.GetAttributeDeclarations();
-            if (this.TypeKind == TypeKind.Concept)
-            {
-                ads = ads.Add(
-                    SyntaxFactory.List(
-                        new AttributeListSyntax[]
-                        {
-                            SyntaxFactory.AttributeList(
-                                SyntaxFactory.SeparatedList(
-                                    new AttributeSyntax[] {SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("Concept"))}
-                                )
-                            )
-                        }
-                    )
-                );
-            }
-            return ads;
+            return declaration.GetAttributeDeclarations();
         }
 
         IAttributeTargetSymbol IAttributeTargetSymbol.AttributesOwner
@@ -1105,6 +1086,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             if ((object)baseType != null && baseType.ContainsDynamic())
             {
                 AddSynthesizedAttribute(ref attributes, compilation.SynthesizeDynamicAttribute(baseType, customModifiersCount: 0));
+            }
+
+            // @t-mawind
+            if (declaration.Kind == DeclarationKind.Concept)
+            {
+                AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptAttribute__ctor));
             }
         }
 
