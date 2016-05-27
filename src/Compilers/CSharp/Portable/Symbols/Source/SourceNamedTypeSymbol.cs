@@ -407,7 +407,26 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         internal ImmutableArray<SyntaxList<AttributeListSyntax>> GetAttributeDeclarations()
         {
-            return declaration.GetAttributeDeclarations();
+            //@t-mawind
+            // TODO: doing this here is insanely hacky, ideally we want to stamp the attribute on
+            // concepts at a later pass.
+            var ads = declaration.GetAttributeDeclarations();
+            if (this.TypeKind == TypeKind.Concept)
+            {
+                ads = ads.Add(
+                    SyntaxFactory.List(
+                        new AttributeListSyntax[]
+                        {
+                            SyntaxFactory.AttributeList(
+                                SyntaxFactory.SeparatedList(
+                                    new AttributeSyntax[] {SyntaxFactory.Attribute(SyntaxFactory.IdentifierName("Concept"))}
+                                )
+                            )
+                        }
+                    )
+                );
+            }
+            return ads;
         }
 
         IAttributeTargetSymbol IAttributeTargetSymbol.AttributesOwner
