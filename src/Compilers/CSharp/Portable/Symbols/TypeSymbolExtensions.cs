@@ -467,7 +467,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 // Visit containing types from outer-most to inner-most.
                 switch (current.TypeKind)
                 {
-                    case TypeKind.Concept: //@t-mawind correct?
                     case TypeKind.Class:
                     case TypeKind.Struct:
                     case TypeKind.Interface:
@@ -505,7 +504,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     case TypeKind.Submission:
                         return null;
 
-                    case TypeKind.Concept: //@t-mawind correct?
                     case TypeKind.Class:
                     case TypeKind.Struct:
                     case TypeKind.Interface:

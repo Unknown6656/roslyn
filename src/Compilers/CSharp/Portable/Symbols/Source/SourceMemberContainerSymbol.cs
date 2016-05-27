@@ -280,7 +280,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             switch (typeKind)
             {
-                case TypeKind.Concept: //@t-mawind???
                 case TypeKind.Interface:
                     mods |= DeclarationModifiers.Abstract;
                     break;
@@ -645,8 +644,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             get
             {
                 // TypeKind is computed eagerly, so this is cheap.
-                return this.TypeKind == TypeKind.Interface ||
-                       this.TypeKind == TypeKind.Concept; //@t-mawind: concepts become interfaces in IL.
+                return this.TypeKind == TypeKind.Interface;
             }
         }
 

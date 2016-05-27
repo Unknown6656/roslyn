@@ -70,7 +70,6 @@ namespace Microsoft.CodeAnalysis.CSharp
                         case TypeKind.Enum:
                             return AttributeTargets.Enum;
 
-                        case TypeKind.Concept: //@t-mawind correct?
                         case TypeKind.Interface:
                             return AttributeTargets.Interface;
 

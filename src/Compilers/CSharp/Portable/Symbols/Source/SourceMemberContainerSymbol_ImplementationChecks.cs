@@ -348,7 +348,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 case TypeKind.Delegate:
                     return;
 
-                case TypeKind.Concept: //@t-mawind correct?
                 case TypeKind.Class:
                 case TypeKind.Struct:
                 case TypeKind.Interface:

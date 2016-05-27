@@ -598,7 +598,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                         declaredBase = compilation.GetSpecialType(SpecialType.System_ValueType);
                         break;
 
-                    case TypeKind.Concept: //@t-mawind correct?
                     case TypeKind.Interface:
                         return null;
 

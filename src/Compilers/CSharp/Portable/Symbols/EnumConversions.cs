@@ -25,8 +25,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     return TypeKind.Enum;
 
                 case DeclarationKind.Concept: //@t-mawind
-                    return TypeKind.Concept;
-
                 case DeclarationKind.Interface:
                     return TypeKind.Interface;
 

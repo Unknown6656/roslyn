@@ -248,7 +248,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             switch (type.TypeKind)
             {
-                case TypeKind.Concept: //@t-mawind correct?
                 case TypeKind.Class:
                 case TypeKind.Error:
                 case TypeKind.Interface:
