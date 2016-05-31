@@ -16,7 +16,7 @@ struct EqInt : Eq<int>
 }
 
 [ConceptInstance]
-struct EqArray<EqA,A> : Eq<A[]> where EqA: struct, Eq<A>
+struct EqArray<A,EqA> : Eq<A[]> where EqA: struct, Eq<A>
 {
     public bool Equals(A[] a, A[] b)
     {
