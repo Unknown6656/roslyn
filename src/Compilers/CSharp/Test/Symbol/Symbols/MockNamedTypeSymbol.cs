@@ -28,6 +28,7 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
                 return 0;
             }
         }
+        internal override int ExplicitArity => 0; //@t-mawind correct?
 
         internal override bool MangleName
         {
@@ -155,6 +156,9 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
         {
             get { return _typeKind == TypeKind.Interface; }
         }
+
+        internal override bool IsConcept => false; //@t-mawind correct?
+        internal override bool IsInstance => false; //@t-mawind correct?
 
         public override Symbol ContainingSymbol
         {
