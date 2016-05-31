@@ -38,7 +38,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// concept, or it is an interface with the <c>ConceptAttribute</c>
         /// attribute); false otherwise.
         /// </returns>
-        internal bool IsConcept => //@t-mawind
+        internal override bool IsConcept => //@t-mawind
             this.MergedDeclaration.Kind == DeclarationKind.Concept ||
             (this.IsInterfaceType() && this.HasConceptAttribute);
 
@@ -74,7 +74,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// instance, or it is a struct with the
         /// <c>ConceptInstanceAttribute</c> attribute); false otherwise.
         /// </returns>
-        internal bool IsInstance => //@t-mawind
+        internal override bool IsInstance => //@t-mawind
             this.MergedDeclaration.Kind == DeclarationKind.Instance ||
             (this.IsStructType() && this.HasInstanceAttribute);
     }

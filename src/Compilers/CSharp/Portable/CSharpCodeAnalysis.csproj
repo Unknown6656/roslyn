@@ -455,6 +455,7 @@
     <Compile Include="Lowering\SynthesizedSubmissionFields.cs" />
     <Compile Include="Lowering\SyntheticBoundNodeFactory.cs" />
     <Compile Include="Lowering\UnmatchedGotoFinder.cs" />
+    <Compile Include="NamedTypeSymbol_Concept.cs" />
     <Compile Include="Parser\AbstractLexer.cs" />
     <Compile Include="Parser\BlendedNode.cs" />
     <Compile Include="Parser\Blender.cs" />

@@ -185,6 +185,26 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             get { return _originalDefinition.IsInterface; }
         }
 
+        /// <summary>
+        /// Gets whether this symbol represents a concept.
+        /// </summary>
+        /// <returns>
+        /// True if this symbol is a concept (either it was declared as a
+        /// concept, or it is an interface with the <c>ConceptAttribute</c>
+        /// attribute); false otherwise.
+        /// </returns>
+        internal override bool IsConcept => _originalDefinition.IsConcept; //@t-mawind
+
+        /// <summary>
+        /// Gets whether this symbol represents a concept.
+        /// </summary>
+        /// <returns>
+        /// True if this symbol is an instance (either it was declared as an
+        /// instance, or it is a struct with the
+        /// <c>ConceptInstanceAttribute</c> attribute); false otherwise.
+        /// </returns>
+        internal override bool IsInstance => _originalDefinition.IsInstance; //@t-mawind
+
         public sealed override bool IsStatic
         {
             get { return _originalDefinition.IsStatic; }

@@ -323,6 +323,26 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols.Retargeting
             }
         }
 
+        /// <summary>
+        /// Gets whether this symbol represents a concept.
+        /// </summary>
+        /// <returns>
+        /// True if this symbol is a concept (either it was declared as a
+        /// concept, or it is an interface with the <c>ConceptAttribute</c>
+        /// attribute); false otherwise.
+        /// </returns>
+        internal override bool IsConcept => _underlyingType.IsConcept; //@t-mawind
+
+        /// <summary>
+        /// Gets whether this symbol represents a concept.
+        /// </summary>
+        /// <returns>
+        /// True if this symbol is an instance (either it was declared as an
+        /// instance, or it is a struct with the
+        /// <c>ConceptInstanceAttribute</c> attribute); false otherwise.
+        /// </returns>
+        internal override bool IsInstance => _underlyingType.IsInstance; //@t-mawind TODO
+
         public override Symbol ContainingSymbol
         {
             get
