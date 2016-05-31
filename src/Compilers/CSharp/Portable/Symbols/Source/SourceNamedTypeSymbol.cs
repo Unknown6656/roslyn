@@ -138,8 +138,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
 
             var typeParameterMismatchReported = false;
-            var typeParameterNames = new string[declaration.Arity];
-            var typeParameterVarianceKeywords = new string[declaration.Arity];
+            var typeParameterNames = new string[tpnCount];
+            var typeParameterVarianceKeywords = new string[tpnCount];
             var parameterBuilders1 = new List<List<AbstractTypeParameterBuilder>>();
 
             foreach (var syntaxRef in this.SyntaxReferences)
