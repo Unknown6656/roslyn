@@ -1096,11 +1096,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // already.
 
             // @t-mawind
-            if (this.IsConcept() && !(this.HasConceptAttribute()))
+            if (this.IsConcept && !this.HasConceptAttribute)
             {
                 AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptAttribute__ctor));
             }
-            else if (this.IsInstance() && !(this.HasInstanceAttribute()))
+            else if (this.IsInstance && !this.HasInstanceAttribute)
             {
                 AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptInstanceAttribute__ctor));
             }
