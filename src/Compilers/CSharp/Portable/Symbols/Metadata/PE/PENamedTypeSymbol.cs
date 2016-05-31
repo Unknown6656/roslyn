@@ -2194,6 +2194,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols.Metadata.PE
                 }
             }
 
+            internal override int ExplicitArity => 0; //@t-mawind (correct?)
+
             internal override bool MangleName
             {
                 get
@@ -2252,6 +2254,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols.Metadata.PE
                     return _arity;
                 }
             }
+            internal override int ExplicitArity => Arity; //@t-mawind (correct?)
 
             internal override bool MangleName
             {

@@ -37,8 +37,16 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <summary>
         /// Returns the arity of this type, or the number of type parameters it takes.
         /// A non-generic type has zero arity.
+        /// Instances can increase the arity via implicit type parameters.
         /// </summary>
         public abstract int Arity { get; }
+
+        /// <summary>
+        /// Returns the arity of this type, less any implicit parameters.
+        /// This is used to check type parameter counts when we don't know the
+        /// number of implicit parameters, but is fairly hacky.
+        /// </summary>
+        internal abstract int ExplicitArity { get; }
 
         /// <summary>
         /// Returns the type parameters that this type has. If this is a non-generic type,

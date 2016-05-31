@@ -285,6 +285,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 get { return _typeParameters.Length; }
             }
 
+            internal override int ExplicitArity => Arity; //@t-mawind (correct?)
+
             public override bool IsImplicitlyDeclared
             {
                 get { return true; }

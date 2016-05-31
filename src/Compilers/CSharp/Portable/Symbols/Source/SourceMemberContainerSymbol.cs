@@ -762,11 +762,17 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
+        internal override int ExplicitArity => declaration.Arity; //@t-mawind (correct?)
+
         public override int Arity
         {
             get
             {
-                return declaration.Arity;
+                //@t-mawind
+                // This is made much more complex by the fact that instances
+                // can have implicit type parameters.
+                if (declaration.Kind != DeclarationKind.Instance) return this.ExplicitArity;
+                return TypeParameters.Count();
             }
         }
 

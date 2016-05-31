@@ -83,6 +83,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols.Retargeting
             }
         }
 
+        internal override int ExplicitArity => _underlyingType.ExplicitArity; //@t-mawind (correct?)
+
         public override ImmutableArray<TypeParameterSymbol> TypeParameters
         {
             get

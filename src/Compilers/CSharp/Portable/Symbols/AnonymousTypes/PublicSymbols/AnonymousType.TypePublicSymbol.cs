@@ -171,6 +171,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 get { return 0; }
             }
 
+            internal override int ExplicitArity => 0; //@t-mawind
+
             public override bool IsImplicitlyDeclared
             {
                 get { return false; }
