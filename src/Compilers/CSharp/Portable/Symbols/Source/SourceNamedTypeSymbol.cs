@@ -1091,13 +1091,16 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 AddSynthesizedAttribute(ref attributes, compilation.SynthesizeDynamicAttribute(baseType, customModifiersCount: 0));
             }
 
+            // Is this a concept or instance?
+            // If so, add in the concept attributes, if we don't have them
+            // already.
+
             // @t-mawind
-            if (declaration.Kind == DeclarationKind.Concept)
+            if (this.IsConcept() && !(this.HasConceptAttribute()))
             {
                 AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptAttribute__ctor));
             }
-            // @t-mawind
-            if (declaration.Kind == DeclarationKind.Instance)
+            else if (this.IsInstance() && !(this.HasInstanceAttribute()))
             {
                 AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptInstanceAttribute__ctor));
             }
