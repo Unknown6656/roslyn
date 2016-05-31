@@ -120,7 +120,19 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private ImmutableArray<TypeParameterSymbol> MakeTypeParameters(DiagnosticBag diagnostics)
         {
-            if (declaration.Arity == 0)
+            // If we're an instance, we have to factor in the number of
+            // possible implicit names incoming, which cannot exceed the
+            // number of constraints.
+            var tpnCount = declaration.Arity;
+            if (declaration.Kind == DeclarationKind.Instance)
+            {
+                tpnCount += this.MaxInstanceImplicits();
+            }
+
+            // This will, thus, be declaration.Arity for everything other than
+            // implicits.  We have to do some fixing-up below in the other
+            // case.
+            if (tpnCount == 0)
             {
                 return ImmutableArray<TypeParameterSymbol>.Empty;
             }
@@ -128,7 +140,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             var typeParameterMismatchReported = false;
             var typeParameterNames = new string[declaration.Arity];
             var typeParameterVarianceKeywords = new string[declaration.Arity];
-            var parameterBuilders1 = new List<List<TypeParameterBuilder>>();
+            var parameterBuilders1 = new List<List<AbstractTypeParameterBuilder>>();
 
             foreach (var syntaxRef in this.SyntaxReferences)
             {
@@ -138,8 +150,18 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 TypeParameterListSyntax tpl;
                 switch (typeDecl.Kind())
                 {
-                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.InstanceDeclaration: //@t-mawind
+                        // See above for why we're doing this.
+                        if (declaration.Arity == 0)
+                        {
+                            tpl = SyntaxFactory.TypeParameterList();
+                        }
+                        else
+                        {
+                            tpl = ((InstanceDeclarationSyntax)typeDecl).TypeParameterList;
+                        }
+                        break;
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
@@ -156,7 +178,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                         throw ExceptionUtilities.UnexpectedValue(typeDecl.Kind());
                 }
 
-                var parameterBuilder = new List<TypeParameterBuilder>();
+                var parameterBuilder = new List<AbstractTypeParameterBuilder>();
                 parameterBuilders1.Add(parameterBuilder);
                 int i = 0;
                 foreach (var tp in tpl.Parameters)
@@ -215,6 +237,20 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     }
                     parameterBuilder.Add(new TypeParameterBuilder(syntaxTree.GetReference(tp), this, location));
                     i++;
+                }
+
+                // Instance declarations can elide some type parameters if they
+                // are a) concept witnesses, and b) mentioned on the left-hand
+                // side of a constraint.  We need to find these and add them here.
+                if (typeDecl.IsKind(SyntaxKind.InstanceDeclaration))
+                {
+                    ResolveImplicitInstanceParams(diagnostics,
+                        (InstanceDeclarationSyntax)typeDecl,
+                        ref parameterBuilder,
+                        ref typeParameterNames,
+                        ref typeParameterVarianceKeywords,
+                        ref typeParameterMismatchReported,
+                        i);
                 }
             }
 

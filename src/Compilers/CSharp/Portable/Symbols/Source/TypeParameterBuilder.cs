@@ -10,9 +10,17 @@ using Microsoft.CodeAnalysis.Text;
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
     /// <summary>
+    /// Abstract class for contexts for binding type parameter symbols of named types.
+    /// </summary>
+    internal abstract class AbstractTypeParameterBuilder
+    {
+        abstract internal TypeParameterSymbol MakeSymbol(int ordinal, IList<AbstractTypeParameterBuilder> builders, DiagnosticBag diagnostics);
+    }
+
+    /// <summary>
     /// A context for binding type parameter symbols of named types.
     /// </summary>
-    internal sealed class TypeParameterBuilder
+    internal sealed class TypeParameterBuilder : AbstractTypeParameterBuilder
     {
         private readonly SyntaxReference _syntaxRef;
         private readonly SourceNamedTypeSymbol _owner;
@@ -26,7 +34,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             _location = location;
         }
 
-        internal TypeParameterSymbol MakeSymbol(int ordinal, IList<TypeParameterBuilder> builders, DiagnosticBag diagnostics)
+        internal override TypeParameterSymbol MakeSymbol(int ordinal, IList<AbstractTypeParameterBuilder> builders, DiagnosticBag diagnostics)
         {
             var syntaxNode = (TypeParameterSyntax)_syntaxRef.GetSyntax();
             var result = new SourceTypeParameterSymbol(
@@ -46,23 +54,31 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return result;
         }
 
-        private static ImmutableArray<Location> ToLocations(IList<TypeParameterBuilder> builders)
+        private static ImmutableArray<Location> ToLocations(IList<AbstractTypeParameterBuilder> builders)
         {
             var arrayBuilder = ArrayBuilder<Location>.GetInstance(builders.Count);
             foreach (var builder in builders)
             {
-                arrayBuilder.Add(builder._location);
+                //@t-mawind TODO: this is awful
+                if (builder is TypeParameterBuilder)
+                {
+                    arrayBuilder.Add(((TypeParameterBuilder)builder)._location);
+                }
             }
 
             return arrayBuilder.ToImmutableAndFree();
         }
 
-        private static ImmutableArray<SyntaxReference> ToSyntaxRefs(IList<TypeParameterBuilder> builders)
+        private static ImmutableArray<SyntaxReference> ToSyntaxRefs(IList<AbstractTypeParameterBuilder> builders)
         {
             var arrayBuilder = ArrayBuilder<SyntaxReference>.GetInstance(builders.Count);
             foreach (var builder in builders)
             {
-                arrayBuilder.Add(builder._syntaxRef);
+                //@t-mawind TODO: this is awful
+                if (builder is TypeParameterBuilder)
+                {
+                    arrayBuilder.Add(((TypeParameterBuilder)builder)._syntaxRef);
+                }
             }
 
             return arrayBuilder.ToImmutableAndFree();
