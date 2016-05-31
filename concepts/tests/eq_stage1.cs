@@ -39,7 +39,7 @@ struct EqArray<A,EqA> : Eq<A[]> where EqA: struct, Eq<A>
 class Program {
    static void Main()
    {
-        var dict = default(EqArray<EqInt, int>);
+        var dict = default(EqArray<int,EqInt>);
         System.Console.Out.Write("1: ");
         System.Console.Out.WriteLine(dict.Equals(new int[] { }, new int[] { }) ? "pass" : "fail");
         System.Console.Out.Write("2: ");
