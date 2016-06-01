@@ -360,6 +360,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private TypeParameterBounds ResolveBounds(ConsList<TypeParameterSymbol> inProgress, DiagnosticBag diagnostics)
         {
             var constraintTypes = _owner.GetTypeParameterConstraintTypes(this.Ordinal);
+
+            // Does each constraint name a concept?
+            foreach (var constraintType in constraintTypes)
+            {
+                if (!constraintType.IsConceptType())
+                {
+                    var loc = constraintType.Locations.IsEmpty ? Location.None : constraintType.Locations[0];
+
+                    // Currently, call this a missing type variable in the constraint.
+                    // This may change later.
+                    diagnostics.Add(ErrorCode.ERR_TyVarNotFoundInConstraint,
+                        loc,
+                        constraintType.Name,
+                        _owner.ConstructedFrom());
+                }
+            }
+
             return this.ResolveBounds(this.ContainingAssembly.CorLibrary, inProgress.Prepend(this), constraintTypes, false, this.DeclaringCompilation, diagnostics);
         }
 
@@ -378,10 +395,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private void CheckConstraintTypeConstraints(DiagnosticBag diagnostics)
         {
             var constraintTypes = this.ConstraintTypesNoUseSiteDiagnostics;
-            if (constraintTypes.Length == 0)
-            {
-                return;
-            }
+
+            // Witnesses are always generated from at least one constraint.
+            // Thus, we should never get here and have zero constraints in play.
+            Debug.Assert(0 < constraintTypes.Length);
+
+            // Now, we behave just like a SourceTypeParameterSymbol.
 
             var corLibrary = this.ContainingAssembly.CorLibrary;
             var conversions = new TypeConversions(corLibrary);

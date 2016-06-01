@@ -225,6 +225,22 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return type.Kind == SymbolKind.NamedType && ((NamedTypeSymbol)type).IsInterface;
         }
 
+        /// <summary>
+        /// Determines whether this symbol names a concept type.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>
+        /// True if this symbol is a <see cref="NamedTypeSymbol"/> and
+        /// <see cref="NamedTypeSymbol.IsConcept"/> is true; false
+        /// otherwise.
+        /// </returns>
+        public static bool IsConceptType(this TypeSymbol type)
+        {
+            //@t-mawind
+            Debug.Assert((object)type != null);
+            return type.Kind == SymbolKind.NamedType && ((NamedTypeSymbol)type).IsConcept;
+        }
+
         public static bool IsClassType(this TypeSymbol type)
         {
             Debug.Assert((object)type != null);
