@@ -254,10 +254,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptWitnessAttribute__ctor));
         }
 
-        internal override void EnsureAllConstraintsAreResolved()
-        {
-            // TODO: this is empty in AnonymousType, is this correct for us?
-        }
+        // As the name suggests, these are implicitly declared.
+        // @t-mawind Is this correct?
+        public override bool IsImplicitlyDeclared => true;
 
         // The following come over from SourceTypeParameterSymbol.
         // Would be useful to understand them, and reduce overlap.
@@ -265,6 +264,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private NamedTypeSymbol GetDefaultBaseType()
         {
             return this.ContainingAssembly.GetSpecialType(SpecialType.System_Object);
+        }
+        internal override void EnsureAllConstraintsAreResolved()
+        {
+            if (ReferenceEquals(_lazyBounds, TypeParameterBounds.Unset))
+            {
+                EnsureAllConstraintsAreResolved(this.ContainerTypeParameters);
+            }
         }
 
         public override bool HasConstructorConstraint
