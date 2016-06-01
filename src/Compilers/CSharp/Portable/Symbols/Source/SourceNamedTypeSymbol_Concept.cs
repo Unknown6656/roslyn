@@ -65,7 +65,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="lastTypeParameter">
         /// The index of the last explicit type parameter found.
         /// </param>
-        private void ResolveImplicitInstanceParams(DiagnosticBag diagnostics,
+        private void ResolveWitnessParams(DiagnosticBag diagnostics,
             InstanceDeclarationSyntax instDecl,
             ref List<AbstractTypeParameterBuilder> parameterBuilder,
             ref string[] typeParameterNames,
@@ -150,7 +150,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                             this); // see comment above
                     }
                 }
-                parameterBuilder.Add(new InstanceImplicitTypeParameterBuilder(clauseName, this));
+                parameterBuilder.Add(new WitnessTypeParameterBuilder(clauseName, this));
                 i++;
             }
         }
@@ -159,7 +159,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
     /// <summary>
     /// Type parameter builder for instance implicit type parameters.
     /// </summary>
-    internal sealed class InstanceImplicitTypeParameterBuilder : AbstractTypeParameterBuilder
+    internal sealed class WitnessTypeParameterBuilder : AbstractTypeParameterBuilder
     {
         private readonly string _name;
         private readonly SourceNamedTypeSymbol _owner;
@@ -173,7 +173,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="owner">
         /// The parent of the type parameter.
         /// </param>
-        internal InstanceImplicitTypeParameterBuilder(string name, SourceNamedTypeSymbol owner)
+        internal WitnessTypeParameterBuilder(string name, SourceNamedTypeSymbol owner)
         {
             _name = name;
             _owner = owner;
@@ -182,14 +182,14 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         // @t-mawind TODO: move somewhere else
         internal override TypeParameterSymbol MakeSymbol(int ordinal, IList<AbstractTypeParameterBuilder> builders, DiagnosticBag diagnostics)
         {
-            return new SynthesizedInstanceImplicitTypeParameterSymbol(_name, ordinal, _owner);
+            return new SynthesizedWitnessParameterSymbol(_name, ordinal, _owner);
         }
     }
 
     /// <summary>
-    /// Type of synthesised instance implicit type parameters.
+    /// Type of synthesised concept-witness type parameters.
     /// </summary>
-    internal sealed class SynthesizedInstanceImplicitTypeParameterSymbol : TypeParameterSymbol
+    internal sealed class SynthesizedWitnessParameterSymbol : TypeParameterSymbol
     {
         // @t-mawind TODO: move somewhere else
         // This is very similar to AnonymousType.TypeParameterSymbol.
@@ -204,7 +204,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private string _name;
 
         /// <summary>
-        /// Constructs a new SynthesizedInstanceImplicitTypeParameterSymbol.
+        /// Constructs a new SynthesizedWitnessParameterSymbol.
         /// </summary>
         /// <param name="name">
         /// The name of the type parameter.
@@ -215,7 +215,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="owner">
         /// The symbol containing this type parameter.
         /// </param>
-        internal SynthesizedInstanceImplicitTypeParameterSymbol(string name, int ordinal, SourceNamedTypeSymbol owner)
+        internal SynthesizedWitnessParameterSymbol(string name, int ordinal, SourceNamedTypeSymbol owner)
         {
   
             _name = name;

@@ -244,7 +244,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 // side of a constraint.  We need to find these and add them here.
                 if (typeDecl.IsKind(SyntaxKind.InstanceDeclaration))
                 {
-                    ResolveImplicitInstanceParams(diagnostics,
+                    ResolveWitnessParams(diagnostics,
                         (InstanceDeclarationSyntax)typeDecl,
                         ref parameterBuilder,
                         ref typeParameterNames,
