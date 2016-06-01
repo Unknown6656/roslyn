@@ -259,14 +259,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
-        public override bool HasValueTypeConstraint
-        {
-            get
-            {
-                var constraints = this.GetDeclaredConstraints();
-                return (constraints & TypeParameterConstraintKind.ValueType) != 0;
-            }
-        }
+        /// <summary>
+        /// Gets whether this parameter is constrained to be a value type.
+        ///
+        /// <para>
+        /// Implicit instance parameters are always concept instances,
+        /// which are encoded as value types: therefore this is set to true.
+        /// </para>
+        /// </summary>
+        public override bool HasValueTypeConstraint => true;
 
         public override bool HasReferenceTypeConstraint
         {

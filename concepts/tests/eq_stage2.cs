@@ -13,7 +13,7 @@ instance EqInt : Eq<int>
     public bool Equals(int a, int b) => a == b;
 }
 
-instance EqArray<A> : Eq<A[]> where EqA: struct, Eq<A>
+instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
 {
     public bool Equals(A[] a, A[] b)
     {
