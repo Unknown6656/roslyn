@@ -1134,11 +1134,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // @t-mawind
             if (this.IsConcept && !this.HasConceptAttribute)
             {
-                AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptAttribute__ctor));
+                AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.System_Concepts_ConceptAttribute__ctor));
             }
             else if (this.IsInstance && !this.HasInstanceAttribute)
             {
-                AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptInstanceAttribute__ctor));
+                AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.System_Concepts_ConceptInstanceAttribute__ctor));
             }
         }
 

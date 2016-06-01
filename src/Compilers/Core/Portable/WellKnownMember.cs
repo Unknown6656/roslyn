@@ -357,9 +357,9 @@ namespace Microsoft.CodeAnalysis
         System_String__Format_IFormatProvider,
 
         //@t-mawind
-        ConceptAttribute__ctor,
-        ConceptInstanceAttribute__ctor,
-        ConceptWitnessAttribute__ctor,
+        System_Concepts_ConceptAttribute__ctor,
+        System_Concepts_ConceptInstanceAttribute__ctor,
+        System_Concepts_ConceptWitnessAttribute__ctor,
 
         Count
     }

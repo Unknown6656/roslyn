@@ -11,7 +11,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         /// <returns>
         /// True if this symbol is a concept (either it was declared as a
-        /// concept, or it is an interface with the <c>ConceptAttribute</c>
+        /// concept, or it is an interface with the <c>System_Concepts_ConceptAttribute</c>
         /// attribute); false otherwise.
         /// </returns>
         internal abstract bool IsConcept { get; } //@t-mawind
@@ -22,7 +22,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <returns>
         /// True if this symbol is an instance (either it was declared as an
         /// instance, or it is a struct with the
-        /// <c>ConceptInstanceAttribute</c> attribute); false otherwise.
+        /// <c>System_Concepts_ConceptInstanceAttribute</c> attribute); false otherwise.
         /// </returns>
         internal abstract bool IsInstance { get; } //@t-mawind
     }

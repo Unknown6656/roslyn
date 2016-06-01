@@ -1,8 +1,11 @@
-
 using System;
 
-class ConceptAttribute : System.Attribute {}
-class ConceptInstanceAttribute : System.Attribute {}
+namespace System.Concepts
+{
+    class ConceptAttribute : System.Attribute {}
+    class ConceptInstanceAttribute : System.Attribute {}
+    class ConceptWitnessAttribute : System.Attribute {}
+}
 
 //
 // Normal interface and struct.
@@ -39,13 +42,13 @@ instance JInt : J<int>
 // These should be unmodified, but work as if they were concepts.
 //
 
-[Concept]
+[System.Concepts.Concept]
 interface J2<T>
 {
 }
 
 
-[ConceptInstance]
+[System.Concepts.ConceptInstance]
 struct J2Int : J2<int>
 {
 }
@@ -56,13 +59,13 @@ struct J2Int : J2<int>
 // These should not have the annotations added twice.
 //
 
-[Concept]
+[System.Concepts.Concept]
 concept J3<T>
 {
 }
 
 
-[ConceptInstance]
+[System.Concepts.ConceptInstance]
 instance J3Int : J3<int>
 {
 }

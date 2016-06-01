@@ -1,8 +1,11 @@
 // Fully expressed concept-based Eq.
 
-class ConceptAttribute : System.Attribute {}
-class ConceptInstanceAttribute : System.Attribute {}
-class ConceptWitnessAttribute : System.Attribute {}
+namespace System.Concepts
+{
+    class ConceptAttribute : System.Attribute {}
+    class ConceptInstanceAttribute : System.Attribute {}
+    class ConceptWitnessAttribute : System.Attribute {}
+}
 
 concept Eq<A>
 {

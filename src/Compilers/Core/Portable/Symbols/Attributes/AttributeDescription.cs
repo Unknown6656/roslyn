@@ -500,8 +500,8 @@ namespace Microsoft.CodeAnalysis
         internal static readonly AttributeDescription AssemblyAlgorithmIdAttribute = new AttributeDescription("System.Reflection", "AssemblyAlgorithmIdAttribute", s_signaturesOfAssemblyAlgorithmIdAttribute);
         internal static readonly AttributeDescription DeprecatedAttribute = new AttributeDescription("Windows.Foundation.Metadata", "DeprecatedAttribute", s_signaturesOfDeprecatedAttribute);
         //@t-mawind TODO: add namespaces to this _and_ WellKnownXYZ
-        internal static readonly AttributeDescription ConceptAttribute = new AttributeDescription("", "ConceptAttribute", s_signaturesOfConceptAttribute);
-        internal static readonly AttributeDescription ConceptInstanceAttribute = new AttributeDescription("", "ConceptInstanceAttribute", s_signaturesOfConceptInstanceAttribute);
-        internal static readonly AttributeDescription ConceptWitnessAttribute = new AttributeDescription("", "ConceptWitnessAttribute", s_signaturesOfConceptWitnessAttribute);
+        internal static readonly AttributeDescription ConceptAttribute = new AttributeDescription("System.Concepts", "ConceptAttribute", s_signaturesOfConceptAttribute);
+        internal static readonly AttributeDescription ConceptInstanceAttribute = new AttributeDescription("System.Concepts", "ConceptInstanceAttribute", s_signaturesOfConceptInstanceAttribute);
+        internal static readonly AttributeDescription ConceptWitnessAttribute = new AttributeDescription("System.Concepts", "ConceptWitnessAttribute", s_signaturesOfConceptWitnessAttribute);
     }
 }

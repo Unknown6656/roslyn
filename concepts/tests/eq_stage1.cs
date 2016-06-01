@@ -1,23 +1,26 @@
 // Fully desugared Eq.
 
-class ConceptAttribute : System.Attribute {}
-class ConceptInstanceAttribute : System.Attribute {}
-class ConceptWitnessAttribute : System.Attribute {}
+namespace System.Concepts
+{
+    class ConceptAttribute : System.Attribute {}
+    class ConceptInstanceAttribute : System.Attribute {}
+    class ConceptWitnessAttribute : System.Attribute {}
+}
 
-[Concept]
+[System.Concepts.Concept]
 interface Eq<A>
 {
     bool Equals(A a, A b);
 }
 
-[ConceptInstance]
+[System.Concepts.ConceptInstance]
 struct EqInt : Eq<int>
 {
     public bool Equals(int a, int b) => a == b;
 }
 
-[ConceptInstance]
-struct EqArray<A, [ConceptWitness] EqA> : Eq<A[]> where EqA: struct, Eq<A>
+[System.Concepts.ConceptInstance]
+struct EqArray<A, [System.Concepts.ConceptWitness] EqA> : Eq<A[]> where EqA: struct, Eq<A>
 {
     public bool Equals(A[] a, A[] b)
     {

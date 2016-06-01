@@ -2528,21 +2528,21 @@ namespace Microsoft.CodeAnalysis
                     (byte)SignatureTypeCode.TypeHandle, (byte)WellKnownType.System_IFormatProvider,
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_String,
                     (byte)SignatureTypeCode.SZArray, (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Object,
-                // ConceptAttribute__ctor @t-mawind
+                // System_Concepts_ConceptAttribute__ctor @t-mawind
                 (byte)MemberFlags.Constructor,                                                                              // Flags
-                (byte)WellKnownType.ConceptAttribute,                                                                       // DeclaringTypeId
+                (byte)WellKnownType.System_Concepts_ConceptAttribute,                                                                       // DeclaringTypeId
                 0,                                                                                                          // Arity
                     0,                                                                                                      // Method Signature
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void,
-                // ConceptInstanceAttribute__ctor @t-mawind
+                // System_Concepts_ConceptInstanceAttribute__ctor @t-mawind
                 (byte)MemberFlags.Constructor,                                                                              // Flags
-                (byte)WellKnownType.ConceptInstanceAttribute,                                                               // DeclaringTypeId
+                (byte)WellKnownType.System_Concepts_ConceptInstanceAttribute,                                                               // DeclaringTypeId
                 0,                                                                                                          // Arity
                     0,                                                                                                      // Method Signature
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void,
-                // ConceptInstanceAttribute__ctor @t-mawind
+                // System_Concepts_ConceptInstanceAttribute__ctor @t-mawind
                 (byte)MemberFlags.Constructor,                                                                              // Flags
-                (byte)WellKnownType.ConceptWitnessAttribute,                                                               // DeclaringTypeId
+                (byte)WellKnownType.System_Concepts_ConceptWitnessAttribute,                                                               // DeclaringTypeId
                 0,                                                                                                          // Arity
                     0,                                                                                                      // Method Signature
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void
@@ -2844,9 +2844,9 @@ namespace Microsoft.CodeAnalysis
                 ".ctor",                                    // System_ComponentModel_EditorBrowsableAttribute__ctor
                 "SustainedLowLatency",                      // System_Runtime_GCLatencyMode__SustainedLowLatency
                 "Format",                                   // System_String__Format_IFormatProvider
-                ".ctor",                                    // ConceptAttribute @t-mawind
-                ".ctor",                                    // ConceptInstanceAttribute @t-mawind
-                ".ctor",                                    // ConceptWitnessAttribute @t-mawind
+                ".ctor",                                    // System_Concepts_ConceptAttribute @t-mawind
+                ".ctor",                                    // System_Concepts_ConceptInstanceAttribute @t-mawind
+                ".ctor",                                    // System_Concepts_ConceptWitnessAttribute @t-mawind
             };
 
             s_descriptors = MemberDescriptor.InitializeFromStream(new System.IO.MemoryStream(initializationBytes, writable: false), allNames);
