@@ -2,6 +2,7 @@
 
 class ConceptAttribute : System.Attribute {}
 class ConceptInstanceAttribute : System.Attribute {}
+class ConceptWitnessAttribute : System.Attribute {}
 
 [Concept]
 interface Eq<A>
@@ -16,7 +17,7 @@ struct EqInt : Eq<int>
 }
 
 [ConceptInstance]
-struct EqArray<A,EqA> : Eq<A[]> where EqA: struct, Eq<A>
+struct EqArray<A, [ConceptWitness] EqA> : Eq<A[]> where EqA: struct, Eq<A>
 {
     public bool Equals(A[] a, A[] b)
     {

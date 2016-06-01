@@ -237,6 +237,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         public override VarianceKind Variance => VarianceKind.None; // TODO: check?
 
+        /// <summary>
+        /// Injects synthesized attribute data for this implicit parameter.
+        ///
+        /// <para>
+        /// This is overridden to return
+        /// <see cref="AttributeDescription.ConceptWitnessAttribute"/> as an
+        /// attribute.  Implicit parameters have no other attributes.
+        /// </para>
+        /// </summary>
+        internal override void AddSynthesizedAttributes(ModuleCompilationState compilationState, ref ArrayBuilder<SynthesizedAttributeData> attributes)
+        {
+            base.AddSynthesizedAttributes(compilationState, ref attributes);
+
+            CSharpCompilation compilation = this.DeclaringCompilation;
+            AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.ConceptWitnessAttribute__ctor));
+        }
+
         internal override void EnsureAllConstraintsAreResolved()
         {
             // TODO: this is empty in AnonymousType, is this correct for us?

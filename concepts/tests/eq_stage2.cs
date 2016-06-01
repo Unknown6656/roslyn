@@ -2,6 +2,7 @@
 
 class ConceptAttribute : System.Attribute {}
 class ConceptInstanceAttribute : System.Attribute {}
+class ConceptWitnessAttribute : System.Attribute {}
 
 concept Eq<A>
 {
