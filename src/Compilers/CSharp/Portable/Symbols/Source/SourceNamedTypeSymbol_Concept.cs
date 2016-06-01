@@ -62,8 +62,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="typeParameterMismatchReported">
         /// Whether a type parameter mismatch has been reported.
         /// </param>
-        /// <param name="lastTypeParameter">
-        /// The index of the last explicit type parameter found.
+        /// <param name="typeParameterCount">
+        /// The number of explicit type parameters.
         /// </param>
         private void ResolveWitnessParams(DiagnosticBag diagnostics,
             InstanceDeclarationSyntax instDecl,
@@ -71,26 +71,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             ref string[] typeParameterNames,
             ref string[] typeParameterVarianceKeywords,
             ref bool typeParameterMismatchReported,
-            int lastTypeParameter)
+            int typeParameterCount)
         {
-            var i = lastTypeParameter;
-            
+            var i = typeParameterCount;
+
             foreach (var clause in instDecl.ConstraintClauses)
             {
-                var clauseName = clause.Name.Identifier.ValueText;
+                if (!IsPossibleWitness(clause, ref typeParameterNames, typeParameterCount)) continue;
 
-                // We only capture this if it hasn't already appeared as a
-                // type parameter.
-                var boundAlready = false;
-                for (int j = 0; j < lastTypeParameter; j++)
-                {
-                    if (typeParameterNames[j] == clauseName)
-                    {
-                        boundAlready = true;
-                        break;
-                    }
-                }
-                if (boundAlready) continue;
+                var clauseName = clause.Name.Identifier.ValueText;
 
                 // This mostly shadows the existing code in SourceNamedTypeSymbol.
                 // This time, we start at the end of where that code left off.
@@ -153,6 +142,22 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 parameterBuilder.Add(new WitnessTypeParameterBuilder(clauseName, this));
                 i++;
             }
+        }
+
+        /// <summary>
+        /// Checks whether a clause is generating an implicit witness parameter.
+        /// </summary>
+        /// <param name="clause">The clause to investigate.</param>
+        /// <param name="typeParameterNames">The array of known type parameter names.</param>
+        /// <param name="typeParameterCount">The number of explicit type parameters.</param>
+        /// <returns></returns>
+        internal bool IsPossibleWitness(TypeParameterConstraintClauseSyntax clause, ref string[] typeParameterNames, int typeParameterCount)
+        {
+            for (int j = 0; j < typeParameterCount; j++)
+            {
+                if (typeParameterNames[j] == clause.Name.Identifier.ValueText) return false;
+            }
+            return true;
         }
     }
 
