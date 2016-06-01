@@ -80,6 +80,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 if (!IsPossibleWitness(clause, ref typeParameterNames, typeParameterCount)) continue;
 
                 var clauseName = clause.Name.Identifier.ValueText;
+                var clauseLocation = clause.Name.Location;
 
                 // This mostly shadows the existing code in SourceNamedTypeSymbol.
                 // This time, we start at the end of where that code left off.
@@ -139,7 +140,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                             this); // see comment above
                     }
                 }
-                parameterBuilder.Add(new WitnessTypeParameterBuilder(clauseName, this));
+                parameterBuilder.Add(new WitnessTypeParameterBuilder(clauseName, clauseLocation, this));
                 i++;
             }
         }
@@ -167,6 +168,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
     internal sealed class WitnessTypeParameterBuilder : AbstractTypeParameterBuilder
     {
         private readonly string _name;
+        private readonly Location _clauseLocation;
         private readonly SourceNamedTypeSymbol _owner;
 
         /// <summary>
@@ -175,19 +177,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="name">
         /// The name of the parameter.
         /// </param>
+        /// <param name="clauseLocation">
+        /// The location of the clause creating this parameter.
+        /// </param>
         /// <param name="owner">
         /// The parent of the type parameter.
         /// </param>
-        internal WitnessTypeParameterBuilder(string name, SourceNamedTypeSymbol owner)
+        internal WitnessTypeParameterBuilder(string name, Location clauseLocation, SourceNamedTypeSymbol owner)
         {
             _name = name;
+            _clauseLocation = clauseLocation;
             _owner = owner;
         }
 
         // @t-mawind TODO: move somewhere else
         internal override TypeParameterSymbol MakeSymbol(int ordinal, IList<AbstractTypeParameterBuilder> builders, DiagnosticBag diagnostics)
         {
-            return new SynthesizedWitnessParameterSymbol(_name, ordinal, _owner);
+            return new SynthesizedWitnessParameterSymbol(_name, _clauseLocation, ordinal, _owner);
         }
     }
 
@@ -204,6 +210,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private SourceNamedTypeSymbol _owner;
         private int _ordinal;
+        private Location _clauseLocation;
         private TypeParameterBounds _lazyBounds = TypeParameterBounds.Unset;
         private SymbolCompletionState _state;
         private string _name;
@@ -214,16 +221,20 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="name">
         /// The name of the type parameter.
         /// </param>
+        /// <param name="clauseLocation">
+        /// The location of the clause creating this witness.
+        /// </param>
         /// <param name="ordinal">
         /// The ordinal of the type parameter.
         /// </param>
         /// <param name="owner">
         /// The symbol containing this type parameter.
         /// </param>
-        internal SynthesizedWitnessParameterSymbol(string name, int ordinal, SourceNamedTypeSymbol owner)
+        internal SynthesizedWitnessParameterSymbol(string name, Location clauseLocation, int ordinal, SourceNamedTypeSymbol owner)
         {
   
             _name = name;
+            _clauseLocation = clauseLocation;
             _ordinal = (short)ordinal;
             _owner = owner;
         }
@@ -371,8 +382,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     // Currently, call this a missing type variable in the constraint.
                     // This may change later.
                     diagnostics.Add(ErrorCode.ERR_TyVarNotFoundInConstraint,
-                        loc,
-                        constraintType.Name,
+                        _clauseLocation,
+                        this.Name,
                         _owner.ConstructedFrom());
                 }
             }
