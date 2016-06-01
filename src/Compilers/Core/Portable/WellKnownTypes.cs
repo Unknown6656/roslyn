@@ -248,6 +248,7 @@ namespace Microsoft.CodeAnalysis
 
         ConceptAttribute, //@t-mawind
         ConceptInstanceAttribute, //@t-mawind
+        ConceptWitnessAttribute, //@t-mawind
 
         Available,
         Last = Available - 1,
@@ -490,8 +491,10 @@ namespace Microsoft.CodeAnalysis
             "System.Runtime.GCLatencyMode",
             "System.IFormatProvider",
 
-            "ConceptAttribute", //@t-mawind
-            "ConceptInstanceAttribute" //@t-mawind
+            //@t-mawind
+            "ConceptAttribute",
+            "ConceptInstanceAttribute",
+            "ConceptWitnessAttribute"
         };
 
         private readonly static Dictionary<string, WellKnownType> s_nameToTypeIdMap = new Dictionary<string, WellKnownType>((int)Count);
@@ -523,7 +526,7 @@ namespace Microsoft.CodeAnalysis
                 }
                 else if (typeId == WellKnownType.Last)
                 {
-                    typeIdName = "ConceptInstanceAttribute"; //@t-mawind
+                    typeIdName = "ConceptWitnessAttribute"; //@t-mawind
                 }
                 else
                 {

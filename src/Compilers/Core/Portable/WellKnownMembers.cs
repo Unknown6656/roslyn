@@ -2539,6 +2539,12 @@ namespace Microsoft.CodeAnalysis
                 (byte)WellKnownType.ConceptInstanceAttribute,                                                               // DeclaringTypeId
                 0,                                                                                                          // Arity
                     0,                                                                                                      // Method Signature
+                    (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void,
+                // ConceptInstanceAttribute__ctor @t-mawind
+                (byte)MemberFlags.Constructor,                                                                              // Flags
+                (byte)WellKnownType.ConceptWitnessAttribute,                                                               // DeclaringTypeId
+                0,                                                                                                          // Arity
+                    0,                                                                                                      // Method Signature
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void
             };
 
@@ -2838,8 +2844,9 @@ namespace Microsoft.CodeAnalysis
                 ".ctor",                                    // System_ComponentModel_EditorBrowsableAttribute__ctor
                 "SustainedLowLatency",                      // System_Runtime_GCLatencyMode__SustainedLowLatency
                 "Format",                                   // System_String__Format_IFormatProvider
-                ".ctor",                                    // ConceptAttribute
-                ".ctor",                                    // ConceptInstanceAttribute
+                ".ctor",                                    // ConceptAttribute @t-mawind
+                ".ctor",                                    // ConceptInstanceAttribute @t-mawind
+                ".ctor",                                    // ConceptWitnessAttribute @t-mawind
             };
 
             s_descriptors = MemberDescriptor.InitializeFromStream(new System.IO.MemoryStream(initializationBytes, writable: false), allNames);

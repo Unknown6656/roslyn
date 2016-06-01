@@ -392,6 +392,7 @@ namespace Microsoft.CodeAnalysis
         //@t-mawind
         private static readonly byte[][] s_signaturesOfConceptAttribute = { s_signature_HasThis_Void };
         private static readonly byte[][] s_signaturesOfConceptInstanceAttribute = { s_signature_HasThis_Void };
+        private static readonly byte[][] s_signaturesOfConceptWitnessAttribute = { s_signature_HasThis_Void };
 
         // early decoded attributes:
         internal static readonly AttributeDescription OptionalAttribute = new AttributeDescription("System.Runtime.InteropServices", "OptionalAttribute", s_signaturesOfOptionalAttribute);
@@ -501,5 +502,6 @@ namespace Microsoft.CodeAnalysis
         //@t-mawind TODO: add namespaces to this _and_ WellKnownXYZ
         internal static readonly AttributeDescription ConceptAttribute = new AttributeDescription("", "ConceptAttribute", s_signaturesOfConceptAttribute);
         internal static readonly AttributeDescription ConceptInstanceAttribute = new AttributeDescription("", "ConceptInstanceAttribute", s_signaturesOfConceptInstanceAttribute);
+        internal static readonly AttributeDescription ConceptWitnessAttribute = new AttributeDescription("", "ConceptWitnessAttribute", s_signaturesOfConceptWitnessAttribute);
     }
 }
