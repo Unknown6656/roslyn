@@ -13,15 +13,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// True if this symbol has the <c>ConceptAttribute</c> attribute;
         /// false otherwise.
         ///</returns>
-        internal bool HasConceptAttribute //@t-mawind
-        {
+        internal bool HasConceptAttribute { //@t-mawind
             get
             {
-                var conceptAttr = WellKnownTypes.GetMetadataName(WellKnownType.ConceptAttribute);
-                foreach (var attr in this.GetAttributes())
+                foreach (var attribute in this.GetAttributes())
                 {
-                    // TODO: Is this the most robust way to compare types?
-                    if (attr.AttributeClass.MetadataName == conceptAttr)
+                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptAttribute))
                     {
                         return true;
                     }
@@ -53,11 +50,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             get
             {
-                var instanceAttr = WellKnownTypes.GetMetadataName(WellKnownType.ConceptInstanceAttribute);
-                foreach (var attr in this.GetAttributes())
+                foreach (var attribute in this.GetAttributes())
                 {
-                    // TODO: Is this the most robust way to compare types?
-                    if (attr.AttributeClass.MetadataName == instanceAttr)
+                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptInstanceAttribute))
                     {
                         return true;
                     }

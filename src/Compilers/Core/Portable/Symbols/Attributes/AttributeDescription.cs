@@ -389,6 +389,10 @@ namespace Microsoft.CodeAnalysis
             s_signature_HasThis_Void_String_DeprecationType_UInt32_Type
         };
 
+        //@t-mawind
+        private static readonly byte[][] s_signaturesOfConceptAttribute = { s_signature_HasThis_Void };
+        private static readonly byte[][] s_signaturesOfConceptInstanceAttribute = { s_signature_HasThis_Void };
+
         // early decoded attributes:
         internal static readonly AttributeDescription OptionalAttribute = new AttributeDescription("System.Runtime.InteropServices", "OptionalAttribute", s_signaturesOfOptionalAttribute);
         internal static readonly AttributeDescription ComImportAttribute = new AttributeDescription("System.Runtime.InteropServices", "ComImportAttribute", s_signaturesOfComImportAttribute);
@@ -494,5 +498,8 @@ namespace Microsoft.CodeAnalysis
         internal static readonly AttributeDescription AssemblyConfigurationAttribute = new AttributeDescription("System.Reflection", "AssemblyConfigurationAttribute", s_signaturesOfAssemblyConfigurationAttribute);
         internal static readonly AttributeDescription AssemblyAlgorithmIdAttribute = new AttributeDescription("System.Reflection", "AssemblyAlgorithmIdAttribute", s_signaturesOfAssemblyAlgorithmIdAttribute);
         internal static readonly AttributeDescription DeprecatedAttribute = new AttributeDescription("Windows.Foundation.Metadata", "DeprecatedAttribute", s_signaturesOfDeprecatedAttribute);
+        //@t-mawind TODO: add namespaces to this _and_ WellKnownXYZ
+        internal static readonly AttributeDescription ConceptAttribute = new AttributeDescription("", "ConceptAttribute", s_signaturesOfConceptAttribute);
+        internal static readonly AttributeDescription ConceptInstanceAttribute = new AttributeDescription("", "ConceptInstanceAttribute", s_signaturesOfConceptInstanceAttribute);
     }
 }
