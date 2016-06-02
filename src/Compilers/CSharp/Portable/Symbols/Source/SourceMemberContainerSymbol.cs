@@ -769,9 +769,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             get
             {
                 //@t-mawind
-                // This is made much more complex by the fact that instances
+                // This is made much more complex by the fact that we
                 // can have implicit type parameters.
-                if (declaration.Kind != DeclarationKind.Instance) return this.ExplicitArity;
                 return TypeParameters.Count();
             }
         }

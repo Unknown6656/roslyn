@@ -120,18 +120,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private ImmutableArray<TypeParameterSymbol> MakeTypeParameters(DiagnosticBag diagnostics)
         {
-            // If we're an instance, we have to factor in the number of
-            // possible implicit names incoming, which cannot exceed the
+            // @t-mawind We have to factor in the number of
+            // possible incoming witnesses, which cannot exceed the
             // number of constraints.
-            var tpnCount = declaration.Arity;
-            if (declaration.Kind == DeclarationKind.Instance)
-            {
-                tpnCount += this.MaxInstanceImplicits();
-            }
-
-            // This will, thus, be declaration.Arity for everything other than
-            // implicits.  We have to do some fixing-up below in the other
-            // case.
+            var tpnCount = declaration.Arity + this.MaxWitnesses();
             if (tpnCount == 0)
             {
                 return ImmutableArray<TypeParameterSymbol>.Empty;
@@ -151,25 +143,28 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 switch (typeDecl.Kind())
                 {
                     case SyntaxKind.InstanceDeclaration: //@t-mawind
-                        // See above for why we're doing this.
+                    case SyntaxKind.ConceptDeclaration: //@t-mawind
+                    case SyntaxKind.ClassDeclaration:
+                    case SyntaxKind.StructDeclaration:
+                    case SyntaxKind.InterfaceDeclaration:
                         if (declaration.Arity == 0)
                         {
                             tpl = SyntaxFactory.TypeParameterList();
                         }
                         else
                         {
-                            tpl = ((InstanceDeclarationSyntax)typeDecl).TypeParameterList;
+                            tpl = ((TypeDeclarationSyntax)typeDecl).TypeParameterList;
                         }
                         break;
-                    case SyntaxKind.ConceptDeclaration: //@t-mawind
-                    case SyntaxKind.ClassDeclaration:
-                    case SyntaxKind.StructDeclaration:
-                    case SyntaxKind.InterfaceDeclaration:
-                        tpl = ((TypeDeclarationSyntax)typeDecl).TypeParameterList;
-                        break;
-
                     case SyntaxKind.DelegateDeclaration:
-                        tpl = ((DelegateDeclarationSyntax)typeDecl).TypeParameterList;
+                        if (declaration.Arity == 0)
+                        {
+                            tpl = SyntaxFactory.TypeParameterList();
+                        }
+                        else
+                        {
+                            tpl = ((DelegateDeclarationSyntax)typeDecl).TypeParameterList;
+                        }
                         break;
 
                     case SyntaxKind.EnumDeclaration:
@@ -239,19 +234,16 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     i++;
                 }
 
-                // Instance declarations can elide some type parameters if they
+                // @t-mawind We can elide some type parameters if they
                 // are a) concept witnesses, and b) mentioned on the left-hand
                 // side of a constraint.  We need to find these and add them here.
-                if (typeDecl.IsKind(SyntaxKind.InstanceDeclaration))
-                {
-                    ResolveWitnessParams(diagnostics,
-                        (InstanceDeclarationSyntax)typeDecl,
-                        ref parameterBuilder,
-                        ref typeParameterNames,
-                        ref typeParameterVarianceKeywords,
-                        ref typeParameterMismatchReported,
-                        i);
-                }
+                ResolveWitnessParams(diagnostics,
+                    (TypeDeclarationSyntax)typeDecl,
+                    ref parameterBuilder,
+                    ref typeParameterNames,
+                    ref typeParameterVarianceKeywords,
+                    ref typeParameterMismatchReported,
+                    i);
             }
 
             var parameterBuilders2 = parameterBuilders1.Transpose(); // type arguments are positional

@@ -36,18 +36,36 @@ struct EqArray<A, [ConceptWitness] EqA> : Eq<A[]> where EqA: struct, Eq<A>
 // Driver.
 //
 
-class Program {
-   static void Main()
-   {
-        var dict = default(EqArray<int,EqInt>);
-        System.Console.Out.Write("1: ");
-        System.Console.Out.WriteLine(dict.Equals(new int[] { }, new int[] { }) ? "pass" : "fail");
-        System.Console.Out.Write("2: ");
-        System.Console.Out.WriteLine(dict.Equals(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 }) ? "pass" : "fail");
-        System.Console.Out.Write("3: ");
-        System.Console.Out.WriteLine(dict.Equals(new int[] { 1, 2, 3 }, new int[] { 1, 2 }) ? "fail" : "pass");
-        System.Console.Out.Write("4: ");
-        System.Console.Out.WriteLine(dict.Equals(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 }) ? "fail" : "pass");
+class Tester<A, [ConceptWitness] EqA> where EqA : struct, Eq<A>
+{
+    int _num;
+    A[] _l;
+    A[] _r;
+    bool _expected;
+
+    public Tester(int num, A[] l, A[] r, bool expected)
+    {
+        _num = num;
+        _l = l;
+        _r = r;
+        _expected = expected;
+    }
+
+    public void Test()
+    {
+        System.Console.Out.Write($"{_num}: ");
+        System.Console.Out.WriteLine((default(EqArray<A, EqA>).Equals(_l, _r) == _expected) ? "pass" : "fail");
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        new Tester<int, EqInt>(1, new int[] { }, new int[] { }, true).Test();
+        new Tester<int, EqInt>(2, new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, true).Test();
+        new Tester<int, EqInt>(3, new int[] { 1, 2, 3 }, new int[] { 1, 2 }, false).Test();
+        new Tester<int, EqInt>(4, new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 }, false).Test();
     }
 }
 

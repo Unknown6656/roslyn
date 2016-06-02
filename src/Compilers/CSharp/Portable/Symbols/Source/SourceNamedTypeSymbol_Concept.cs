@@ -12,8 +12,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
     internal partial class SourceNamedTypeSymbol
     {
         /// <summary>
-        /// Gets the maximum number of possible implicit type parameters in
-        /// this symbol.
+        /// Gets the maximum number of possible witnesses in this symbol.
         /// </summary>
         /// <returns>
         /// The number of constraints, which is an upper bound on the number
@@ -21,7 +20,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// in any source references.
         /// Otherwise, 0.
         /// </returns>
-        private int MaxInstanceImplicits()
+        private int MaxWitnesses()
         {
             var maxImplicits = 0;
             // Find out the maximum number of referenced constraints.
@@ -29,10 +28,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             foreach (var syntaxRef in this.SyntaxReferences)
             {
                 var typeDecl = (CSharpSyntaxNode)syntaxRef.GetSyntax();
-                if (typeDecl.IsKind(SyntaxKind.InstanceDeclaration))
+                if (SyntaxFacts.IsTypeDeclaration(typeDecl.Kind()))
                 {
-                    var instDecl = (InstanceDeclarationSyntax)typeDecl;
-                    maxImplicits = System.Math.Max(maxImplicits, instDecl.ConstraintClauses.Count);
+                    var instDecl = (TypeDeclarationSyntax)typeDecl;
+                    maxImplicits = Math.Max(maxImplicits, instDecl.ConstraintClauses.Count);
                 }
             }
 
@@ -40,13 +39,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         /// <summary>
-        /// Adds implict type parameters on an instance declaration.
+        /// Adds implicit witness type parameters on an declaration.
         /// </summary>
         /// <param name="diagnostics">
         /// The bag of diagnostics into which we report errors.
         /// </param>
-        /// <param name="instDecl">
-        /// The instance declaration to examine.
+        /// <param name="typeDecl">
+        /// The type declaration to examine.
         /// </param>
         /// <param name="parameterBuilder">
         /// The type parameter builder to append onto.
@@ -66,7 +65,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// The number of explicit type parameters.
         /// </param>
         private void ResolveWitnessParams(DiagnosticBag diagnostics,
-            InstanceDeclarationSyntax instDecl,
+            TypeDeclarationSyntax typeDecl,
             ref List<AbstractTypeParameterBuilder> parameterBuilder,
             ref string[] typeParameterNames,
             ref string[] typeParameterVarianceKeywords,
@@ -75,7 +74,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             var i = typeParameterCount;
 
-            foreach (var clause in instDecl.ConstraintClauses)
+            foreach (var clause in typeDecl.ConstraintClauses)
             {
                 if (!IsPossibleWitness(clause, ref typeParameterNames, typeParameterCount)) continue;
 
