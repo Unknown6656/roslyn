@@ -813,6 +813,58 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 result.Add(typeParameter);
             }
 
+            //@t-mawind
+            // Note similarity to SourceNamedTypeSymbol's ResolveWitnessParams.
+            var witnessOrdinal = typeParameters.Count;
+            foreach (var clause in syntax.ConstraintClauses)
+            {
+                var name = clause.Name.Identifier.ValueText;
+                var location = clause.Name.Location;
+
+                // Check to see if this clause already names an existing type parameter.
+                var isWitness = true;
+                foreach (var tp in typeParameters)
+                {
+                    if (name == tp.Identifier.ValueText)
+                    {
+                        isWitness = false;
+                        break;
+                    }
+                }
+                if (!isWitness) break;
+
+                for (int i = 0; i < result.Count; i++)
+                {
+                    if (name == result[i].Name)
+                    {
+                        diagnostics.Add(ErrorCode.ERR_DuplicateTypeParameter, location, name);
+                        break;
+                    }
+                }
+
+                var tpEnclosing = ContainingType.FindEnclosingTypeParameter(name);
+                if ((object)tpEnclosing != null)
+                {
+                    // Type parameter '{0}' has the same name as the type parameter from outer type '{1}'
+                    diagnostics.Add(ErrorCode.WRN_TypeParameterSameAsOuterTypeParameter, location, name, tpEnclosing.ContainingType);
+                }
+
+                // @t-mawind TODO: overriding
+
+                var typeParameter = /*(typeMap != null) ?
+                    (TypeParameterSymbol)new SourceOverridingMethodTypeParameterSymbol(
+                        typeMap,
+                        name,
+                        ordinal,
+                        locations,
+                        syntaxRefs) :*/
+                    new SynthesizedWitnessMethodParameterSymbol(name, location, witnessOrdinal, this);
+
+                result.Add(typeParameter);
+
+                witnessOrdinal++;
+            }
+
             return result.ToImmutableAndFree();
         }
 
