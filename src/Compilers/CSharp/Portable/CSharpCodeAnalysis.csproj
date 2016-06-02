@@ -637,6 +637,7 @@
     <Compile Include="Symbols\Source\SourceMemberContainerSymbol_ImplementationChecks.cs" />
     <Compile Include="Symbols\Source\SourceMemberFieldSymbol.cs" />
     <Compile Include="Symbols\Source\SourceMemberMethodSymbol.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedWitnessTypeParameterSymbol.cs" />
     <Compile Include="Symbols\Source\SourceMethodSymbol.cs" />
     <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />
     <Compile Include="Symbols\Source\SourceNamedTypeSymbol.cs" />
