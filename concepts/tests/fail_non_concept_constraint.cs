@@ -1,12 +1,6 @@
 // This should fail, because instance EqArray is trying to constrain to an interface
 // that isn't a concept.
-
-namespace System.Concepts
-{
-    class ConceptAttribute : System.Attribute {}
-    class ConceptInstanceAttribute : System.Attribute {}
-    class ConceptWitnessAttribute : System.Attribute {}
-}
+// Remember to reference ConceptAttributes.dll!
 
 interface Eq<A>
 {

@@ -1,11 +1,7 @@
-using System;
+// Remember to reference ConceptAttributes.dll!
 
-namespace System.Concepts
-{
-    class ConceptAttribute : System.Attribute {}
-    class ConceptInstanceAttribute : System.Attribute {}
-    class ConceptWitnessAttribute : System.Attribute {}
-}
+using System;
+using System.Concepts;
 
 //
 // Normal interface and struct.
@@ -42,13 +38,13 @@ instance JInt : J<int>
 // These should be unmodified, but work as if they were concepts.
 //
 
-[System.Concepts.Concept]
+[Concept]
 interface J2<T>
 {
 }
 
 
-[System.Concepts.ConceptInstance]
+[ConceptInstance]
 struct J2Int : J2<int>
 {
 }
@@ -59,13 +55,13 @@ struct J2Int : J2<int>
 // These should not have the annotations added twice.
 //
 
-[System.Concepts.Concept]
+[Concept]
 concept J3<T>
 {
 }
 
 
-[System.Concepts.ConceptInstance]
+[ConceptInstance]
 instance J3Int : J3<int>
 {
 }
