@@ -60,12 +60,28 @@ class Tester<A, [ConceptWitness] EqA> where EqA : struct, Eq<A>
 
 class Program
 {
+    static int count = 1;
+
+    // This fairly convoluted driver is trying to test both class witness
+    // capture and method witness capture.
+
+    static void ShouldEq<A, [ConceptWitness] EqA>(A[] l, A[] r) where EqA : struct, Eq<A>
+    {
+        new Tester<A, EqA>(count, l, r, true).Test();
+        count++;
+    }
+
+    static void ShouldNotEq<A, [ConceptWitness] EqA>(A[] l, A[] r) where EqA : struct, Eq<A>
+    {
+        new Tester<A, EqA>(count, l, r, false).Test();
+        count++;
+    }
+
     static void Main()
     {
-        new Tester<int, EqInt>(1, new int[] { }, new int[] { }, true).Test();
-        new Tester<int, EqInt>(2, new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 }, true).Test();
-        new Tester<int, EqInt>(3, new int[] { 1, 2, 3 }, new int[] { 1, 2 }, false).Test();
-        new Tester<int, EqInt>(4, new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 }, false).Test();
+        ShouldEq<int, EqInt>(new int[] { }, new int[] { });
+        ShouldEq<int, EqInt>(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 });
+        ShouldNotEq<int, EqInt>(new int[] { 1, 2, 3 }, new int[] { 1, 2 });
+        ShouldNotEq<int, EqInt>(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 });
     }
 }
-
