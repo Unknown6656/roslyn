@@ -851,13 +851,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                 // @t-mawind TODO: overriding
 
-                var typeParameter = /*(typeMap != null) ?
-                    (TypeParameterSymbol)new SourceOverridingMethodTypeParameterSymbol(
+                var typeParameter = (typeMap != null) ?
+                    (TypeParameterSymbol)new SynthesizedWitnessOverridingMethodTypeParameterSymbol(
                         typeMap,
                         name,
-                        ordinal,
-                        locations,
-                        syntaxRefs) :*/
+                        location,
+                        witnessOrdinal) :
                     new SynthesizedWitnessMethodParameterSymbol(name, location, witnessOrdinal, this);
 
                 result.Add(typeParameter);

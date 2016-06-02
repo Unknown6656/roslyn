@@ -364,4 +364,100 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return _owner.GetTypeParameterConstraints(this.Ordinal);
         }
     }
+
+    /// <summary>
+    /// A witness type parameter for a method that either overrides a base
+    /// type method or explicitly implements an interface method.
+    /// </summary>
+    /// <remarks>
+    /// As to <see cref="SynthesizedWitnessMethodParameterSymbol"/> what
+    /// <see cref="SourceOverridingMethodTypeParameterSymbol"/> is to 
+    /// <see cref="SourceMemberContainerTypeSymbol"/>.
+    /// </remarks>
+    internal sealed class SynthesizedWitnessOverridingMethodTypeParameterSymbol : SynthesizedWitnessParameterSymbolBase
+    {
+        //@t-mawind mostly copied from SourceOverridingMethodTypeParameterSymbol.
+        // This needs testing to make sure it's the right thing to do--
+        // I'm sceptical.
+
+        private readonly OverriddenMethodTypeParameterMapBase _map;
+
+        /// <summary>
+        /// Constructs a new SynthesizedWitnessMethodParameterSymbol.
+        /// </summary>
+        /// <param name="map">
+        /// The overridden method map for the parent map.
+        /// </param>
+        /// <param name="name">
+        /// The name of the type parameter.
+        /// </param>
+        /// <param name="clauseLocation">
+        /// The location of the clause creating this witness.
+        /// </param>
+        /// <param name="ordinal">
+        /// The ordinal of the type parameter.
+        /// </param>
+        public SynthesizedWitnessOverridingMethodTypeParameterSymbol(OverriddenMethodTypeParameterMapBase map, string name, Location clauseLocation, int ordinal)
+            : base(name, clauseLocation, ordinal)
+        {
+            _map = map;
+        }
+
+        public SourceMemberMethodSymbol Owner => _map.OverridingMethod;
+
+        public override TypeParameterKind TypeParameterKind => TypeParameterKind.Method;
+
+        public override Symbol ContainingSymbol => this.Owner;
+
+        public override bool HasConstructorConstraint
+        {
+            get
+            {
+                var typeParameter = this.OverriddenTypeParameter;
+                return ((object)typeParameter != null) && typeParameter.HasConstructorConstraint;
+            }
+        }
+
+        public override bool HasReferenceTypeConstraint
+        {
+            get
+            {
+                var typeParameter = this.OverriddenTypeParameter;
+                return ((object)typeParameter != null) && typeParameter.HasReferenceTypeConstraint;
+            }
+        }
+
+        protected override ImmutableArray<TypeParameterSymbol> ContainerTypeParameters
+        {
+            get { return this.Owner.TypeParameters; }
+        }
+
+        protected override TypeParameterBounds ResolveBounds(ConsList<TypeParameterSymbol> inProgress, DiagnosticBag diagnostics)
+        {
+            var typeParameter = this.OverriddenTypeParameter;
+            if ((object)typeParameter == null)
+            {
+                return null;
+            }
+
+            var map = _map.TypeMap;
+            Debug.Assert(map != null);
+
+            var constraintTypes = map.SubstituteTypesWithoutModifiers(typeParameter.ConstraintTypesNoUseSiteDiagnostics);
+            return this.ResolveBounds(this.ContainingAssembly.CorLibrary, inProgress.Prepend(this), constraintTypes, true, this.DeclaringCompilation, diagnostics);
+        }
+
+        /// <summary>
+        /// The type parameter to use for determining constraints. If there is a base
+        /// method that the owner method is overriding, the corresponding type
+        /// parameter on that method is used. Otherwise, the result is null.
+        /// </summary>
+        private TypeParameterSymbol OverriddenTypeParameter
+        {
+            get
+            {
+                return _map.GetOverriddenTypeParameter(this.Ordinal);
+            }
+        }
+    }
 }
