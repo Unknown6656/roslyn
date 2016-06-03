@@ -1,0 +1,114 @@
+// Laemmel and Ostermanns solution to the expression problem (not that convincing IMHO, but expressible).
+// Taken from "Software Extension and Integration with Type Classes".
+namespace Exp {
+  using System;
+
+  concept Exp<X> { }
+  class Lit {
+    public int i;
+    public Lit(int i) {
+      this.i = i;
+    }
+  }
+
+  class Add<X, Y> {
+    public X x;
+    public Y y;
+    public Add(X x, Y y) {
+      this.x = x; this.y = y;
+    }
+  }
+
+  instance ExpLit : Exp<Lit> {
+  }
+
+  instance ExpAdd<X, Y> : Exp<Add<X, Y>>
+    where ExpX : Exp<X>
+    where ExpY : Exp<Y> {
+  }
+
+  concept Eval<X> : Exp<X> {
+    int eval(X x);
+  }
+
+  static partial class Overloads {
+    public static int eval<X>(X e) where EvalX : Eval<X> {
+      return EvalX.eval(e);
+    }
+  }
+  instance EvalLit : Eval<Lit> {
+    public int eval(Lit x) {
+      return x.i;
+    }
+  }
+  instance EvalAdd<X, Y> : Eval<Add<X, Y>>
+    where EvalX : Eval<X>
+    where EvalY : Eval<Y> {
+    public int eval(Add<X, Y> a) {
+      return Overloads.eval<X, EvalX>(a.x) + Overloads.eval<Y, EvalY>(a.y);
+    }
+  }
+
+  class Neg<X> {
+    public X x;
+    public Neg(X x) {
+      this.x = x;
+    }
+  }
+
+  instance ExpNeg<ExpX, X> : Exp<Neg<X>>
+    where ExpX : Exp<X> {
+  }
+
+  instance EvalNeg<X> : Eval<Neg<X>>
+    where EvalX : Eval<X> {
+    public int eval(Neg<X> n) {
+      return -Overloads.eval<X, EvalX>(n.x);
+    }
+  }
+
+  concept Print<X> : Exp<X> {
+    void print(X x);
+  }
+
+  static partial class Overloads {
+    public static void Print<X>(X e) where PrintX : Print<X> {
+      PrintX.print(e);
+    }
+  }
+
+  instance PrintLit : Print<Lit> {
+    public void print(Lit x) {
+      Console.Write(x.i);
+    }
+  }
+
+  instance PrintAdd<X, Y> : Print<Add<X, Y>>
+    where PrintX : Print<X>
+    where PrintY : Print<Y> {
+
+    public void print(Add<X, Y> a) {
+      Overloads.Print<X, PrintX>(a.x);
+      Console.Write("+");
+      Overloads.Print<Y, PrintY>(a.y);
+    }
+  }
+
+
+  class Test {
+
+    public static int Eval<X>(X x) where EvalX : Eval<X> {
+      return EvalX.eval(x);
+    }
+
+    public static void Main() {
+      Lit one = new Lit(1);
+      Add<Lit, Lit> oneplusone = new Add<Lit, Lit>(one, one);
+      int two = Eval<Add<Lit, Lit>, EvalAdd<Lit, Lit, EvalLit, EvalLit>>(oneplusone);
+      Console.Write("Print(\"1+1\")=\"");
+      Overloads.Print<Add<Lit, Lit>, PrintAdd<Lit, Lit, PrintLit, PrintLit>>(oneplusone);
+      Console.WriteLine("\"");
+      Console.WriteLine("Eval(\"1+1\")={0}", two);
+    }
+  }
+}
