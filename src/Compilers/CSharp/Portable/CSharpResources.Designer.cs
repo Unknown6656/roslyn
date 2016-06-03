@@ -2708,6 +2708,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Constraint &apos;concept&apos; may only be used on overrides of methods with concepts..
+        /// </summary>
+        internal static string ERR_ConceptConstraintOnNonOverride {
+            get {
+                return ResourceManager.GetString("ERR_ConceptConstraintOnNonOverride", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &apos;{0}&apos; must declare a body because it is not marked abstract, extern, or partial.
         /// </summary>
         internal static string ERR_ConcreteMissingBody {

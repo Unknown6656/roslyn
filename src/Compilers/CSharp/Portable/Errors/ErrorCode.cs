@@ -1128,6 +1128,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         // ERR_BadAwaitWithoutAsyncAnonMeth = 4035,         Merged with ERR_BadAwaitWithoutAsyncLambda in Roslyn
         ERR_NoSuchMemberOrExtensionNeedUsing = 4036,
 
+        ERR_ConceptConstraintOnNonOverride = 4037, //@t-mawind
+
         // available 4037-4999
 
         // WRN_UnknownOption = 5000,   //unused in Roslyn

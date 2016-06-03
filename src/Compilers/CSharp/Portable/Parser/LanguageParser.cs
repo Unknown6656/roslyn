@@ -1652,6 +1652,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 {
                     constraints = _pool.Allocate<TypeParameterConstraintClauseSyntax>();
                     this.ParseTypeParameterConstraintClauses(hasTypeParams, constraints);
+                    this.RejectConceptConstraints(constraints);
                 }
 
                 var openBrace = this.EatToken(SyntaxKind.OpenBraceToken);
@@ -2062,8 +2063,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 case SyntaxKind.NewKeyword:
                 case SyntaxKind.ClassKeyword:
                 case SyntaxKind.StructKeyword:
+                case SyntaxKind.ConceptKeyword: //@t-mawind
                     return true;
-                //@t-mawind TODO: add ConceptKeyword and InstanceKeyword here?
                 case SyntaxKind.IdentifierToken:
                     return this.IsTrueIdentifier();
                 default:
@@ -2090,7 +2091,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                     }
 
                     return _syntaxFactory.ConstructorConstraint(newToken, open, close);
-                //@t-mawind TODO: add ConceptKeyword here?
+                case SyntaxKind.ConceptKeyword: //@t-mawind
+                    var ctoken = this.EatToken();
+                    if (!isFirst)
+                    {
+                        ctoken = this.AddError(ctoken, ErrorCode.ERR_RefValBoundMustBeFirst); // @t-mawind not correct error!
+                    }
+                    return _syntaxFactory.ConceptConstraint(ctoken);
                 case SyntaxKind.StructKeyword:
                     isStruct = true;
                     goto case SyntaxKind.ClassKeyword;
@@ -2964,6 +2971,48 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             return this.CurrentToken.Kind == SyntaxKind.DotToken || this.CurrentToken.Kind == SyntaxKind.ColonColonToken;
         }
 
+        /// <summary>
+        /// Attach errors to any of the constraints in <paramref name="constraints"/> that contain the
+        /// <c>concept</c> constraint.
+        /// </summary>
+        /// <param name="constraints">
+        /// The set of constraints to populate with errors if a <c>concept</c> constraint is found.
+        /// </param>
+        private void RejectConceptConstraints(SyntaxListBuilder<TypeParameterConstraintClauseSyntax> constraints)
+        {
+            for (int i = 0; i < constraints.Count; i++)
+            {
+                 var clause = constraints[i];
+                for (int j = 0; j < clause.Constraints.Count; j++)
+                {
+                    var constraint = clause.Constraints[j];
+                    if (constraint.Kind == SyntaxKind.ConceptConstraint)
+                    {
+                        // @t-mawind this is revolting.  Is there any easier way to assemble this?
+                        // @t-mawind at least consider batching up errors outside the j loop?
+                        var newConstraintArray = new TypeParameterConstraintSyntax[clause.Constraints.Count];
+                        for (int k = 0; k < clause.Constraints.Count; k++)
+                        {
+                            if (k == j)
+                            {
+                                newConstraintArray[k] = this.AddErrorToFirstToken(constraint, ErrorCode.ERR_ConceptConstraintOnNonOverride);
+                            }
+                            else
+                            {
+                                newConstraintArray[k] = clause.Constraints[k];
+                            }
+                        }
+
+                        var newConstraints = SyntaxFactory.SeparatedList<TypeParameterConstraintSyntax>(newConstraintArray);
+                        constraints[i] = clause.Update(clause.WhereKeyword,
+                            clause.name,
+                            clause.colonToken,
+                            newConstraints);
+                    }
+                }
+            }
+        }
+
         private MethodDeclarationSyntax ParseMethodDeclaration(
             SyntaxListBuilder<AttributeListSyntax> attributes,
             SyntaxListBuilder modifiers,
@@ -3001,16 +3050,48 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                     // our context again (perhaps an open brace).
                 }
 
+                var isOverride = modifiers != null && modifiers.Any(SyntaxKind.OverrideKeyword);
+
                 // When a generic method overrides a generic method declared in a base
                 // class, or is an explicit interface member implementation of a method in
                 // a base interface, the method shall not specify any type-parameter-
                 // constraints-clauses. In these cases, the type parameters of the method
                 // inherit constraints from the method being overridden or implemented
                 if (!constraints.IsNull && constraints.Count > 0 &&
-                    ((explicitInterfaceOpt != null) || (modifiers != null && modifiers.Any(SyntaxKind.OverrideKeyword))))
+                    ((explicitInterfaceOpt != null) || isOverride))
                 {
-                    constraints[0] = this.AddErrorToFirstToken(constraints[0], ErrorCode.ERR_OverrideWithConstraints);
+                    //@t-mawind Cheekily allow constraints in this case if:
+                    // 1) we're in an override, and
+                    // 2) every constraint is of the form 'Foo : concept'.
+                    // This is a horrible hack.
+                    var permitted = true;
+                    if (isOverride)
+                    {
+                        for (int i = 0; i < constraints.Count; i++)
+                        {
+                            var clause = constraints[i];
+                            if (clause.Constraints.Count == 1)
+                            {
+                                var constraint = clause.Constraints[0];
+                                if (constraint.Kind != SyntaxKind.ConceptConstraint) permitted = false;
+                            }
+                            else
+                            {
+                                permitted = false;
+                            }
+                            if (!permitted) break;
+                        }
+                    }
+                    else
+                    {
+                        permitted = false;
+                    }
+
+                    if (!permitted) constraints[0] = this.AddErrorToFirstToken(constraints[0], ErrorCode.ERR_OverrideWithConstraints);
                 }
+
+                // @t-mawind We don't allow concept constraints on anything other than overrides.
+                if (!constraints.IsNull && !isOverride) this.RejectConceptConstraints(constraints);
 
                 _termState = saveTerm;
 

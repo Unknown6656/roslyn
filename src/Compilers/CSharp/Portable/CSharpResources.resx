@@ -4692,4 +4692,7 @@ To remove the warning, you can use /reference instead (set the Embed Interop Typ
   <data name="ERR_OptionMustBeAbsolutePath" xml:space="preserve">
     <value>Option '{0}' must be an absolute path.</value>
   </data>
+  <data name="ERR_ConceptConstraintOnNonOverride" xml:space="preserve">
+    <value>Constraint 'concept' may only be used on overrides of methods with concepts.</value>
+  </data>
 </root>
