@@ -615,6 +615,7 @@
     <Compile Include="Symbols\Source\IndexedTypeParameterSymbol.cs" />
     <Compile Include="Symbols\Source\LambdaSymbol.cs" />
     <Compile Include="Symbols\Source\ModifierUtils.cs" />
+    <Compile Include="Symbols\Source\NamedTypeSymbol_Concept.cs" />
     <Compile Include="Symbols\Source\ParameterHelpers.cs" />
     <Compile Include="Symbols\Source\SourceAssemblySymbol.cs" />
     <Compile Include="Symbols\Source\SourceClonedParameterSymbol.cs" />

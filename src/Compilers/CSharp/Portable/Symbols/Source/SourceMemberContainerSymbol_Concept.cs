@@ -6,26 +6,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
     internal partial class SourceMemberContainerTypeSymbol
     {
-        /// <summary>
-        /// Gets whether this symbol has the concept attribute set.
-        /// </summary>
-        /// <returns>
-        /// True if this symbol has the <c>System_Concepts_ConceptAttribute</c> attribute;
-        /// false otherwise.
-        ///</returns>
-        internal bool HasConceptAttribute { //@t-mawind
-            get
-            {
-                foreach (var attribute in this.GetAttributes())
-                {
-                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptAttribute))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
 
         /// <summary>
         /// Gets whether this symbol represents a concept.
@@ -38,28 +18,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         internal override bool IsConcept => //@t-mawind
             this.MergedDeclaration.Kind == DeclarationKind.Concept ||
             (this.IsInterfaceType() && this.HasConceptAttribute);
-
-        /// <summary>
-        /// Gets whether this symbol has the instance attribute set.
-        /// </summary>
-        /// <returns>
-        /// True if this symbol has the <c>System_Concepts_ConceptInstanceAttribute</c>
-        /// attribute; false otherwise.
-        ///</returns>
-        internal bool HasInstanceAttribute //@t-mawind
-        {
-            get
-            {
-                foreach (var attribute in this.GetAttributes())
-                {
-                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptInstanceAttribute))
-                    {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        }
 
         /// <summary>
         /// Gets whether this symbol represents a concept.

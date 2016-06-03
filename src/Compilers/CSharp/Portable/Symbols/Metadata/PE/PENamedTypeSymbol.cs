@@ -2154,21 +2154,25 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols.Metadata.PE
         /// Gets whether this symbol represents a concept.
         /// </summary>
         /// <returns>
-        /// True if this symbol is a concept (either it was declared as a
-        /// concept, or it is an interface with the <c>System_Concepts_ConceptAttribute</c>
-        /// attribute); false otherwise.
+        /// True if this symbol is an interface with the
+        /// <c>System_Concepts_ConceptAttribute</c> attribute; false otherwise.
         /// </returns>
-        internal override bool IsConcept => false; //@t-mawind TODO
+        /// <remarks>
+        /// PE metadata does not natively contain concepts.
+        /// </remarks>
+        internal override bool IsConcept => this.IsInterfaceType() && this.HasConceptAttribute; //@t-mawind
 
         /// <summary>
-        /// Gets whether this symbol represents a concept.
+        /// Gets whether this symbol represents a concept instance.
         /// </summary>
         /// <returns>
-        /// True if this symbol is an instance (either it was declared as an
-        /// instance, or it is a struct with the
-        /// <c>System_Concepts_ConceptInstanceAttribute</c> attribute); false otherwise.
+        /// True if this symbol is a struct with the
+        /// <c>System_Concepts_ConceptInstanceAttribute</c> attribute; false otherwise.
         /// </returns>
-        internal override bool IsInstance => false; //@t-mawind TODO
+        /// <remarks>
+        /// PE metadata does not natively contain instances.
+        /// </remarks>
+        internal override bool IsInstance => this.IsStructType() && this.HasInstanceAttribute; //@t-mawind
 
         /// <summary>
         /// Specialized PENamedTypeSymbol for types with no type parameters in
