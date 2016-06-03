@@ -226,6 +226,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         // As the name suggests, these are implicitly declared.
         // @t-mawind Is this correct?
         public override bool IsImplicitlyDeclared => true;
+
+        internal Location ClauseLocation => _clauseLocation;
     }
 
     /// <summary>

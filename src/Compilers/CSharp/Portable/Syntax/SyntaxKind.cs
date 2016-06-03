@@ -509,6 +509,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         OperatorDeclaration = 8876,
         ConversionOperatorDeclaration = 8877,
         ConstructorDeclaration = 8878,
+        ConceptConstraint = 8879, //@t-mawind
 
         BaseConstructorInitializer = 8889,
         ThisConstructorInitializer = 8890,
