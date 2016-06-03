@@ -20,13 +20,12 @@ struct EqArray<A, [ConceptWitness] EqA> : Eq<A[]> where EqA: struct, Eq<A>
 {
     public bool Equals(A[] a, A[] b)
     {
-        var dict = default(EqA);
         if (a == null) return b == null;
         if (b == null) return false;
         if (a.Length != b.Length) return false;
         for (int i = 0; i < a.Length; i++)
         {
-            if (!dict.Equals(a[i], b[i])) return false;
+            if (!(default(EqA).Equals(a[i], b[i]))) return false;
         }
         return true;
     }
