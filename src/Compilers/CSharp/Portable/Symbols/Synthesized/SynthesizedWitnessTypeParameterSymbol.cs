@@ -111,6 +111,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                 if (ReferenceEquals(Interlocked.CompareExchange(ref _lazyBounds, bounds, TypeParameterBounds.Unset), TypeParameterBounds.Unset))
                 {
+                    //@t-mawind TODO: does this belong elsewhere?
+                    this.CheckAllConstraintTypesNameConcepts(diagnostics);
+
                     this.CheckConstraintTypeConstraints(diagnostics);
                     this.AddDeclarationDiagnostics(diagnostics);
                     _state.NotePartComplete(CompletionPart.TypeParameterConstraints);
@@ -228,6 +231,36 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         public override bool IsImplicitlyDeclared => true;
 
         internal Location ClauseLocation => _clauseLocation;
+        
+        /// <summary>
+        /// Determines whether every constraint type on this type parameter
+        /// names a concept.
+        /// <remarks>
+        /// This is a requirement for witness type parameters, mainly to
+        /// ensure that their syntax isn't accidentally or intentionally
+        /// misused.
+        /// </remarks>
+        /// </summary>
+        /// <param name="diagnostics">
+        /// The diagnostics bag to which errors raised by non-concept-naming
+        /// constraint types will be added.
+        /// </param>
+        private void CheckAllConstraintTypesNameConcepts(DiagnosticBag diagnostics) {
+            foreach (var constraintType in this.ConstraintTypesNoUseSiteDiagnostics)
+            {
+                if (!constraintType.IsConceptType())
+                {
+                    var loc = constraintType.Locations.IsEmpty ? Location.None : constraintType.Locations[0];
+
+                    // Currently, call this a missing type variable in the constraint.
+                    // This may change later.
+                    diagnostics.Add(ErrorCode.ERR_TyVarNotFoundInConstraint,
+                        this.ClauseLocation,
+                        this.Name,
+                        this.ContainingSymbol.ConstructedFrom());
+                }
+            }
+        }
     }
 
     /// <summary>
