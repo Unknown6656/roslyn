@@ -200,6 +200,14 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         // These are the main differences from SourceTypeParameterSymbolBase:
 
         /// <summary>
+        /// Gets whether this parameter is a concept witness.
+        /// </summary>
+        /// <remarks>
+        /// This is specifically a witness synthesis, so it always is.
+        /// </remarks>
+        internal override bool IsConceptWitness => true;
+
+        /// <summary>
         /// Gets whether this parameter is constrained to be a value type.
         ///
         /// <para>

@@ -4637,6 +4637,19 @@ namespace Microsoft.CodeAnalysis.CSharp
                             Debug.Assert((object)leftType != null);
                             if (leftType.TypeKind == TypeKind.TypeParameter)
                             {
+                                //@t-mawind
+                                // Attempts to use a witness A.Foo() translate
+                                // (for now) to default(A).Foo().
+                                if (leftType.IsConceptWitness)
+                                {
+                                    //@t-mawind Can we do this without building a fake AST?
+                                    var def = SyntaxFactory.MemberAccessExpression(
+                                        SyntaxKind.SimpleMemberAccessExpression,
+                                        SyntaxFactory.DefaultExpression((TypeSyntax)boundLeft.Syntax),
+                                        right);
+                                    return this.BindMemberAccess(def, invoked, indexed, diagnostics);
+                                }
+
                                 Error(diagnostics, ErrorCode.ERR_BadSKunknown, boundLeft.Syntax, leftType, MessageID.IDS_SK_TYVAR.Localize());
                                 return BadExpression(node, LookupResultKind.NotAValue, boundLeft);
                             }

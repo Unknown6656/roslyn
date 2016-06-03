@@ -554,6 +554,25 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         /// <summary>
+        /// Is this a symbol for a concept witness?
+        /// </summary>
+        internal virtual bool IsConceptWitness
+        {
+            get
+            {
+                // Usually, types are concept witnesses if they have
+                // [ConceptWitness]. @t-mawind
+
+                foreach (var attribute in this.GetAttributes())
+                {
+                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptWitnessAttribute)) return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
         /// Is this type a managed type (false for everything but enum, pointer, and
         /// some struct types).
         /// </summary>
