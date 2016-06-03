@@ -827,6 +827,17 @@ namespace Microsoft.CodeAnalysis.CSharp
                 gotError = IsRefOrOutThisParameterCaptured(node, diagnostics);
             }
 
+            // @t-mawind
+            //   If we're non-statically calling a type expression at this
+            //   stage, we're invoking against an instance (hopefully).
+            //   Desugar the instance call to a dictionary construction before
+            //   we continue.
+            if (!method.IsStatic && receiver.Kind == BoundKind.TypeExpression)
+            {
+                Debug.Assert(receiver.Type.IsInstanceType());
+                receiver = new BoundDefaultOperator(receiver.Syntax, receiver.Type) { WasCompilerGenerated = true };
+            }
+
             // What if some of the arguments are implicit?  Dev10 reports unsafe errors
             // if the implied argument would have an unsafe type.  We need to check
             // the parameters explicitly, since there won't be bound nodes for the implied

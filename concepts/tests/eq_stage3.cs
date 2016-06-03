@@ -48,7 +48,7 @@ class Tester<A> where EqA: Eq<A>
     public void Test()
     {
         System.Console.Out.Write($"{_num}: ");
-        System.Console.Out.WriteLine((default(EqArray<A, EqA>).Equals(_l, _r) == _expected) ? "pass" : "fail");
+        System.Console.Out.WriteLine((EqArray<A, EqA>.Equals(_l, _r) == _expected) ? "pass" : "fail");
     }
 }
 

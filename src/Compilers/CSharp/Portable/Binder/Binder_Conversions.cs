@@ -457,7 +457,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return true;
                 }
             }
-            else if (IsMemberAccessedThroughType(receiverOpt))
+            else if (IsMemberAccessedThroughType(receiverOpt) && !(receiverOpt?.Type.IsInstanceType() ?? false) /* @t-mawind */)
             {
                 diagnostics.Add(ErrorCode.ERR_ObjectRequired, node.Location, memberSymbol);
                 return true;
