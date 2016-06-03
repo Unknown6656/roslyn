@@ -4637,17 +4637,13 @@ namespace Microsoft.CodeAnalysis.CSharp
                             Debug.Assert((object)leftType != null);
                             if (leftType.TypeKind == TypeKind.TypeParameter)
                             {
-                                //@t-mawind
-                                // Attempts to use a witness A.Foo() translate
-                                // (for now) to default(A).Foo().
+                                //@t-mawind Attempts to get a member of a witness parameter construct a dictionary of that parameter type.
                                 if (leftType.IsConceptWitness)
                                 {
                                     //@t-mawind Can we do this without building a fake AST?
-                                    var def = SyntaxFactory.MemberAccessExpression(
-                                        SyntaxKind.SimpleMemberAccessExpression,
-                                        SyntaxFactory.DefaultExpression((TypeSyntax)boundLeft.Syntax),
-                                        right);
-                                    return this.BindMemberAccess(def, invoked, indexed, diagnostics);
+                                    BoundExpression newBoundLeft = new BoundDefaultOperator(boundLeft.Syntax, leftType) { WasCompilerGenerated = true };
+                                    newBoundLeft = CheckValue(newBoundLeft, BindValueKind.RValue, diagnostics);
+                                    return BindInstanceMemberAccess(node, right, newBoundLeft, rightName, rightArity, typeArgumentsSyntax, typeArguments, invoked, diagnostics);
                                 }
 
                                 Error(diagnostics, ErrorCode.ERR_BadSKunknown, boundLeft.Syntax, leftType, MessageID.IDS_SK_TYVAR.Localize());
