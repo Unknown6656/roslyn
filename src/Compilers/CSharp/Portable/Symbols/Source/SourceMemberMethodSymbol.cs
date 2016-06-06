@@ -702,7 +702,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private DeclarationModifiers MakeModifiers(SyntaxTokenList modifiers, MethodKind methodKind, Location location, DiagnosticBag diagnostics, out bool modifierErrors)
         {
             bool isInterface = this.ContainingType.IsInterface;
-            var defaultAccess = isInterface ? DeclarationModifiers.Public : DeclarationModifiers.Private;
+            bool isConceptInstance = this.ContainingType.IsInstance;
+
+            // @t-mawind
+            //    Concept instances default to public method access: indeed,
+            //    the only thing allowed in a concept instance is a public
+            //    method.
+            var defaultAccess = (isInterface || isConceptInstance) ? DeclarationModifiers.Public : DeclarationModifiers.Private;
 
             // Check that the set of modifiers is allowed
             var allowedModifiers = DeclarationModifiers.Partial | DeclarationModifiers.Unsafe;

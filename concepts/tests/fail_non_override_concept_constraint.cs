@@ -8,16 +8,14 @@ concept Eq<A>
 
 instance EqArray<A> : Eq<A[]> where EqA: concept // bad!
 {
-    public bool Equals(A[] a, A[] b)
+    bool Equals(A[] a, A[] b)
     {
-        var dict = default(EqA);
-
         if (a == null) return b == null;
         if (b == null) return false;
         if (a.Length != b.Length) return false;
         for (int i = 0; i < a.Length; i++)
         {
-            if (!dict.Equals(a[i], b[i])) return false;
+            if (!EqA.Equals(a[i], b[i])) return false;
         }
         return true;
     }
@@ -25,9 +23,8 @@ instance EqArray<A> : Eq<A[]> where EqA: concept // bad!
 
 class Program {
    public void Foo<A>(A a) where A: concept // bad!
-   {
-       ;
-   }
+   {}
+
    static void Main()
    {}
 }

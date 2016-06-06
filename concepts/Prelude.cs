@@ -33,7 +33,7 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance EqBool : Eq<bool>
     {
-        public bool Equals(bool a, bool b) => a == b;
+        bool Equals(bool a, bool b) => a == b;
     }
 
     /// <summary>
@@ -41,7 +41,7 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance EqInt : Eq<int>
     {
-        public bool Equals(int a, int b) => a == b;
+        bool Equals(int a, int b) => a == b;
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
     {
-        public bool Equals(A[] a, A[] b)
+        bool Equals(A[] a, A[] b)
         {
             if (a == null) return b == null;
             if (b == null) return false;
@@ -96,8 +96,8 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance OrdBool : Ord<bool>
     {
-        public bool Equals(bool a, bool b) => EqBool.Equals(a, b);
-        public bool Leq(bool a, bool b) => !a || b;
+        bool Equals(bool a, bool b) => EqBool.Equals(a, b);
+        bool Leq(bool a, bool b) => !a || b;
     }
     
     /// <summary>
@@ -105,8 +105,8 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance OrdInt : Ord<int>
     {
-        public bool Equals(int a, int b) => EqInt.Equals(a, b);
-        public bool Leq(int a, int b) => a <= b;
+        bool Equals(int a, int b) => EqInt.Equals(a, b);
+        bool Leq(int a, int b) => a <= b;
     }
     
     #endregion Ord

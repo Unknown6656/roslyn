@@ -70,9 +70,10 @@ instance J3Int : J3<int>
 // Driver.
 //
 
-class Program {
-   static void Main()
-   {
-   }
+class Program
+{
+    static void Main()
+    {
+    }
 }
 
