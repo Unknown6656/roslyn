@@ -92,7 +92,7 @@ namespace BD.Mark1
         /// <returns>
         ///     Zero.
         /// </returns>
-        public static A Zero() => NumA.FromInteger(0);
+        public static A Zero() => FromInteger(0);
 
         /// <summary>
         ///     The unity of a numeric class.
@@ -100,7 +100,7 @@ namespace BD.Mark1
         /// <returns>
         ///     One.
         /// </returns>
-        public static A One() => NumA.FromInteger(1);
+        public static A One() => FromInteger(1);
 
         /// <summary>
         ///     The two of a numeric class.
@@ -108,7 +108,7 @@ namespace BD.Mark1
         /// <returns>
         ///     Two.
         /// </returns>
-        public static A Two() => NumA.FromInteger(2);
+        public static A Two() => FromInteger(2);
 
         /// <summary>
         ///     Calculates the negation of a number.
@@ -119,7 +119,7 @@ namespace BD.Mark1
         /// <returns>
         ///     The negation of <paramref name="x"/>.
         /// </returns>
-        public static A Neg(A x) => NumA.Mul(NumA.FromInteger(-1), x);
+        public static A Neg(A x) => Mul(FromInteger(-1), x);
 
         /// <summary>
         ///     Calculates the square of a number.
@@ -130,69 +130,55 @@ namespace BD.Mark1
         /// <returns>
         ///     The square of <paramref name="x"/>.
         /// </returns>
-        public static A Square(A x) => NumA.Mul(x, x);
+        public static A Square(A x) => Mul(x, x);
     }
 
     instance NumDA<A> : Num<D<A>>
         where NumA : Num<A>
     {
-        D<A> FromInteger(int x)
-            => D<A>.Const<NumA>(NumA.FromInteger(x));
+        D<A> FromInteger(int x) => D<A>.Const<NumA>(FromInteger(x));
 
         D<A> Add(D<A> x, D<A> y)
-            => new D<A>(NumA.Add(x.X, y.X), NumA.Add(x.DX, y.DX));
+            => new D<A>(Add(x.X, y.X), Add(x.DX, y.DX));
 
         D<A> Mul(D<A> x, D<A> y)
             => new D<A>(
                    // Product rule
-                   NumA.Mul(x.X, y.X),
-                   NumA.Add(NumA.Mul(x.DX, y.X), NumA.Mul(y.DX, x.X))
+                   Mul(x.X, y.X), Add(Mul(x.DX, y.X), Mul(y.DX, x.X))
                );
 
         D<A> Sub(D<A> x, D<A> y)
-            => new D<A>(NumA.Sub(x.X, y.X), NumA.Sub(x.DX, y.DX));
+            => new D<A>(Sub(x.X, y.X), Sub(x.DX, y.DX));
 
         D<A> Signum(D<A> x)
-            => new D<A>(NumA.Signum(x.X), N<A, NumA>.Zero());
+            => new D<A>(Signum(x.X), N<A, NumA>.Zero());
 
         D<A> Abs(D<A> x)
-            => new D<A>(
-                   NumA.Abs(x.X),
-                   NumA.Mul(x.DX, NumA.Signum(x.X))
-               );
+            => new D<A>(Abs(x.X), Mul(x.DX, Signum(x.X)));
     }
 
     instance FractionalDA<A> : Fractional<D<A>>
         where FracA : Fractional<A>
     {
         // Implementation of Num
-        D<A> FromInteger(int x)
-            => NumDA<A, FracA>.FromInteger(x);
-        D<A> Add(D<A> x, D<A> y)
-            => NumDA<A, FracA>.Add(x, y);
-        D<A> Mul(D<A> x, D<A> y)
-            => NumDA<A, FracA>.Mul(x, y);
-        D<A> Sub(D<A> x, D<A> y)
-            => NumDA<A, FracA>.Sub(x, y);
-        D<A> Signum(D<A> x)
-            => NumDA<A, FracA>.Signum(x);
-        D<A> Abs(D<A> x)
-            => NumDA<A, FracA>.Abs(x);
+        D<A> FromInteger(int x)  => NumDA<A, FracA>.FromInteger(x);
+        D<A> Add(D<A> x, D<A> y) => NumDA<A, FracA>.Add(x, y);
+        D<A> Mul(D<A> x, D<A> y) => NumDA<A, FracA>.Mul(x, y);
+        D<A> Sub(D<A> x, D<A> y) => NumDA<A, FracA>.Sub(x, y);
+        D<A> Signum(D<A> x)      => NumDA<A, FracA>.Signum(x);
+        D<A> Abs(D<A> x)         => NumDA<A, FracA>.Abs(x);
 
         // Implementation of Fractional
         D<A> FromRational(Ratio<int> x)
-            => D<A>.Const<FracA>(FracA.FromRational(x));
+            => D<A>.Const<FracA>(FromRational(x));
 
         D<A> Div(D<A> x, D<A> y)
             => new D<A>(
                    // Quotient rule
-                   FracA.Div(x.X, y.X),
-                   FracA.Div(
-                       FracA.Sub(
-                           FracA.Mul(x.DX, y.X),
-                           FracA.Mul(y.DX, x.X)
-                       ),
-                       FracA.Mul(y.X, y.X)
+                   Div(x.X, y.X),
+                   Div(
+                       Sub(Mul(x.DX, y.X), Mul(y.DX, x.X)),
+                       Mul(y.X, y.X)
                    )
                );
     }
@@ -220,63 +206,46 @@ namespace BD.Mark1
             => FractionalDA<A, FloatA>.Div(x, y);
 
         // Implementation of Floating
-        D<A> Pi() => D<A>.Const<FloatA>(FloatA.Pi());
+        D<A> Pi() => D<A>.Const<FloatA>(Pi());
 
         // d(e^x) = e^x
-        D<A> Exp(D<A> x)
-            => new D<A>(
-                   FloatA.Exp(x.X),
-                   FloatA.Mul(x.DX, FloatA.Exp(x.X))
-               );
+        D<A> Exp(D<A> x) => new D<A>(Exp(x.X), Mul(x.DX, Exp(x.X)));
 
         // d(ln x) = 1/x
-        D<A> Log(D<A> x)
-            => new D<A>(FloatA.Log(x.X), FloatA.Div(x.DX, x.X));
+        D<A> Log(D<A> x) => new D<A>(Log(x.X), Div(x.DX, x.X));
 
         // d(sqrt x) = 1/(2 sqrt x)
         D<A> Sqrt(D<A> x)
             => new D<A>(
-                   FloatA.Sqrt(x.X),
-                   FloatA.Div(
-                       x.DX,
-                       FloatA.Mul(N<A, FloatA>.Two(), FloatA.Sqrt(x.X))
-                   )
+                   Sqrt(x.X),
+                   Div(x.DX, Mul(N<A, FloatA>.Two(), Sqrt(x.X)))
                );
 
         // d(x^y) rewrites to D(e^(ln x * y))
-        D<A> Pow(D<A> x, D<A> y)
-            => Exp(Mul(Log(x), y));
+        D<A> Pow(D<A> x, D<A> y) => Exp(Mul(Log(x), y));
 
         // d(log b(x)) rewrites to D(log x / log b)
-        D<A> LogBase(D<A> b, D<A> x)
-            => Div(Log(x), Log(b));
+        D<A> LogBase(D<A> b, D<A> x) => Div(Log(x), Log(b));
 
         // d(sin x) = cos x
         D<A> Sin(D<A> x)
-            => new D<A>(
-                   FloatA.Sin(x.X),
-                   FloatA.Mul(x.DX, FloatA.Cos(x.X))
-               );
+            => new D<A>(Sin(x.X), Mul(x.DX, Cos(x.X)));
 
         // d(sin x) = -sin x
         D<A> Cos(D<A> x)
             => new D<A>(
-                   FloatA.Cos(x.X),
-                   FloatA.Mul(
-                       x.DX,
-                       N<A, FloatA>.Neg(FloatA.Sin(x.X))
-                   )
+                   Cos(x.X), Mul(x.DX, N<A, FloatA>.Neg(Sin(x.X)))
                );
 
         // d(tan x) = 1 + tan^2 x
         D<A> Tan(D<A> x)
             => new D<A>(
-                   FloatA.Tan(x.X),
-                   FloatA.Mul(
+                   Tan(x.X),
+                   Mul(
                        x.DX,
-                       FloatA.Add(
+                       Add(
                            N<A, FloatA>.One(),
-                           N<A, FloatA>.Square(FloatA.Tan(x.X))
+                           N<A, FloatA>.Square(Tan(x.X))
                        )
                    )
                );
@@ -284,11 +253,11 @@ namespace BD.Mark1
         // d(asin x) = 1/sqrt(1 - x^2)
         D<A> Asin(D<A> x)
             => new D<A>(
-                   FloatA.Asin(x.X),
-                   FloatA.Div(
+                   Asin(x.X),
+                   Div(
                        x.DX,
-                       FloatA.Sqrt(
-                           FloatA.Sub(
+                       Sqrt(
+                           Sub(
                                N<A, FloatA>.One(),
                                N<A, FloatA>.Square(x.X)
                            )
@@ -299,12 +268,12 @@ namespace BD.Mark1
         // d(acos x) = -1/sqrt(1 - x^2)
         D<A> Acos(D<A> x)
             => new D<A>(
-                   FloatA.Acos(x.X),
-                   FloatA.Div(
+                   Acos(x.X),
+                   Div(
                        x.DX,
                        N<A, FloatA>.Neg(
-                           FloatA.Sqrt(
-                               FloatA.Sub(
+                           Sqrt(
+                               Sub(
                                    N<A, FloatA>.One(),
                                    N<A, FloatA>.Square(x.X)
                                )
@@ -316,10 +285,10 @@ namespace BD.Mark1
         // d(atan x) = 1/(1 + x^2)
         D<A> Atan(D<A> x)
             => new D<A>(
-                   FloatA.Atan(x.X),
-                   FloatA.Div(
+                   Atan(x.X),
+                   Div(
                        x.DX,
-                       FloatA.Add(
+                       Add(
                            N<A, FloatA>.One(),
                            N<A, FloatA>.Square(x.X)
                        )
@@ -327,34 +296,26 @@ namespace BD.Mark1
                );
 
         // d(sinh x) = cosh x
-        D<A> Sinh(D<A> x)
-            => new D<A>(
-                   FloatA.Sinh(x.X),
-                   FloatA.Mul(x.DX, FloatA.Cosh(x.X))
-               );
+        D<A> Sinh(D<A> x) => new D<A>(Sinh(x.X), Mul(x.DX, Cosh(x.X)));
 
         // d(cosh x) = sinh x
-        D<A> Cosh(D<A> x)
-            => new D<A>(
-                   FloatA.Cosh(x.X),
-                   FloatA.Mul(x.DX, FloatA.Sinh(x.X))
-               );
+        D<A> Cosh(D<A> x) => new D<A>(Cosh(x.X), Mul(x.DX, Sinh(x.X)));
 
         // d(tanh x) = 1/(cosh^2 x)
         D<A> Tanh(D<A> x)
             => new D<A>(
-                   FloatA.Tanh(x.X),
-                   FloatA.Div(x.DX, N<A, FloatA>.Square(FloatA.Cosh(x.X)))
+                   Tanh(x.X),
+                   Div(x.DX, N<A, FloatA>.Square(Cosh(x.X)))
                );
 
         // d(asinh x) = 1 / sqrt(x^2 + 1)
         D<A> Asinh(D<A> x)
             => new D<A>(
-                   FloatA.Asinh(x.X),
-                   FloatA.Div(
+                   Asinh(x.X),
+                   Div(
                        x.DX,
-                       FloatA.Sqrt(
-                           FloatA.Add(
+                       Sqrt(
+                           Add(
                                N<A, FloatA>.Square(x.X),
                                N<A, FloatA>.One()
                            )
@@ -365,11 +326,11 @@ namespace BD.Mark1
         // d(acosh x) = 1 / sqrt(x^2 - 1)
         D<A> Acosh(D<A> x)
             => new D<A>(
-                   FloatA.Acosh(x.X),
-                  FloatA.Div(
+                   Acosh(x.X),
+                  Div(
                        x.DX,
-                       FloatA.Sqrt(
-                           FloatA.Sub(
+                       Sqrt(
+                           Sub(
                                N<A, FloatA>.Square(x.X),
                                N<A, FloatA>.One()
                            )
@@ -380,10 +341,10 @@ namespace BD.Mark1
         // d(atanh x) = 1 / (1 - x^2)
         D<A> Atanh(D<A> x)
             => new D<A>(
-                   FloatA.Atanh(x.X),
-                   FloatA.Div(
+                   Atanh(x.X),
+                   Div(
                        x.DX,
-                       FloatA.Sub(
+                       Sub(
                            N<A, FloatA>.One(),
                            N<A, FloatA>.Square(x.X)
                        )
