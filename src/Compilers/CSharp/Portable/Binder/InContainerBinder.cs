@@ -195,6 +195,17 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 this.LookupMembersInternal(result, _container, name, arity, basesBeingResolved, options, originalBinder, diagnose, ref useSiteDiagnostics);
 
+                // @t-mawind
+                //   We treat any methods coming from class concept witnesses
+                //   as coming from the same scope as class methods.
+                if (_container.Kind == SymbolKind.NamedType)
+                {
+                    foreach (var tp in (_container as NamedTypeSymbol).TypeParameters)
+                    {
+                        if (tp.IsConceptWitness) LookupSymbolsInWitness(tp, result, name, arity, basesBeingResolved, options, originalBinder, diagnose, ref useSiteDiagnostics);
+                    }
+                }
+
                 if (result.IsMultiViable)
                 {
                     // symbols cannot conflict with using alias names

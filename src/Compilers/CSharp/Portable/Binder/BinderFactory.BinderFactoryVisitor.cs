@@ -686,7 +686,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                         {
                             resultBinder = new InContainerBinder(typeSymbol, resultBinder);
 
-                            if (parent.TypeParameterList != null)
+                            // @t-mawind We can't rely on TypeParameterList
+                            //   here, because there may be witnesses.
+                            if (!typeSymbol.TypeParameters.IsEmpty)
                             {
                                 resultBinder = new WithClassTypeParametersBinder(typeSymbol, resultBinder);
                             }
