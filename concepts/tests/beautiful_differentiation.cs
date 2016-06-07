@@ -3,7 +3,6 @@
 
 using System.Concepts.Prelude;
 using System;
-using System.Concepts;
 
 /// <summary>
 ///     Mark 1 beautiful differentiation: first-order, scalar,
@@ -57,7 +56,7 @@ namespace BD.Mark1
         ///     A <see cref="D{A}"/> with the value
         ///     <paramref name="k"/> and first derivative <c>0</c>.
         /// </returns>
-        public static D<A> Const<[ConceptWitness] NumA>(A k) where NumA : struct, Num<A>
+        public static D<A> Const(A k) where NumA : Num<A>
         {
             return new D<A>(k, N<A, NumA>.Zero());
         }
@@ -76,7 +75,7 @@ namespace BD.Mark1
         ///     A <see cref="D{A}"/> with the value
         ///     <paramref name="t"/> and first derivative <c>1</c>.
         /// </returns>
-        public static D<A> Id<[ConceptWitness] NumA>(A t) where NumA : struct, Num<A>
+        public static D<A> Id(A t) where NumA : Num<A>
         {
             return new D<A>(t, N<A, NumA>.One());
         }
@@ -431,15 +430,32 @@ namespace BD {
             );
         }
 
+        public static A G<A>(A z) where FloatA : Floating<A>
+        {
+            return FloatA.Mul(
+                FloatA.Mul(
+                    FloatA.FromInteger(3),
+                    FloatA.Asinh(z)
+                ),
+                FloatA.Log(z)
+            );
+        }
+
         public static void TestMark1()
         {
             var d = new BD.Mark1.D<double>(2.0, 1.0);
+
             var d2 =
                 F<BD.Mark1.D<double>,
                   BD.Mark1.FloatingDA<double, FloatingDouble>>(d);
 
+            var d3 =
+                G<BD.Mark1.D<double>,
+                  BD.Mark1.FloatingDA<double, FloatingDouble>>(d);
+
             Console.Out.WriteLine($"D {d.X} {d.DX}");
             Console.Out.WriteLine($"D {d2.X} {d2.DX}");
+            Console.Out.WriteLine($"D {d3.X} {d3.DX}");
         }
 
         public static void Main()

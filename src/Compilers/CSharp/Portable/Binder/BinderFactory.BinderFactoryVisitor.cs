@@ -135,10 +135,20 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                     SourceMethodSymbol method = null;
 
-                    if (usage != NodeUsage.Normal && methodDecl.TypeParameterList != null)
+                    // @t-mawind
+                    //   To find out whether we need to use the type parameters
+                    //   binder, we can't rely on methodDecl.TypeParameterList:
+                    //   it doesn't take witnesses into account.  Instead, we
+                    //   must use the symbol's type parameter list...
+                    if (usage != NodeUsage.Normal)
                     {
                         method = GetMethodSymbol(methodDecl, resultBinder);
-                        resultBinder = new WithMethodTypeParametersBinder(method, resultBinder);
+
+                        // @t-mawind ...which we don't get until here.
+                        if (!method.TypeParameters.IsEmpty)
+                        {
+                            resultBinder = new WithMethodTypeParametersBinder(method, resultBinder);
+                        }
                     }
 
                     if (usage == NodeUsage.MethodBody)
