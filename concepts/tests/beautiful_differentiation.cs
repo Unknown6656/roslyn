@@ -37,7 +37,8 @@ namespace BD.Mark1
         /// <param name="dx">
         ///    The calculated first derivative of the value.
         /// </param>
-        public D(A x, A dx) {
+        public D(A x, A dx)
+        {
             this.X = x;
             this.DX = dx;
         }
@@ -222,10 +223,10 @@ namespace BD.Mark1
                );
 
         // d(x^y) rewrites to D(e^(ln x * y))
-        D<A> Pow(D<A> x, D<A> y) => Exp(Mul(Log(x), y));
+        D<A> Pow(D<A> x, D<A> y) => this.Exp(this.Mul(this.Log(x), y));
 
         // d(log b(x)) rewrites to D(log x / log b)
-        D<A> LogBase(D<A> b, D<A> x) => Div(Log(x), Log(b));
+        D<A> LogBase(D<A> b, D<A> x) => this.Div(this.Log(x), this.Log(b));
 
         // d(sin x) = cos x
         D<A> Sin(D<A> x)
@@ -327,7 +328,7 @@ namespace BD.Mark1
         D<A> Acosh(D<A> x)
             => new D<A>(
                    Acosh(x.X),
-                  Div(
+                   Div(
                        x.DX,
                        Sqrt(
                            Sub(
@@ -367,40 +368,25 @@ namespace BD {
         where NumB : Num<B>
     {
         Func<A, B> Add(Func<A, B> f, Func<A, B> g)
-            => (x) => NumB.Add(f(x), g(x));
+            => (x) => Add(f(x), g(x));
         Func<A, B> Sub(Func<A, B> f, Func<A, B> g)
-            => (x) => NumB.Sub(f(x), g(x));
+            => (x) => Sub(f(x), g(x));
         Func<A, B> Mul(Func<A, B> f, Func<A, B> g)
-            => (x) => NumB.Mul(f(x), g(x));
+            => (x) => Mul(f(x), g(x));
         Func<A, B> Abs(Func<A, B> f)
-            => (x) => NumB.Abs(f(x));
+            => (x) => Abs(f(x));
         Func<A, B> Signum(Func<A, B> f)
-            => (x) => NumB.Signum(f(x));
+            => (x) => Signum(f(x));
         Func<A, B> FromInteger(int k)
-            => (x) => NumB.FromInteger(k);
+            => (x) => FromInteger(k);
     }
 
     public class Program {
         public static A F<A>(A z) where FloatA : Floating<A>
-        {
-            return FloatA.Sqrt(
-                FloatA.Mul(
-                    FloatA.FromInteger(3),
-                    FloatA.Sin(z)
-                )
-            );
-        }
+            => Sqrt(Mul(FromInteger(3), Sin(z)));
 
         public static A G<A>(A z) where FloatA : Floating<A>
-        {
-            return FloatA.Mul(
-                FloatA.Mul(
-                    FloatA.FromInteger(3),
-                    FloatA.Asinh(z)
-                ),
-                FloatA.Log(z)
-            );
-        }
+            => Mul(Mul(FromInteger(3), Asinh(z)), Log(z));
 
         public static void TestMark1()
         {
