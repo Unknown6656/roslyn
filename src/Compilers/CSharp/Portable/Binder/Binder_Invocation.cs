@@ -771,6 +771,21 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var receiver = ReplaceTypeOrValueReceiver(methodGroup.Receiver, method.IsStatic && !invokedAsExtensionMethod, diagnostics);
 
+            // @t-mawind
+            //   In possibly the worst hack in this entire endeavour, any
+            //   implicitly resolved witness calls will arrive here with a
+            //   (fake) receiver, but a method containing-symbol that is a
+            //   SynthesizedWitnessMethodSymbol.
+            //   In lieu of a better way of dealing with this,
+            //   we just catch this situation and send the binder off again
+            //   trying to bind default(typeParam).Method(args).
+            if (!method.IsStatic &&
+                (method is SynthesizedWitnessMethodSymbol))
+            {
+                receiver = new BoundDefaultOperator(receiver.Syntax, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true };
+                receiver = CheckValue(receiver, BindValueKind.RValue, diagnostics);
+            }
+
             // Note: we specifically want to do final validation (7.6.5.1) without checking delegate compatibility (15.2),
             // so we're calling MethodGroupFinalValidation directly, rather than via MethodGroupConversionHasErrors.
             // Note: final validation wants the receiver that corresponds to the source representation
@@ -828,27 +843,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             // @t-mawind
-            //   In possibly the worst hack in this entire endeavour, any
-            //   implicitly resolved witness calls will arrive here with a
-            //   BoundThisReceiver but a method containing-symbol that is a
-            //   SynthesizedWitnessMethodSymbol.
-            //   In lieu of a better way of dealing with this,
-            //   we just catch this situation and send the binder off again
-            //   trying to bind default(typeParam).Method(args).
-            if (!method.IsStatic &&
-                receiver.Kind == BoundKind.ThisReference &&
-                (method is SynthesizedWitnessMethodSymbol))
-            {
-                receiver = new BoundDefaultOperator(receiver.Syntax, (TypeParameterSymbol) ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true };
-                receiver = CheckValue(receiver, BindValueKind.RValue, diagnostics);
-            }
-
-            // @t-mawind
             //   If we're non-statically calling a type expression at this
             //   stage, we're invoking against an explicit instance (hopefully).
             //   Desugar the instance call to a dictionary construction before
             //   we continue.
-            if (!method.IsStatic && receiver.Kind == BoundKind.TypeExpression)
+            if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression)
             {
                 Debug.Assert(receiver.Type.IsInstanceType());
                 receiver = new BoundDefaultOperator(receiver.Syntax, receiver.Type) { WasCompilerGenerated = true };

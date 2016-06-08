@@ -136,7 +136,7 @@ namespace BD.Mark1
     instance NumDA<A> : Num<D<A>>
         where NumA : Num<A>
     {
-        D<A> FromInteger(int x) => D<A>.Const<NumA>(FromInteger(x));
+        D<A> FromInteger(int x) => D<A>.Const<NumA>(NumA.FromInteger(x));
 
         D<A> Add(D<A> x, D<A> y)
             => new D<A>(Add(x.X, y.X), Add(x.DX, y.DX));
@@ -170,7 +170,7 @@ namespace BD.Mark1
 
         // Implementation of Fractional
         D<A> FromRational(Ratio<int> x)
-            => D<A>.Const<FracA>(FromRational(x));
+            => D<A>.Const<FracA>(FracA.FromRational(x));
 
         D<A> Div(D<A> x, D<A> y)
             => new D<A>(
@@ -206,7 +206,7 @@ namespace BD.Mark1
             => FractionalDA<A, FloatA>.Div(x, y);
 
         // Implementation of Floating
-        D<A> Pi() => D<A>.Const<FloatA>(Pi());
+        D<A> Pi() => D<A>.Const<FloatA>(FloatA.Pi());
 
         // d(e^x) = e^x
         D<A> Exp(D<A> x) => new D<A>(Exp(x.X), Mul(x.DX, Exp(x.X)));

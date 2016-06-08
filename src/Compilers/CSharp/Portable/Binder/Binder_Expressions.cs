@@ -1016,9 +1016,30 @@ namespace Microsoft.CodeAnalysis.CSharp
                 return null;
             }
 
-            var declaringType = members[0].ContainingType;
+            NamedTypeSymbol declaringType = null;
+
+            // @t-mawind
+            //   This is a nasty hack to make method groups containing a
+            //   concept play nicely.
+            //   Eventually it should either be removed by making concepts
+            //   make their own method group, or with a new form of
+            //   ThisReference which collapses into the appropriate form
+            //   based on the method actually used.
+            foreach (var member in members)
+            {
+                if (!(member is SynthesizedWitnessMethodSymbol))
+                {
+                    declaringType = member.ContainingType;
+                    break;
+                }
+            }
+            // If we didn't get a declaring type, all of our methods are
+            // witness dispatches, so it doesn't matter what we set as
+            // the receiver.
+            if (declaringType == null) return ThisReference(syntax, currentType, wasCompilerGenerated: true);
 
             HashSet<DiagnosticInfo> unused = null;
+
             if (currentType.IsEqualToOrDerivedFrom(declaringType, ignoreDynamic: false, useSiteDiagnostics: ref unused))
             {
                 return ThisReference(syntax, currentType, wasCompilerGenerated: true);
