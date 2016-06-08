@@ -46,7 +46,7 @@ namespace Exp
 
 	static partial class Overloads
     {
-		public static int eval<X>(X e) where EvalX : Eval<X> => EvalX.eval(e);
+		public static int eval<X>(X e) where EvalX : Eval<X> => eval(e);
 	}
 
 	instance EvalLit : Eval<Lit>
@@ -91,7 +91,7 @@ namespace Exp
     {
 		public static void Print<X>(X e) where PrintX : Print<X>
         {
-			PrintX.print(e);
+			print(e);
 		}
 	}
 
@@ -118,7 +118,7 @@ namespace Exp
 
 	class Test
     {
-		public static int Eval<X>(X x) where EvalX : Eval<X> => EvalX.eval(x);
+		public static int Eval<X>(X x) where EvalX : Eval<X> => eval(x);
 
 		public static void Main()
         {
