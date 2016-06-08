@@ -772,18 +772,13 @@ namespace Microsoft.CodeAnalysis.CSharp
             var receiver = ReplaceTypeOrValueReceiver(methodGroup.Receiver, method.IsStatic && !invokedAsExtensionMethod, diagnostics);
 
             // @t-mawind
-            //   In possibly the worst hack in this entire endeavour, any
-            //   implicitly resolved witness calls will arrive here with a
-            //   (fake) receiver, but a method containing-symbol that is a
-            //   SynthesizedWitnessMethodSymbol.
-            //   In lieu of a better way of dealing with this,
-            //   we just catch this situation and send the binder off again
-            //   trying to bind default(typeParam).Method(args).
-            if (!method.IsStatic &&
-                (method is SynthesizedWitnessMethodSymbol))
+            //   Witness invocations, which manifest as null receiver and
+            //   witness-method symbol, need to become dictionary lookups.
+            //   At some point it might be nice to clean up all of the
+            //   disparate invocations of this lookup synthesis.
+            if (receiver == null && method is SynthesizedWitnessMethodSymbol)
             {
-                receiver = new BoundDefaultOperator(receiver.Syntax, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true };
-                receiver = CheckValue(receiver, BindValueKind.RValue, diagnostics);
+                receiver = new BoundDefaultOperator(expression, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true };
             }
 
             // Note: we specifically want to do final validation (7.6.5.1) without checking delegate compatibility (15.2),
