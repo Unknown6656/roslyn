@@ -55,6 +55,14 @@ namespace System.Concepts.Prelude
     }
 
     /// <summary>
+    ///     Implementation of <see cref="Eq{A}"/> for doubles.
+    /// </summary>
+    public instance EqDouble : Eq<double>
+    {
+        bool Equals(double x, double y) => x == y;
+    }
+
+    /// <summary>
     ///     Implementation of <see cref="Eq{A}"/> for arrays.
     /// </summary>
     public instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
@@ -125,6 +133,15 @@ namespace System.Concepts.Prelude
     {
         bool Equals(int x, int y) => EqInt.Equals(x, y);
         bool Leq(int x, int y) => x <= y;
+    }
+
+    /// <summary>
+    ///     Implementation of <see cref="Ord{A}"/> for doubles.
+    /// </summary>
+    public instance OrdDouble : Ord<double>
+    {
+        bool Equals(double x, double y) => EqDouble.Equals(x, y);
+        bool Leq(double x, double y) => x <= y;
     }
 
     #endregion Ord
