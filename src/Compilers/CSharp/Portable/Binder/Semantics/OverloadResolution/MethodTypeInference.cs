@@ -64,7 +64,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
     }
 
-    internal sealed class MethodTypeInferrer
+    internal sealed partial class MethodTypeInferrer
     {
         private enum InferenceResult
         {
@@ -518,6 +518,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             // SPEC: bounds. The second phase may have to be repeated a number of times.
             InferTypeArgsFirstPhase(ref useSiteDiagnostics);
             bool success = InferTypeArgsSecondPhase(binder, ref useSiteDiagnostics);
+            // @t-mawind Adding in witness phase.
+            if (!success) success = InferTypeArgsConceptPhase(binder, ref useSiteDiagnostics);
             return new MethodTypeInferenceResult(success, GetResults());
         }
 
