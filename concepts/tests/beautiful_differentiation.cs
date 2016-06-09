@@ -10,7 +10,7 @@ using System;
 /// <typeparam name="A">
 ///     The underlying numeric representation.
 /// </typeparam>
-struct D<A>
+public struct D<A>
 {
     /// <summary>
     ///     The base value of the automatic derivative.
@@ -167,8 +167,7 @@ static class Fr<A> where FracA: Fractional<A>
 }
 
 /// <summary>
-///     Mark 1 beautiful differentiation: first-order, scalar,
-///     functional.
+///     Mark 2 beautiful differentiation.
 /// </summary>
 namespace BD.Mark1
 {
@@ -245,255 +244,7 @@ namespace BD.Mark1
             => FractionalDA<A, FloatA>.Div(x, y);
 
         // Implementation of Floating
-        D<A> Pi() => D<A>.Const<FloatA>(FloatA.Pi());
-
-        // d(e^x) = e^x
-        D<A> Exp(D<A> x) =>
-            D<A>.Chain<FloatA>(FloatA.Exp, FloatA.Exp)(x);
-
-        // d(ln x) = 1/x
-        D<A> Log(D<A> x) =>
-            D<A>.Chain<FloatA>(FloatA.Log, Fr<A, FloatA>.Recip)(x);
-
-        // d(sqrt x) = 1/(2 sqrt x)
-        D<A> Sqrt(D<A> x)
-            => new D<A>(
-                   Sqrt(x.X),
-                   Div(x.DX, Mul(N<A, FloatA>.Two(), Sqrt(x.X)))
-               );
-
-        // d(x^y) rewrites to D(e^(ln x * y))
-        D<A> Pow(D<A> x, D<A> y) => this.Exp(this.Mul(this.Log(x), y));
-
-        // d(log b(x)) rewrites to D(log x / log b)
-        D<A> LogBase(D<A> b, D<A> x) => this.Div(this.Log(x), this.Log(b));
-
-        // d(sin x) = cos x
-        D<A> Sin(D<A> x) => D<A>.Chain<FloatA>(FloatA.Sin, FloatA.Cos)(x);
-
-        // d(sin x) = -sin x
-        D<A> Cos(D<A> x)
-            => new D<A>(
-                   Cos(x.X), Mul(x.DX, N<A, FloatA>.Neg(Sin(x.X)))
-               );
-
-        // d(tan x) = 1 + tan^2 x
-        D<A> Tan(D<A> x)
-            => new D<A>(
-                   Tan(x.X),
-                   Mul(
-                       x.DX,
-                       Add(
-                           N<A, FloatA>.One(),
-                           N<A, FloatA>.Square(Tan(x.X))
-                       )
-                   )
-               );
-
-        // d(asin x) = 1/sqrt(1 - x^2)
-        D<A> Asin(D<A> x)
-            => new D<A>(
-                   Asin(x.X),
-                   Div(
-                       x.DX,
-                       Sqrt(
-                           Sub(
-                               N<A, FloatA>.One(),
-                               N<A, FloatA>.Square(x.X)
-                           )
-                       )
-                   )
-               );
-
-        // d(acos x) = -1/sqrt(1 - x^2)
-        D<A> Acos(D<A> x)
-            => new D<A>(
-                   Acos(x.X),
-                   Div(
-                       x.DX,
-                       N<A, FloatA>.Neg(
-                           Sqrt(
-                               Sub(
-                                   N<A, FloatA>.One(),
-                                   N<A, FloatA>.Square(x.X)
-                               )
-                           )
-                       )
-                   )
-               );
-
-        // d(atan x) = 1/(1 + x^2)
-        D<A> Atan(D<A> x)
-            => new D<A>(
-                   Atan(x.X),
-                   Div(
-                       x.DX,
-                       Add(
-                           N<A, FloatA>.One(),
-                           N<A, FloatA>.Square(x.X)
-                       )
-                   )
-               );
-
-        // d(sinh x) = cosh x
-        D<A> Sinh(D<A> x) => D<A>.Chain<FloatA>(FloatA.Sinh, FloatA.Cosh)(x);
-
-        // d(cosh x) = sinh x
-        D<A> Cosh(D<A> x) => D<A>.Chain<FloatA>(FloatA.Cosh, FloatA.Sinh)(x);
-
-        // d(tanh x) = 1/(cosh^2 x)
-        D<A> Tanh(D<A> x)
-            => new D<A>(
-                   Tanh(x.X),
-                   Div(x.DX, N<A, FloatA>.Square(Cosh(x.X)))
-               );
-
-        // d(asinh x) = 1 / sqrt(x^2 + 1)
-        D<A> Asinh(D<A> x)
-            => new D<A>(
-                   Asinh(x.X),
-                   Div(
-                       x.DX,
-                       Sqrt(
-                           Add(
-                               N<A, FloatA>.Square(x.X),
-                               N<A, FloatA>.One()
-                           )
-                       )
-                   )
-               );
-
-        // d(acosh x) = 1 / sqrt(x^2 - 1)
-        D<A> Acosh(D<A> x)
-            => new D<A>(
-                   Acosh(x.X),
-                   Div(
-                       x.DX,
-                       Sqrt(
-                           Sub(
-                               N<A, FloatA>.Square(x.X),
-                               N<A, FloatA>.One()
-                           )
-                       )
-                   )
-               );
-
-        // d(atanh x) = 1 / (1 - x^2)
-        D<A> Atanh(D<A> x)
-            => new D<A>(
-                   Atanh(x.X),
-                   Div(
-                       x.DX,
-                       Sub(
-                           N<A, FloatA>.One(),
-                           N<A, FloatA>.Square(x.X)
-                       )
-                   )
-               );
-    }
-}
-
-namespace BD.Mark2 {
-    /// <summary>
-    ///     Numeric instance for functions.
-    /// </summary>
-    /// <typeparam name="A">
-    ///     The domain of the function; unconstrained.
-    /// </typeparam>
-    /// <typeparam name="B">
-    ///     The range of the function; must be <c>Num</c>.
-    /// </typeparam>
-    instance NumF<A, B> : Num<Func<A, B>>
-        where NumB : Num<B>
-    {
-        Func<A, B> Add(Func<A, B> f, Func<A, B> g)
-            => (x) => Add(f(x), g(x));
-        Func<A, B> Sub(Func<A, B> f, Func<A, B> g)
-            => (x) => Sub(f(x), g(x));
-        Func<A, B> Mul(Func<A, B> f, Func<A, B> g)
-            => (x) => Mul(f(x), g(x));
-        Func<A, B> Abs(Func<A, B> f)
-            => (x) => Abs(f(x));
-        Func<A, B> Signum(Func<A, B> f)
-            => (x) => Signum(f(x));
-        Func<A, B> FromInteger(int k)
-            => (x) => FromInteger(k);
-    }
-
-    instance NumDA<A> : Num<D<A>>
-        where NumA : Num<A>
-    {
-        D<A> FromInteger(int x) => D<A>.Const<NumA>(FromInteger(x));
-
-        D<A> Add(D<A> x, D<A> y)
-            => new D<A>(Add(x.X, y.X), Add(x.DX, y.DX));
-
-        D<A> Mul(D<A> x, D<A> y)
-            => new D<A>(
-                   // Product rule
-                   Mul(x.X, y.X), Add(Mul(x.DX, y.X), Mul(y.DX, x.X))
-               );
-
-        D<A> Sub(D<A> x, D<A> y)
-            => new D<A>(Sub(x.X, y.X), Sub(x.DX, y.DX));
-
-        D<A> Signum(D<A> x) =>
-            D<A>.Chain<NumA>(NumA.Signum, NumF<A, A, NumA>.FromInteger(0))(x);
-
-        D<A> Abs(D<A> x) =>
-            D<A>.Chain<NumA>(NumA.Abs, NumA.Signum)(x);
-    }
-
-    instance FractionalDA<A> : Fractional<D<A>>
-        where FracA : Fractional<A>
-    {
-        // Implementation of Num
-        D<A> FromInteger(int x)  => NumDA<A, FracA>.FromInteger(x);
-        D<A> Add(D<A> x, D<A> y) => NumDA<A, FracA>.Add(x, y);
-        D<A> Mul(D<A> x, D<A> y) => NumDA<A, FracA>.Mul(x, y);
-        D<A> Sub(D<A> x, D<A> y) => NumDA<A, FracA>.Sub(x, y);
-        D<A> Signum(D<A> x)      => NumDA<A, FracA>.Signum(x);
-        D<A> Abs(D<A> x)         => NumDA<A, FracA>.Abs(x);
-
-        // Implementation of Fractional
-        D<A> FromRational(Ratio<int> x)
-            => D<A>.Const<FracA>(FracA.FromRational(x));
-
-        D<A> Div(D<A> x, D<A> y)
-            => new D<A>(
-                   // Quotient rule
-                   Div(x.X, y.X),
-                   Div(
-                       Sub(Mul(x.DX, y.X), Mul(y.DX, x.X)),
-                       Mul(y.X, y.X)
-                   )
-               );
-    }
-
-    instance FloatingDA<A> : Floating<D<A>>
-        where FloatA : Floating<A>
-    {
-        // Implementation of Num
-        D<A> FromInteger(int x)
-            => FractionalDA<A, FloatA>.FromInteger(x);
-        D<A> Add(D<A> x, D<A> y)
-            => FractionalDA<A, FloatA>.Add(x, y);
-        D<A> Mul(D<A> x, D<A> y)
-            => FractionalDA<A, FloatA>.Mul(x, y);
-        D<A> Sub(D<A> x, D<A> y)
-            => FractionalDA<A, FloatA>.Sub(x, y);
-        D<A> Signum(D<A> x)
-            => FractionalDA<A, FloatA>.Signum(x);
-        D<A> Abs(D<A> x)
-            => FractionalDA<A, FloatA>.Abs(x);
-        // Implementation of Fractional
-        D<A> FromRational(Ratio<int> x)
-            => FractionalDA<A, FloatA>.FromRational(x);
-        D<A> Div(D<A> x, D<A> y)
-            => FractionalDA<A, FloatA>.Div(x, y);
-
-        // Implementation of Floating
-        D<A> Pi() => D<A>.Const<FloatA>(FloatA.Pi());
+        D<A> Pi() => D<A>.Const<FloatA>(Pi());
 
         // d(e^x) = e^x
         D<A> Exp(D<A> x) => new D<A>(Exp(x.X), Mul(x.DX, Exp(x.X)));
@@ -513,6 +264,7 @@ namespace BD.Mark2 {
 
         // d(log b(x)) rewrites to D(log x / log b)
         D<A> LogBase(D<A> b, D<A> x) => this.Div(this.Log(x), this.Log(b));
+
 
         // d(sin x) = cos x
         D<A> Sin(D<A> x)
@@ -640,6 +392,321 @@ namespace BD.Mark2 {
     }
 }
 
+namespace BD.Mark2 {
+    /// <summary>
+    ///     Numeric instance for functions.
+    /// </summary>
+    /// <typeparam name="A">
+    ///     The domain of the function; unconstrained.
+    /// </typeparam>
+    /// <typeparam name="B">
+    ///     The range of the function; must be <c>Num</c>.
+    /// </typeparam>
+    instance NumF<A, B> : Num<Func<A, B>>
+        where NumB : Num<B>
+    {
+        Func<A, B> Add(Func<A, B> f, Func<A, B> g)
+            => (x) => Add(f(x), g(x));
+        Func<A, B> Sub(Func<A, B> f, Func<A, B> g)
+            => (x) => Sub(f(x), g(x));
+        Func<A, B> Mul(Func<A, B> f, Func<A, B> g)
+            => (x) => Mul(f(x), g(x));
+        Func<A, B> Abs(Func<A, B> f)
+            => (x) => Abs(f(x));
+        Func<A, B> Signum(Func<A, B> f)
+            => (x) => Signum(f(x));
+        Func<A, B> FromInteger(int k)
+            => (x) => FromInteger(k);
+    }
+
+    /// <summary>
+    ///     Fractional instance for functions.
+    /// </summary>
+    /// <typeparam name="A">
+    ///     The domain of the function; unconstrained.
+    /// </typeparam>
+    /// <typeparam name="B">
+    ///     The range of the function; must be <c>Fractional</c>.
+    /// </typeparam>
+    instance FracF<A, B> : Fractional<Func<A, B>>
+        where FracB : Fractional<B>
+    {
+        Func<A, B> Add(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Add(f, g);
+        Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Sub(f, g);
+        Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Mul(f, g);
+        Func<A, B> Abs(Func<A, B> f)               => NumF<A, B, FracB>.Abs(f);
+        Func<A, B> Signum(Func<A, B> f)            => NumF<A, B, FracB>.Signum(f);
+        Func<A, B> FromInteger(int k)              => NumF<A, B, FracB>.FromInteger(k);
+
+        Func<A, B> FromRational(Ratio<int> k)
+            => (x) => FromRational(k);
+        Func<A, B> Div(Func<A, B> f, Func<A, B> g)
+            => (x) => Div(f(x), g(x));
+    }
+
+    /// <summary>
+    ///     Floating instance for functions.
+    /// </summary>
+    /// <typeparam name="A">
+    ///     The domain of the function; unconstrained.
+    /// </typeparam>
+    /// <typeparam name="B">
+    ///     The range of the function; must be <c>Floating</c>.
+    /// </typeparam>
+    instance FloatF<A, B> : Floating<Func<A, B>>
+        where FloatB : Floating<B>
+    {
+        Func<A, B> Add(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Add(f, g);
+        Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Sub(f, g);
+        Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Mul(f, g);
+        Func<A, B> Abs(Func<A, B> f)               => FracF<A, B, FloatB>.Abs(f);
+        Func<A, B> Signum(Func<A, B> f)            => FracF<A, B, FloatB>.Signum(f);
+        Func<A, B> FromInteger(int k)              => FracF<A, B, FloatB>.FromInteger(k);
+        Func<A, B> FromRational(Ratio<int> k)      => FracF<A, B, FloatB>.FromRational(k);
+        Func<A, B> Div(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Div(f, g);
+
+        Func<A, B> Pi() => (x) => Pi();
+        Func<A, B> Sqrt(Func<A, B> f) => (x) => Sqrt(f(x));
+        Func<A, B> Exp(Func<A, B> f) => (x) => Exp(f(x));
+        Func<A, B> Log(Func<A, B> f) => (x) => Log(f(x));
+        Func<A, B> Pow(Func<A, B> f, Func<A, B> g)
+            => (x) => Pow(f(x), g(x));
+        Func<A, B> LogBase(Func<A, B> f, Func<A, B> g)
+            => (x) => LogBase(f(x), g(x));
+
+        Func<A, B> Sin(Func<A, B> f)   => (x) => Sin(f(x));
+        Func<A, B> Cos(Func<A, B> f)   => (x) => Cos(f(x));
+        Func<A, B> Tan(Func<A, B> f)   => (x) => Tan(f(x));
+        Func<A, B> Asin(Func<A, B> f)  => (x) => Asin(f(x));
+        Func<A, B> Acos(Func<A, B> f)  => (x) => Acos(f(x));
+        Func<A, B> Atan(Func<A, B> f)  => (x) => Atan(f(x));
+        Func<A, B> Sinh(Func<A, B> f)  => (x) => Sinh(f(x));
+        Func<A, B> Cosh(Func<A, B> f)  => (x) => Cosh(f(x));
+        Func<A, B> Tanh(Func<A, B> f)  => (x) => Tanh(f(x));
+        Func<A, B> Asinh(Func<A, B> f) => (x) => Asinh(f(x));
+        Func<A, B> Acosh(Func<A, B> f) => (x) => Acosh(f(x));
+        Func<A, B> Atanh(Func<A, B> f) => (x) => Atanh(f(x));
+    }
+
+    instance NumDA<A> : Num<D<A>>
+        where NumA : Num<A>
+    {
+        D<A> FromInteger(int x) => D<A>.Const<NumA>(FromInteger(x));
+
+        D<A> Add(D<A> x, D<A> y)
+            => new D<A>(Add(x.X, y.X), Add(x.DX, y.DX));
+
+        D<A> Mul(D<A> x, D<A> y)
+            => new D<A>(
+                   // Product rule
+                   Mul(x.X, y.X), Add(Mul(x.DX, y.X), Mul(y.DX, x.X))
+               );
+
+        D<A> Sub(D<A> x, D<A> y)
+            => new D<A>(Sub(x.X, y.X), Sub(x.DX, y.DX));
+
+        D<A> Signum(D<A> x) =>
+            D<A>.Chain<NumA>(Signum, NumF<A, A, NumA>.FromInteger(0))(x);
+
+        D<A> Abs(D<A> x) =>
+            D<A>.Chain<NumA>(Abs, Signum)(x);
+    }
+
+    instance FractionalDA<A> : Fractional<D<A>>
+        where FracA : Fractional<A>
+    {
+        // Implementation of Num
+        D<A> FromInteger(int x)  => NumDA<A, FracA>.FromInteger(x);
+        D<A> Add(D<A> x, D<A> y) => NumDA<A, FracA>.Add(x, y);
+        D<A> Mul(D<A> x, D<A> y) => NumDA<A, FracA>.Mul(x, y);
+        D<A> Sub(D<A> x, D<A> y) => NumDA<A, FracA>.Sub(x, y);
+        D<A> Signum(D<A> x)      => NumDA<A, FracA>.Signum(x);
+        D<A> Abs(D<A> x)         => NumDA<A, FracA>.Abs(x);
+
+        // Implementation of Fractional
+        D<A> FromRational(Ratio<int> x)
+            => D<A>.Const<FracA>(FracA.FromRational(x));
+
+        D<A> Div(D<A> x, D<A> y)
+            => new D<A>(
+                   // Quotient rule
+                   Div(x.X, y.X),
+                   Div(
+                       Sub(Mul(x.DX, y.X), Mul(y.DX, x.X)),
+                       Mul(y.X, y.X)
+                   )
+               );
+    }
+
+    instance FloatingDA<A> : Floating<D<A>>
+        where FloatA : Floating<A>
+    {
+        // Implementation of Num
+        D<A> FromInteger(int x)
+            => FractionalDA<A, FloatA>.FromInteger(x);
+        D<A> Add(D<A> x, D<A> y)
+            => FractionalDA<A, FloatA>.Add(x, y);
+        D<A> Mul(D<A> x, D<A> y)
+            => FractionalDA<A, FloatA>.Mul(x, y);
+        D<A> Sub(D<A> x, D<A> y)
+            => FractionalDA<A, FloatA>.Sub(x, y);
+        D<A> Signum(D<A> x)
+            => FractionalDA<A, FloatA>.Signum(x);
+        D<A> Abs(D<A> x)
+            => FractionalDA<A, FloatA>.Abs(x);
+        // Implementation of Fractional
+        D<A> FromRational(Ratio<int> x)
+            => FractionalDA<A, FloatA>.FromRational(x);
+        D<A> Div(D<A> x, D<A> y)
+            => FractionalDA<A, FloatA>.Div(x, y);
+
+        // Implementation of Floating
+        D<A> Pi() => D<A>.Const<FloatA>(FloatA.Pi());
+
+        // d(e^x) = e^x
+        D<A> Exp(D<A> x) => D<A>.Chain<FloatA>(Exp, Exp)(x);
+
+        // d(ln x) = 1/x
+        D<A> Log(D<A> x) =>
+            D<A>.Chain<FloatA>(Log, Fr<A, FloatA>.Recip)(x);
+
+        // d(sqrt x) = 1/(2 sqrt x)
+        D<A> Sqrt(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Sqrt,
+                   Fr<Func<A, A>, FloatF<A, A, FloatA>>.Recip(
+                       FloatF<A, A, FloatA>.Mul(
+                           N<Func<A, A>, FloatF<A, A, FloatA>>.Two(),
+                           Sqrt
+                       )
+                   )
+               )(x);
+
+        // d(x^y) rewrites to D(e^(ln x * y))
+        D<A> Pow(D<A> x, D<A> y) => this.Exp(this.Mul(this.Log(x), y));
+
+        // d(log b(x)) rewrites to D(log x / log b)
+        D<A> LogBase(D<A> b, D<A> x) => this.Div(this.Log(x), this.Log(b));
+
+        // d(sin x) = cos x
+        D<A> Sin(D<A> x) => D<A>.Chain<FloatA>(Sin, Cos)(x);
+
+        // d(sin x) = -sin x
+        D<A> Cos(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Cos,
+                   N<Func<A, A>, NumF<A, A, FloatA>>.Neg(Sin)
+               )(x);
+
+        // d(tan x) = 1 + tan^2 x
+        D<A> Tan(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Tan,
+                   FloatF<A, A, FloatA>.Add(
+                       N<Func<A, A>, NumF<A, A, FloatA>>.One(),
+                       N<Func<A, A>, NumF<A, A, FloatA>>.Square(Tan)
+                   )
+               )(x);
+
+        // d(asin x) = 1/sqrt(1 - x^2)
+        D<A> Asin(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Asin,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       FloatF<A, A, FloatA>.Sqrt(
+                           NumF<A, A, FloatA>.Sub(
+                               N<Func<A, A>, NumF<A, A, FloatA>>.One(),
+                               N<A, FloatA>.Square
+                           )
+                       )
+                   )
+               )(x);
+
+        // d(acos x) = -1/sqrt(1 - x^2)
+        D<A> Acos(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Acos,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       N<Func<A, A>, NumF<A, A, FloatA>>.Neg(
+                           FloatF<A, A, FloatA>.Sqrt(
+                               NumF<A, A, FloatA>.Sub(
+                                   N<Func<A, A>, NumF<A, A, FloatA>>.One(),
+                                   N<A, FloatA>.Square
+                               )
+                           )
+                       )
+                   )
+               )(x);
+
+        // d(atan x) = 1/(1 + x^2)
+        D<A> Atan(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Atan,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       NumF<A, A, FloatA>.Add(
+                       	   N<Func<A, A>, NumF<A, A, FloatA>>.One(),
+                           N<A, FloatA>.Square
+                       )
+                   )
+               )(x);
+
+        // d(sinh x) = cosh x
+        D<A> Sinh(D<A> x) => D<A>.Chain<FloatA>(Sinh, Cosh)(x);
+
+        // d(cosh x) = sinh x
+        D<A> Cosh(D<A> x) => D<A>.Chain<FloatA>(Cosh, Sinh)(x);
+
+        // d(tanh x) = 1/(cosh^2 x)
+        D<A> Tanh(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Tanh,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       N<Func<A, A>, NumF<A, A, FloatA>>.Square(Cosh)
+                   )
+               )(x);
+
+        // d(asinh x) = 1 / sqrt(x^2 + 1)
+        D<A> Asinh(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Asinh,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       FloatF<A, A, FloatA>.Sqrt(
+                           NumF<A, A, FloatA>.Add(
+                               N<A, FloatA>.Square,
+                               N<Func<A, A>, NumF<A, A, FloatA>>.One()
+                           )
+                       )
+                   )
+               )(x);
+
+        // d(acosh x) = 1 / sqrt(x^2 - 1)
+        D<A> Acosh(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Acosh,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       FloatF<A, A, FloatA>.Sqrt(
+                           NumF<A, A, FloatA>.Sub(
+                               N<A, FloatA>.Square,
+                               N<Func<A, A>, NumF<A, A, FloatA>>.One()
+                           )
+                       )
+                   )
+               )(x);
+
+        // d(atanh x) = 1 / (1 - x^2)
+        D<A> Atanh(D<A> x)
+            => D<A>.Chain<FloatA>(
+                   Atanh,
+                   Fr<Func<A, A>, FracF<A, A, FloatA>>.Recip(
+                       NumF<A, A, FloatA>.Sub(
+                           N<Func<A, A>, NumF<A, A, FloatA>>.One(),
+                           N<A, FloatA>.Square
+                       )
+                   )
+               )(x);
+    }
+}
+
 namespace BD {
     public class Program {
         public static A F<A>(A z) where FloatA : Floating<A>
@@ -648,17 +715,13 @@ namespace BD {
         public static A G<A>(A z) where FloatA : Floating<A>
             => Mul(Mul(FromInteger(3), Asinh(z)), Log(z));
 
-        public static void TestMark1()
+        public static void Test() where FDA : Floating<D<double>>
         {
             var d = new D<double>(2.0, 1.0);
 
-            var d2 =
-                F<D<double>,
-                  BD.Mark1.FloatingDA<double, FloatingDouble>>(d);
+            var d2 = F<D<double>, FDA>(d);
 
-            var d3 =
-                G<D<double>,
-                  BD.Mark1.FloatingDA<double, FloatingDouble>>(d);
+            var d3 = G<D<double>, FDA>(d);
 
             Console.Out.WriteLine($"D {d.X} {d.DX}");
             Console.Out.WriteLine($"D {d2.X} {d2.DX}");
@@ -667,7 +730,8 @@ namespace BD {
 
         public static void Main()
         {
-            TestMark1();
+            Test<BD.Mark1.FloatingDA<double, FloatingDouble>>();
+            Test<BD.Mark2.FloatingDA<double, FloatingDouble>>();
         }
     }
 }
