@@ -4652,8 +4652,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                                 //@t-mawind Attempts to get a member of a witness parameter construct a dictionary of that parameter type.
                                 if (leftType.IsConceptWitness)
                                 {
-                                    //@t-mawind Can we do this without building a fake AST?
-                                    BoundExpression newBoundLeft = new BoundDefaultOperator(boundLeft.Syntax, leftType) { WasCompilerGenerated = true };
+                                    BoundExpression newBoundLeft = this.SynthesizeWitnessInvocationReceiver(boundLeft.Syntax, leftType);
                                     newBoundLeft = CheckValue(newBoundLeft, BindValueKind.RValue, diagnostics);
                                     return BindInstanceMemberAccess(node, right, newBoundLeft, rightName, rightArity, typeArgumentsSyntax, typeArguments, invoked, diagnostics);
                                 }

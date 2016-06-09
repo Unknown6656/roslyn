@@ -778,7 +778,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   disparate invocations of this lookup synthesis.
             if (receiver == null && method is SynthesizedWitnessMethodSymbol)
             {
-                receiver = new BoundDefaultOperator(expression, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true };
+                receiver = SynthesizeWitnessInvocationReceiver(expression, ((SynthesizedWitnessMethodSymbol)method).Parent);
             }
 
             // Note: we specifically want to do final validation (7.6.5.1) without checking delegate compatibility (15.2),
@@ -845,7 +845,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression)
             {
                 Debug.Assert(receiver.Type.IsInstanceType());
-                receiver = new BoundDefaultOperator(receiver.Syntax, receiver.Type) { WasCompilerGenerated = true };
+                receiver = SynthesizeWitnessInvocationReceiver(receiver.Syntax, receiver.Type);
             }
 
             // What if some of the arguments are implicit?  Dev10 reports unsafe errors

@@ -10,6 +10,21 @@ namespace Microsoft.CodeAnalysis.CSharp
     internal partial class Binder
     {
         /// <summary>
+        /// Synthesizes the correct receiver of a witness invocation.
+        /// </summary>
+        /// <param name="syntax">
+        /// The syntax from which the receiver is being synthesized.
+        /// </param>
+        /// <param name="witness">
+        /// The witness on which we are invoking a method.
+        /// </param>
+        /// <returns></returns>
+        BoundExpression SynthesizeWitnessInvocationReceiver(CSharpSyntaxNode syntax, TypeSymbol witness)
+        {
+            return new BoundDefaultOperator(syntax, witness) { WasCompilerGenerated = true };
+        }
+
+        /// <summary>
         /// Tries to look up symbols inside a witness type parameter.
         /// <para>
         /// This lookup checks all of the concepts this witness implements
