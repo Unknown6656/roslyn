@@ -16,12 +16,23 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </summary>
         public static bool CanUnify(TypeSymbol t1, TypeSymbol t2)
         {
+            MutableTypeMap substitution = null;
+            return CanUnify(t1, t2, out substitution);
+        }
+
+        /// <summary>
+        /// Tries to produce a substitution of type parameters that will make
+        /// two types identical.
+        /// </summary>
+        public static bool CanUnify(TypeSymbol t1, TypeSymbol t2, out MutableTypeMap substitution)
+        {
+            substitution = null;
+
             if (t1 == t2)
             {
                 return true;
             }
 
-            MutableTypeMap substitution = null;
             bool result = CanUnifyHelper((object)t1 == null ? default(TypeWithModifiers) : new TypeWithModifiers(t1),
                                          (object)t2 == null ? default(TypeWithModifiers) : new TypeWithModifiers(t2),
                                          ref substitution);

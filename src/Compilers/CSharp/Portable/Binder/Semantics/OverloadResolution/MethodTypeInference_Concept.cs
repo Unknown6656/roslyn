@@ -51,17 +51,59 @@ namespace Microsoft.CodeAnalysis.CSharp
             // or binder.
             var allInstances = GetAllVisibleInstances(binder);
 
+            var groundInstances = new HashSet<TypeSymbol>();
+
+            // Can we just represent constraints on a predicated symbol directly by
+            // the concept witnesses in their arguments?
+            var predicatedInstances = new HashSet<NamedTypeSymbol>();
+
+            FilterInstances(allInstances, ref groundInstances, ref predicatedInstances);
+
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                // TODO: stuff
-                success = false;
+                success = TryInferConceptWitness(j, groundInstances, predicatedInstances);
 
                 if (!success) break;
             }
 
 
             return success;
+        }
+
+        /// <summary>
+        /// Tries to infer the concept witness at the given index.
+        /// </summary>
+        /// <param name="index">
+        /// The index of the concept witness to infer.
+        /// </param>
+        /// <param name="groundInstances">
+        /// The set of ground instances available for this witness.</param>
+        /// <param name="predicatedInstances">
+        /// The set of predicated instances available for this witness.
+        /// </param>
+        /// <returns>
+        /// True if the witness was inferred and fixed in the parameter set;
+        /// false otherwise.
+        /// </returns>
+        private bool TryInferConceptWitness(int index, HashSet<TypeSymbol> groundInstances, HashSet<NamedTypeSymbol> predicatedInstances)
+        {
+            foreach (var instance in groundInstances)
+            {
+                MutableTypeMap mtm = null;
+                // TODO: this is definitely wrong.
+                if (TypeUnification.CanUnify(this._methodTypeParameters[index], instance, out mtm))
+                {
+                    // TODO: this is probably wrong.
+                    this._fixedResults[index] = mtm.SubstituteType(instance).AsTypeSymbolOnly();
+
+                    // TODO: ensure there isn't another witness?
+                    return true;
+                }
+            }
+
+            // TODO: use the predicated instances (either here or before).
+            return false;
         }
 
         /// <summary>
@@ -184,6 +226,59 @@ namespace Microsoft.CodeAnalysis.CSharp
                 else
                 {
                     GetNamedInstances(binder, member, ref instances);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Partitions visible instances into 'ground' instances, which can be
+        /// substituted directly, and 'predicated' instances, which are
+        /// expecting at least one of their type parameters to satisfy a
+        /// concept constraint.
+        /// </summary>
+        /// <param name="instances">
+        /// The set of instances found in the namespace.
+        /// </param>
+        /// <param name="grounds">
+        /// The set to populate with ground instances.
+        /// </param>
+        /// <param name="predicateds">
+        /// The set to populate with predicated instances.
+        /// </param>
+        private void FilterInstances(ImmutableArray<TypeSymbol> instances, ref HashSet<TypeSymbol> grounds, ref HashSet<NamedTypeSymbol> predicateds)
+        {
+            foreach (var instance in instances)
+            {
+                var isGround = true;
+
+                // Type parameters are always concept witnesses, and are thus
+                // ground--the existence of said witness means its instance is
+                // accessible to us.
+                if (!instance.IsTypeParameter())
+                {
+                    Debug.Assert(instance.Kind == SymbolKind.NamedType);
+
+                    // If this is not expecting any witnesses itself, assume it
+                    // is ground--this might not be true if it has non-witness
+                    // constraints!
+                    foreach (var tp in ((NamedTypeSymbol)instance).TypeParameters)
+                    {
+                        if (tp.IsConceptWitness)
+                        {
+                            isGround = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (isGround)
+                {
+                    grounds.Add(instance);
+                }
+                else
+                {
+                    Debug.Assert(instance.Kind == SymbolKind.NamedType);
+                    predicateds.Add((NamedTypeSymbol)instance);
                 }
             }
         }
