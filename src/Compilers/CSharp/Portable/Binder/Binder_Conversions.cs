@@ -288,8 +288,29 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         private BoundExpression CreateMethodGroupConversion(CSharpSyntaxNode syntax, BoundExpression source, Conversion conversion, bool isCast, TypeSymbol destination, DiagnosticBag diagnostics)
         {
-            BoundMethodGroup group = FixMethodGroupWithTypeOrValue((BoundMethodGroup)source, conversion, diagnostics);
-            BoundExpression receiverOpt = group.ReceiverOpt;
+            BoundMethodGroup group = (BoundMethodGroup)source;
+            // @t-mawind
+            //   If this is a witness method, synthesise its receiver to
+            //   allow the conversion to go through.
+            //   Probably not the right place to put this, but I couldn't
+            //   find anywhere better.
+            var receiverOpt = group.ReceiverOpt;
+            if (receiverOpt == null && conversion.Method is SynthesizedWitnessMethodSymbol)
+            {
+                receiverOpt = SynthesizeWitnessInvocationReceiver(group.Syntax, ((SynthesizedWitnessMethodSymbol)conversion.Method).Parent);
+                group = group.Update(
+                    group.TypeArgumentsOpt,
+                    group.Name,
+                    group.Methods,
+                    group.LookupSymbolOpt,
+                    group.LookupError,
+                    group.Flags,
+                    receiverOpt, //only change
+                    group.ResultKind);
+            }
+
+            group = FixMethodGroupWithTypeOrValue(group, conversion, diagnostics);
+            receiverOpt = group.ReceiverOpt;
             MethodSymbol method = conversion.Method;
             bool hasErrors = false;
             if (receiverOpt != null && receiverOpt.Kind == BoundKind.BaseReference && method.IsAbstract)
@@ -329,6 +350,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             BoundExpression receiverOpt = group.ReceiverOpt;
             Debug.Assert(receiverOpt != null);
             Debug.Assert((object)conversion.Method != null);
+
             receiverOpt = ReplaceTypeOrValueReceiver(receiverOpt, conversion.Method.IsStatic && !conversion.IsExtensionMethod, diagnostics);
             return group.Update(
                 group.TypeArgumentsOpt,
