@@ -145,50 +145,60 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             var instances = new ArrayBuilder<TypeSymbol>();
 
-            // We can see two types of instance:
-            // 1) Any instances witnessed on a method or type between us and
-            //    the global namespace;
-            GetConstraintWitnessInstances(binder, ref instances);
-            // 2) Any visible named instance.
-            GetNamedInstances(binder, binder.Compilation.GlobalNamespace, ref instances);
+            for (var b = binder;
+                 b != null;
+                 b = b.Next)
+            {
+                // ContainingMember crashes if we're in a BuckStopsHereBinder.
+                var container = b.ContainingMemberOrLambda;
+                if (container == null) continue;
+
+                // We can see two types of instance:
+                // 1) Any instances witnessed on a method or type between us and
+                //    the global namespace;
+                GetConstraintWitnessInstances(container, ref instances);
+                // 2) Any visible named instance.  (See below, too).
+                GetNamedInstances(binder, container, ref instances);
+
+                // The above is ok if we just want to get all instances in
+                // a straight line up the scope from here to the global
+                // namespace, but we also need to pull in imports too.
+                foreach (var u in b.GetImports(null).Usings)
+                {
+                    // TODO: Do we need to recurse into nested types/namespaces?
+                    GetNamedInstances(binder, u.NamespaceOrType, ref instances);
+                }
+            }
 
             return instances.ToImmutableAndFree();
         }
 
         /// <summary>
-        /// Adds all constraint witnesses visible in this scope to an array.
+        /// Adds all constraint witnesses in a parent member or type to an array.
         /// </summary>
-        /// <param name="binder">
-        /// The binder providing scope for this query.
+        /// <param name="container">
+        /// The container symbol to query.
         /// </param>
         /// <param name="instances">
         /// The instance array to populate with witnesses.
         /// </param>
-        private void GetConstraintWitnessInstances(Binder binder, ref ArrayBuilder<TypeSymbol> instances)
+        private void GetConstraintWitnessInstances(Symbol container, ref ArrayBuilder<TypeSymbol> instances)
         {
-            var parent = binder.ContainingMember();
-            Debug.Assert(parent != null);
+            // Only methods and named types have constrained witnesses.
+            if (container.Kind != SymbolKind.Method && container.Kind != SymbolKind.NamedType) return;
 
-            for (var container = parent;
-                 container.Kind != SymbolKind.Namespace;
-                 container = container.ContainingSymbol)
+            var tps = (((container as MethodSymbol)?.TypeParameters)
+                       ?? (container as NamedTypeSymbol)?.TypeParameters)
+                       ?? ImmutableArray<TypeParameterSymbol>.Empty;
+
+            foreach (var tp in tps)
             {
-                // Only methods and named kinds have constrained witnesses.
-                if (container.Kind != SymbolKind.Method && container.Kind != SymbolKind.NamedType) continue;
-
-                var tps = (((container as MethodSymbol)?.TypeParameters)
-                           ?? (container as NamedTypeSymbol)?.TypeParameters)
-                           ?? ImmutableArray<TypeParameterSymbol>.Empty;
-
-                foreach (var tp in tps)
-                {
-                    if (tp.IsConceptWitness) instances.Add(tp);
-                }
+                if (tp.IsConceptWitness) instances.Add(tp);
             }
         }
 
         /// <summary>
-        /// Adds all named-type instances visible in this scope to an array.
+        /// Adds all named-type instances inside a container and visible in this scope to an array.
         /// </summary>
         /// <param name="binder">
         /// The binder providing scope for this query.
@@ -199,22 +209,14 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="instances">
         /// The instance array to populate with witnesses.
         /// </param>
-        private void GetNamedInstances(Binder binder, NamespaceOrTypeSymbol container, ref ArrayBuilder<TypeSymbol> instances)
+        private void GetNamedInstances(Binder binder, Symbol container, ref ArrayBuilder<TypeSymbol> instances)
         {
             var ignore = new HashSet<DiagnosticInfo>();
 
-            if (container.Kind == SymbolKind.Namespace)
-            {
-                foreach (var member in ((NamespaceSymbol) container).GetNamespaceMembers())
-                {
-                    // Is this too lenient?
-                    // It seems to allow us to infer instances from far-away namespaces.
-                    if (!binder.IsAccessible(member, ref ignore, binder.ContainingType)) continue;
-                    GetNamedInstances(binder, member, ref instances);
-                }
-            }
+            // Only namespaces and named kinds have named instances.
+            if (container.Kind != SymbolKind.Namespace && container.Kind != SymbolKind.NamedType) return;
 
-            foreach (var member in container.GetTypeMembers())
+            foreach (var member in ((NamespaceOrTypeSymbol)container).GetTypeMembers())
             {
                 if (!binder.IsAccessible(member, ref ignore, binder.ContainingType)) continue;
 
@@ -222,10 +224,6 @@ namespace Microsoft.CodeAnalysis.CSharp
                 if (member.IsInstance)
                 {
                     instances.Add(member);
-                }
-                else
-                {
-                    GetNamedInstances(binder, member, ref instances);
                 }
             }
         }
