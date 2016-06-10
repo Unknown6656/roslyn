@@ -3,6 +3,7 @@
 
 using System.Concepts.Prelude;
 using System;
+using static NumUtils;
 
 /// <summary>
 ///     A first-order, scalar automatic derivative.
