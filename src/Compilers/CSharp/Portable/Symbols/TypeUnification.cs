@@ -17,16 +17,15 @@ namespace Microsoft.CodeAnalysis.CSharp
         public static bool CanUnify(TypeSymbol t1, TypeSymbol t2)
         {
             MutableTypeMap substitution = null;
-            return CanUnify(t1, t2, out substitution);
+            return CanUnify(t1, t2, ref substitution);
         }
 
         /// <summary>
         /// Tries to produce a substitution of type parameters that will make
         /// two types identical.
         /// </summary>
-        public static bool CanUnify(TypeSymbol t1, TypeSymbol t2, out MutableTypeMap substitution)
+        public static bool CanUnify(TypeSymbol t1, TypeSymbol t2, ref MutableTypeMap substitution)
         {
-            substitution = null;
 
             if (t1 == t2)
             {
