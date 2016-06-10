@@ -642,5 +642,21 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 return _map.GetOverriddenTypeParameter(this.Ordinal);
             }
         }
+
+        internal override bool IsConceptWitness
+        {
+            get
+            {
+                // Usually, types are concept witnesses if they have
+                // [ConceptWitness]. @t-mawind
+                foreach (var attribute in this.GetAttributes())
+                {
+                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptWitnessAttribute)) return true;
+                }
+
+                return false;
+            }
+        }
+
     }
 }

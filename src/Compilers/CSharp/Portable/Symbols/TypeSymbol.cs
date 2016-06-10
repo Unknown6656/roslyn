@@ -555,22 +555,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         /// <summary>
         /// Is this a symbol for a concept witness?
+        /// <para>
+        /// Only type parameters are concept witnesses; everything else will
+        /// return false here.
+        /// </para>
         /// </summary>
-        internal virtual bool IsConceptWitness
-        {
-            get
-            {
-                // Usually, types are concept witnesses if they have
-                // [ConceptWitness]. @t-mawind
+        internal virtual bool IsConceptWitness => false;
 
-                foreach (var attribute in this.GetAttributes())
-                {
-                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptWitnessAttribute)) return true;
-                }
-
-                return false;
-            }
-        }
+        // @t-mawind
+        //   The above used to be defined directly here in terms of GetAttributes().
+        //   However, this lends itself to infinite recursion when we ask types that
+        //   consult the binder on trips to GetAttributes() whether they are a
+        //   concept witness, as the binder itself checks whether things are concept
+        //   witnesses too!
+        //
+        //   Instead, we just override IsConceptWitness for the things that are
+        //   potentially concept witnesses: source and PE type parameters, and
+        //   synthesised concept witness parameters (for which it is set to true).
 
         /// <summary>
         /// Is this type a managed type (false for everything but enum, pointer, and
