@@ -58,20 +58,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             // compilation or binder.
             var allInstances = GetAllVisibleInstances(binder);
 
-            var groundInstances = new HashSet<TypeSymbol>();
-
-            // Can we just represent constraints on a predicated symbol directly by
-            // the concept witnesses in their arguments?
-            var predicatedInstances = new HashSet<NamedTypeSymbol>();
-
-            FilterInstances(allInstances, ref groundInstances, ref predicatedInstances);
-
             var boundParams = GetAlreadyBoundTypeParameters(binder);
 
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                success = TryInferConceptWitness(j, groundInstances, predicatedInstances, fixedMap, boundParams);
+                success = TryInferConceptWitness(j, allInstances, fixedMap, boundParams);
 
                 if (!success) break;
             }
@@ -140,10 +132,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="index">
         /// The index of the concept witness to infer.
         /// </param>
-        /// <param name="groundInstances">
-        /// The set of ground instances available for this witness.</param>
-        /// <param name="predicatedInstances">
-        /// The set of predicated instances available for this witness.
+        /// <param name="allInstances">
+        /// The set of instances available for this witness.
         /// </param>
         /// <param name="fixedMap">
         /// The map from fixed type parameters to their arguments.
@@ -157,57 +147,146 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// false otherwise.
         /// </returns>
         private bool TryInferConceptWitness(int index,
-            HashSet<TypeSymbol> groundInstances,
-            HashSet<NamedTypeSymbol> predicatedInstances,
+            ImmutableArray<TypeSymbol> allInstances,
             MutableTypeMap fixedMap,
             ImmutableHashSet<TypeParameterSymbol> boundParams)
         {
-            // A ground instance satisfies inference if, for all concepts
-            // required by the type parameter, at least one concept on the
-            // witness unifies with that concept.
+            // @t-mawind
+            // An instance satisfies inference if:
+            //
+            // 1) for all concepts required by the type parameter, at least
+            //    one concept on the witness unifies with that concept without
+            //    capturing bound type parameters;
+            // 2) all of the type parameters of that instance can be bound,
+            //    both by the substitutions from the unification above and also
+            //    by recursively trying to infer any missing concept witnesses.
+            //
+            // The first part is equivalent to establishing
+            //    witness :- instance.
+            //
+            // The second part is equivalent to resolving
+            //    instance :- dependency1; dependency2; ...
+            // by trying to establish the dependencies as separare queries.
+            //
+            // If we have multiple satisfying instances, or zero, we fail.
+
+            // TODO: We don't yet have #2, so we presume that if we have any
+            // concept-witness type parameters we've failed.
+
             var requiredConcepts = this.GetRequiredConceptsFor(index, fixedMap);
 
-            foreach (var instance in groundInstances)
+            // First, collect all of the instances satisfying 1).
+            var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
+            foreach (var instance in allInstances)
             {
-                var providedConcepts =
-                    ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
-                     ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
-                     ?? ImmutableArray<NamedTypeSymbol>.Empty);
-
-                MutableTypeMap mtm = new MutableTypeMap();
-
-                bool allSatisfied = true;
-                foreach (var requiredConcept in requiredConcepts)
+                MutableTypeMap unifyingSubstitutions = new MutableTypeMap();
+                if (AllRequiredConceptsProvided(requiredConcepts, instance, boundParams, ref unifyingSubstitutions))
                 {
-                    bool satisfied = false;
-                    foreach (var providedConcept in providedConcepts)
+                    // The unification may have provided us with substitutions
+                    // that were needed to make the provided concepts fit the
+                    // required concepts.
+                    //
+                    // It may be that some of these substitutions also need to
+                    // apply to the actual instance so it can satisfy #2.
+                    var result = unifyingSubstitutions.SubstituteType(instance).AsTypeSymbolOnly();
+                    firstPassInstanceBuilder.Add(result);
+                }
+            }
+            var firstPassInstances = firstPassInstanceBuilder.ToImmutableAndFree();
+            // We can't infer if none of the instances implement our concept!
+            // However, if we have more than one candidate instance at this
+            // point, we shouldn't bail until we've made sure only one of them
+            // passes 2).
+            if (firstPassInstances.IsEmpty) return false;
+
+            // TODO: implement the next phase properly
+            var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
+            foreach (var instance in firstPassInstances)
+            {
+                var hasUnfixedWitnesses = false;
+                // Only named types (ie instance declarations) can contain
+                // unresolved concept witnesses.
+                if (instance.Kind == SymbolKind.NamedType)
+                {
+                    var nt = (NamedTypeSymbol)instance;
+                    var targs = nt.TypeArguments;
+                    var tpars = nt.TypeParameters;
+                    for (int i = 0; i < tpars.Length; i++)
                     {
-                        if (TypeUnification.CanUnify(providedConcept, requiredConcept, ref mtm, boundParams))
+                        if (tpars[i].IsConceptWitness && tpars[i] == targs[i])
                         {
-                            satisfied = true;
-                            break;
+                            // TODO: try to infer this
+                            hasUnfixedWitnesses = true;
                         }
                     }
+                }
 
-                    if (!satisfied)
+                if (!hasUnfixedWitnesses) secondPassInstanceBuilder.Add(instance);
+            }
+            var secondPassInstances = secondPassInstanceBuilder.ToImmutableAndFree();
+
+            // Either ambiguity, or an outright lack of inference success.
+            if (secondPassInstances.Length != 1) return false;
+            _fixedResults[index] = secondPassInstances[0];
+            return true;
+        }
+
+        /// <summary>
+        /// Checks whether a list of required concepts is implemented by a
+        /// candidate instance modulo unifying substitutions.
+        /// <para>
+        /// We don't check yet that the instance itself is satisfiable, just that
+        /// it will satisfy our concept list if it is.
+        /// </para>
+        /// </summary>
+        /// <param name="requiredConcepts">
+        /// The list of required concepts to implement.
+        /// </param>
+        /// <param name="instance">
+        /// The candidate instance.
+        /// </param>
+        /// <param name="boundParams">
+        /// A list of all type parameters that have been bound by the
+        /// containing scope, and thus cannot be substituted by unification.
+        /// </param>
+        /// <param name="unifyingSubstitutions">
+        /// A map of type substitutions, populated by this method, which are
+        /// required in order to make the instance implement the concepts.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, the given instance implements the given list
+        /// of concepts.
+        /// </returns>
+        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
+                                                 TypeSymbol instance,
+                                                 ImmutableHashSet<TypeParameterSymbol> boundParams,
+                                                 ref MutableTypeMap unifyingSubstitutions)
+        {
+            var providedConcepts =
+                ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
+                 ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
+                 ?? ImmutableArray<NamedTypeSymbol>.Empty);
+
+            foreach (var requiredConcept in requiredConcepts)
+            {
+                bool thisProvided = false;
+                foreach (var providedConcept in providedConcepts)
+                {
+                    if (TypeUnification.CanUnify(providedConcept,
+                            requiredConcept,
+                            ref unifyingSubstitutions,
+                            boundParams))
                     {
-                        allSatisfied = false;
+                        thisProvided = true;
                         break;
                     }
                 }
 
-                if (allSatisfied)
-                {
-                    // TODO: this is probably wrong.
-                    this._fixedResults[index] = mtm.SubstituteType(instance).AsTypeSymbolOnly();
-
-                    // TODO: ensure there isn't another witness?
-                    return true;
-                }
+                if (!thisProvided) return false;
             }
 
-            // TODO: use the predicated instances (either here or before).
-            return false;
+            // If we got here, all required concepts must have been provided.
+            return true;
         }
 
         /// <summary>
@@ -321,6 +400,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
 
+            // TODO: find out why we're getting duplicates in the first place.
+            instances.RemoveDuplicates();
             return instances.ToImmutableAndFree();
         }
 
@@ -375,59 +456,6 @@ namespace Microsoft.CodeAnalysis.CSharp
                 if (member.IsInstance)
                 {
                     instances.Add(member);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Partitions visible instances into 'ground' instances, which can be
-        /// substituted directly, and 'predicated' instances, which are
-        /// expecting at least one of their type parameters to satisfy a
-        /// concept constraint.
-        /// </summary>
-        /// <param name="instances">
-        /// The set of instances found in the namespace.
-        /// </param>
-        /// <param name="grounds">
-        /// The set to populate with ground instances.
-        /// </param>
-        /// <param name="predicateds">
-        /// The set to populate with predicated instances.
-        /// </param>
-        private void FilterInstances(ImmutableArray<TypeSymbol> instances, ref HashSet<TypeSymbol> grounds, ref HashSet<NamedTypeSymbol> predicateds)
-        {
-            foreach (var instance in instances)
-            {
-                var isGround = true;
-
-                // Type parameters are always concept witnesses, and are thus
-                // ground--the existence of said witness means its instance is
-                // accessible to us.
-                if (!instance.IsTypeParameter())
-                {
-                    Debug.Assert(instance.Kind == SymbolKind.NamedType);
-
-                    // If this is not expecting any witnesses itself, assume it
-                    // is ground--this might not be true if it has non-witness
-                    // constraints!
-                    foreach (var tp in ((NamedTypeSymbol)instance).TypeParameters)
-                    {
-                        if (tp.IsConceptWitness)
-                        {
-                            isGround = false;
-                            break;
-                        }
-                    }
-                }
-
-                if (isGround)
-                {
-                    grounds.Add(instance);
-                }
-                else
-                {
-                    Debug.Assert(instance.Kind == SymbolKind.NamedType);
-                    predicateds.Add((NamedTypeSymbol)instance);
                 }
             }
         }
