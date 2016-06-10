@@ -88,7 +88,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </param>
         /// <returns>
         /// </returns>
-        private ImmutableArray<TypeParameterSymbol> GetAlreadyBoundTypeParameters(Binder binder)
+        private ImmutableHashSet<TypeParameterSymbol> GetAlreadyBoundTypeParameters(Binder binder)
         {
             // TODO: combine with other binder traversal?
             var tps = new ArrayBuilder<TypeParameterSymbol>();
@@ -109,7 +109,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             // TODO: We're doing something wrong here that is causing duplicates.
             tps.RemoveDuplicates();
-            return tps.ToImmutableAndFree();
+            return tps.ToImmutableAndFree().ToImmutableHashSet();
         }
 
         /// <summary>
@@ -160,7 +160,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             HashSet<TypeSymbol> groundInstances,
             HashSet<NamedTypeSymbol> predicatedInstances,
             MutableTypeMap fixedMap,
-            ImmutableArray<TypeParameterSymbol> boundParams)
+            ImmutableHashSet<TypeParameterSymbol> boundParams)
         {
             // A ground instance satisfies inference if, for all concepts
             // required by the type parameter, at least one concept on the
@@ -182,15 +182,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                     bool satisfied = false;
                     foreach (var providedConcept in providedConcepts)
                     {
-                        if (TypeUnification.CanUnify(providedConcept, requiredConcept, ref mtm))
+                        if (TypeUnification.CanUnify(providedConcept, requiredConcept, ref mtm, boundParams))
                         {
-                            // We need to make sure this unification doesn't
-                            // rewrite any bound parameters.  Otherwise, it
-                            // could, eg., try to use a ground instance
-                            // Foo<X> for Foo<Y> even though X and Y are
-                            // different bound type parameters.
-                            if (!mtm.SubstituteTypeParameters(boundParams).SequenceEqual(boundParams)) continue;
-                            
                             satisfied = true;
                             break;
                         }
