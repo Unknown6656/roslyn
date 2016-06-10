@@ -38,29 +38,10 @@ namespace System.Concepts.Prelude
         // supply == for now.
     }
 
-    /// <summary>
-    ///     Implementation of <see cref="Eq{A}"/> for booleans.
-    /// </summary>
-    public instance EqBool : Eq<bool>
-    {
-        bool Equals(bool x, bool y) => x == y;
-    }
-
-    /// <summary>
-    ///     Implementation of <see cref="Eq{A}"/> for integers.
-    /// </summary>
-    public instance EqInt : Eq<int>
-    {
-        bool Equals(int x, int y) => x == y;
-    }
-
-    /// <summary>
-    ///     Implementation of <see cref="Eq{A}"/> for doubles.
-    /// </summary>
-    public instance EqDouble : Eq<double>
-    {
-        bool Equals(double x, double y) => x == y;
-    }
+    // Subconcept implementations of Eq:
+    // - Eq<bool>   -> OrdBool
+    // - Eq<int>    -> OrdInt.
+    // - Eq<double> -> OrdDouble.
 
     /// <summary>
     ///     Implementation of <see cref="Eq{A}"/> for arrays.
@@ -122,7 +103,7 @@ namespace System.Concepts.Prelude
     /// </remarks>
     public instance OrdBool : Ord<bool>
     {
-        bool Equals(bool x, bool y) => EqBool.Equals(x, y);
+        bool Equals(bool x, bool y) => x == y;
         bool Leq(bool x, bool y) => !x || y;
     }
 
@@ -131,7 +112,7 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance OrdInt : Ord<int>
     {
-        bool Equals(int x, int y) => EqInt.Equals(x, y);
+        bool Equals(int x, int y) => x == y;
         bool Leq(int x, int y) => x <= y;
     }
 
@@ -140,7 +121,7 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance OrdDouble : Ord<double>
     {
-        bool Equals(double x, double y) => EqDouble.Equals(x, y);
+        bool Equals(double x, double y) => x == y;
         bool Leq(double x, double y) => x <= y;
     }
 
@@ -249,7 +230,7 @@ namespace System.Concepts.Prelude
         A FromInteger(int x);
 
         // Haskell uses arbitrary-precision integers here, so maybe we
-        // should do to?
+        // should do too?
     }
 
     /// <summary>
@@ -265,18 +246,8 @@ namespace System.Concepts.Prelude
         int FromInteger(int x) => x;
     }
 
-    /// <summary>
-    ///     Implementation of <see cref="Num{A}"/> for doubles.
-    /// </summary>
-    public instance NumDouble : Num<double>
-    {
-        double Add(double x, double y)  => x + y;
-        double Sub(double x, double y)  => x - y;
-        double Mul(double x, double y)  => x * y;
-        double Abs(double x)            => Math.Abs(x);
-        double Signum(double x)         => Math.Sign(x);
-        double FromInteger(int x)       => (double)x;
-    }
+    // Subconcept implementations of Num:
+    // Num<double> is implemented by FloatingDouble.
 
     #endregion Num
 
@@ -344,21 +315,8 @@ namespace System.Concepts.Prelude
         // should do to?
     }
 
-    /// <summary>
-    ///     Implementation of <see cref="Fractional{A}"/> for doubles.
-    /// </summary>
-    public instance FractionalDouble : Fractional<double>
-    {
-        double Add(double x, double y)  => NumDouble.Add(x, y);
-        double Sub(double x, double y)  => NumDouble.Sub(x, y);
-        double Mul(double x, double y)  => NumDouble.Mul(x, y);
-        double Abs(double x)            => NumDouble.Abs(x);
-        double Signum(double x)         => NumDouble.Signum(x);
-        double FromInteger(int x)       => NumDouble.FromInteger(x);
-
-        double Div(double x, double y)    => x / y;
-        double FromRational(Ratio<int> x) => x.num / x.den;
-    }
+    // Subconcept implementations of Fractional:
+    // - Fractional<double> -> FloatingDouble
 
     #endregion Fractional
 
@@ -593,23 +551,23 @@ namespace System.Concepts.Prelude
     /// </summary>
     public instance FloatingDouble : Floating<double>
     {
-        double Add(double x, double y)
-            => FractionalDouble.Add(x, y);
-        double Sub(double x, double y)
-            => FractionalDouble.Sub(x, y);
-        double Mul(double x, double y)
-            => FractionalDouble.Mul(x, y);
-        double Abs(double x)
-            => FractionalDouble.Abs(x);
-        double Signum(double x)
-            => FractionalDouble.Signum(x);
-        double FromInteger(int x)
-            => FractionalDouble.FromInteger(x);
-        double Div(double x, double y)
-            => FractionalDouble.Div(x, y);
-        double FromRational(Ratio<int> x)
-            => FractionalDouble.FromRational(x);
+        //
+        // Num
+        //
+        double Add(double x, double y)     => x + y;
+        double Sub(double x, double y)     => x - y;
+        double Mul(double x, double y)     => x * y;
+        double Abs(double x)               => Math.Abs(x);
+        double Signum(double x)            => Math.Sign(x);
+        double FromInteger(int x)          => (double)x;
 
+        //
+        // Fractional
+        //
+        double Div(double x, double y)     => x / y;
+        double FromRational(Ratio<int> x)  => x.num / x.den;
+
+        // Floating
         double Pi()                        => Math.PI;
         double Exp(double x)               => Math.Exp(x);
         double Sqrt(double x)              => Math.Sqrt(x);
