@@ -191,5 +191,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         private static readonly Func<TypeSymbol, bool> s_isNotObjectFunc = type => type.SpecialType != SpecialType.System_Object;
+
+        //@t-mawind
+        internal override bool IsConceptWitness => _substitutedFrom.IsConceptWitness;
     }
 }
