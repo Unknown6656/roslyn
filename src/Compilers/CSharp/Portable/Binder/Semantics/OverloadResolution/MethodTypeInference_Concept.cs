@@ -47,8 +47,15 @@ namespace Microsoft.CodeAnalysis.CSharp
             // If we got this far, we should have at least something to infer.
             Debug.Assert(!conceptIndices.IsEmpty);
 
-            // Ideally this should be cached at some point, perhaps on the compilation
-            // or binder.
+            // We'll be checking to see if concepts defined on the missing
+            // witness type parameters are implemented.  Since this means we
+            // are checking something on the method definition, but need it
+            // in terms of our fixed type arguments, we must make a mapping
+            // from parameters to arguments.
+            var fixedMap = this.MakeFixedMap();
+
+            // TODO: Ideally this should be cached at some point, perhaps on the
+            // compilation or binder.
             var allInstances = GetAllVisibleInstances(binder);
 
             var groundInstances = new HashSet<TypeSymbol>();
@@ -62,13 +69,34 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                success = TryInferConceptWitness(j, groundInstances, predicatedInstances);
+                success = TryInferConceptWitness(j, groundInstances, predicatedInstances, fixedMap);
 
                 if (!success) break;
             }
-
-
+            
             return success;
+        }
+
+        /// <summary>
+        /// Constructs a map from fixed method type parameters to their
+        /// inferred arguments.
+        /// </summary>
+        /// <returns>
+        /// A map mapping each fixed parameter to its argument.
+        /// </returns>
+        private MutableTypeMap MakeFixedMap()
+        {
+            MutableTypeMap mt = new MutableTypeMap();
+
+            for (int i = 0; i < _methodTypeParameters.Length; i++)
+            {
+                if (_fixedResults[i] != null)
+                {
+                    mt.Add(_methodTypeParameters[i], new TypeWithModifiers(_fixedResults[i]));
+                }
+            }
+
+            return mt;
         }
 
         /// <summary>
@@ -82,17 +110,50 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="predicatedInstances">
         /// The set of predicated instances available for this witness.
         /// </param>
+        /// <param name="fixedMap">
+        /// The map from fixed type parameters to their arguments.
+        /// </param>
         /// <returns>
         /// True if the witness was inferred and fixed in the parameter set;
         /// false otherwise.
         /// </returns>
-        private bool TryInferConceptWitness(int index, HashSet<TypeSymbol> groundInstances, HashSet<NamedTypeSymbol> predicatedInstances)
+        private bool TryInferConceptWitness(int index, HashSet<TypeSymbol> groundInstances, HashSet<NamedTypeSymbol> predicatedInstances, MutableTypeMap fixedMap)
         {
             foreach (var instance in groundInstances)
             {
+                // A ground instance satisfies inference if, for all concepts
+                // required by the type parameter, at least one concept on the
+                // witness unifies with that concept.
+                var requiredConcepts = this.GetRequiredConceptsFor(index, fixedMap);
+
+                var providedConcepts =
+                    ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
+                     ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
+                     ?? ImmutableArray<NamedTypeSymbol>.Empty);
+
                 MutableTypeMap mtm = null;
-                // TODO: this is definitely wrong.
-                if (TypeUnification.CanUnify(this._methodTypeParameters[index], instance, out mtm))
+
+                bool allSatisfied = true;
+                foreach (var requiredConcept in requiredConcepts)
+                {
+                    bool satisfied = false;
+                    foreach (var providedConcept in providedConcepts)
+                    {
+                        if (TypeUnification.CanUnify(providedConcept, requiredConcept, out mtm))
+                        {
+                            satisfied = true;
+                            break;
+                        }
+                    }
+
+                    if (!satisfied)
+                    {
+                        allSatisfied = false;
+                        break;
+                    }
+                }
+
+                if (allSatisfied)
                 {
                     // TODO: this is probably wrong.
                     this._fixedResults[index] = mtm.SubstituteType(instance).AsTypeSymbolOnly();
@@ -104,6 +165,53 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             // TODO: use the predicated instances (either here or before).
             return false;
+        }
+
+        /// <summary>
+        /// Deduces the set of concepts that must be implemented by any witness
+        /// supplied to the given type parameter index.
+        /// </summary>
+        /// <param name="index">
+        /// The index of the type parameter being inferred.
+        /// </param>
+        /// <param name="fixedMap">
+        /// A map mapping fixed type parameters to their type arguments.
+        /// </param>
+        /// <returns></returns>
+        private ImmutableArray<TypeSymbol> GetRequiredConceptsFor(int index, MutableTypeMap fixedMap)
+        {
+            var rawRequiredConcepts = this._methodTypeParameters[index].AllEffectiveInterfacesNoUseSiteDiagnostics;
+
+            // The concepts from above are in terms of the method's type
+            // parameters.  In order to be able to unify properly, we need to
+            // substitute the inferences we've made so far.
+            var rc = new ArrayBuilder<TypeSymbol>();
+            foreach (var con in rawRequiredConcepts)
+            {
+                rc.Add(fixedMap.SubstituteType(con).AsTypeSymbolOnly());
+            }
+
+            var unused = new HashSet<DiagnosticInfo>();
+
+            // Now we can do some optimisation: if we're asking for a concept,
+            // we don't need to ask for its base concepts.
+            var rc2 = new ArrayBuilder<TypeSymbol>();
+            foreach (var c1 in rc)
+            {
+                var needed = true;
+                foreach (var c2 in rc)
+                {
+                    if (c1.ImplementsInterface(c2, ref unused))
+                    {
+                        needed = false;
+                        break;
+                    }
+                }
+                if (needed) rc2.Add(c1);
+            }
+
+            rc.Free();
+            return rc2.ToImmutableAndFree();
         }
 
         /// <summary>
