@@ -4,6 +4,7 @@ using System.Concepts.Prelude;
 using System.Concepts.Monoid;
 using System.Text;
 using System;
+using static System.Concepts.Monoid.Utils;
 
 static class ArrayHelp<A>
 {
@@ -34,10 +35,10 @@ class NumMonoidTest<A> where NumA: Num<A>
     {
         var xss = ArrayHelp<A>.ShowArray(_xs);
 
-        var sum = MUtils<A, Sum<A, NumA>>.MConcat(_xs);
+        var sum = Concat<A, Sum<A, NumA>>(_xs);
         Console.Out.WriteLine($"Sum {xss} = {sum}");
 
-        var product = MUtils<A, Product<A, NumA>>.MConcat(_xs);
+        var product = Concat<A, Product<A, NumA>>(_xs);
         Console.Out.WriteLine($"Product {xss} = {product}");
     }
 }
@@ -56,10 +57,10 @@ class OrdSemiTest<A> where OrdA: Ord<A>
     {
         var xss = ArrayHelp<A>.ShowArray(_xs);
 
-        var min = SUtils<A, Min<A, OrdA>>.SConcat(_xs);
+        var min = ConcatNonEmpty<A, Min<A, OrdA>>(_xs);
         Console.Out.WriteLine($"Min {xss} = {min}");
 
-        var max = SUtils<A, Max<A, OrdA>>.SConcat(_xs);
+        var max = ConcatNonEmpty<A, Max<A, OrdA>>(_xs);
         Console.Out.WriteLine($"Max {xss} = {max}");
     }
 }
@@ -82,9 +83,9 @@ static class MonoidExamples
 
         var bools = new bool[] { true, true, false, true, false };
         var boolss = ArrayHelp<bool>.ShowArray(bools);
-        var any = MUtils<bool, Any>.MConcat(bools);
+        var any = Concat<bool, Any>(bools);
         Console.Out.WriteLine($"Any {boolss} = {any}");
-        var all = MUtils<bool, All>.MConcat(bools);
+        var all = Concat<bool, All>(bools);
         Console.Out.WriteLine($"All {boolss} = {all}");
     }
 }

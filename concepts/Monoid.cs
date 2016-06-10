@@ -133,12 +133,9 @@ namespace System.Concepts.Monoid
 #region Utilities
 
     /// <summary>
-    ///     Utility functions for semigroups.
+    ///     Utility functions for monoids and semigroups.
     /// </summary>
-    /// <typeparam name="A">
-    ///     The semigroup on which these utilities are being defined.
-    /// </typeparam>
-    public static class SUtils<A> where SA : Semigroup<A>
+    public static class Utils
     {
         /// <summary>
         ///     Folds a non-empty list using a semigroup.
@@ -149,7 +146,10 @@ namespace System.Concepts.Monoid
         /// <returns>
         ///     The result of folding.
         /// </returns>
-        public static A SConcat(A[] xs)
+        /// <typeparam name="A">
+        ///     The semigroup on which this function is being defined.
+        /// </typeparam>
+        public static A ConcatNonEmpty<A>(A[] xs) where SA : Semigroup<A>
         {
             var lxs = xs.Length;
 
@@ -165,26 +165,20 @@ namespace System.Concepts.Monoid
 
             return result;
         }
-    }
 
-    /// <summary>
-    ///     Utility functions for monoids.
-    /// </summary>
-    /// <typeparam name="A">
-    ///     The monoid on which these utilities are being defined.
-    /// </typeparam>
-    public static class MUtils<A> where MA : Monoid<A>
-    {
         /// <summary>
         ///     Folds a list using a monoid.
         /// </summary>
         /// <param name="xs">
         ///     The list to fold.
         /// </param>
+        /// <typeparam name="A">
+        ///     The monoid on which this function is being defined.
+        /// </typeparam>
         /// <returns>
         ///     The result of folding.
         /// </returns>
-        public static A MConcat(A[] xs)
+        public static A Concat<A>(A[] xs) where MA : Monoid<A>
         {
             A result = Empty();
             foreach (A x in xs)

@@ -58,7 +58,7 @@ namespace Exp
 		where EvalX : Eval<X>
 		where EvalY : Eval<Y>
     {
-		int eval(Add<X, Y> a) => Overloads.eval<X, EvalX>(a.x) + Overloads.eval<Y, EvalY>(a.y);
+		int eval(Add<X, Y> a) => Overloads.eval(a.x) + Overloads.eval(a.y);
 	}
 
 	class Neg<X>
@@ -79,7 +79,7 @@ namespace Exp
 	instance EvalNeg<X> : Eval<Neg<X>>
 		where EvalX : Eval<X>
     {
-		int eval(Neg<X> n) => -Overloads.eval<X, EvalX>(n.x);
+		int eval(Neg<X> n) => -Overloads.eval(n.x);
 	}
 
 	concept Print<X> : Exp<X>
@@ -109,9 +109,9 @@ namespace Exp
     {
 		void print(Add<X, Y> a)
         {
-			Overloads.Print<X, PrintX>(a.x);
+			Overloads.Print(a.x);
 			Console.Write("+");
-			Overloads.Print<Y, PrintY>(a.y);
+			Overloads.Print(a.y);
 		}
 	}
 
