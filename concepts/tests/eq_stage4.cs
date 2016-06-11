@@ -1,4 +1,4 @@
-// Fully expressed concept-based Eq with witness-explicit dictionary usage.
+// Fully expressed concept-based Eq with witness-implicit dictionary usage.
 // Remember to reference ConceptAttributes.dll!
 
 concept Eq<A>
@@ -20,7 +20,7 @@ instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
         if (a.Length != b.Length) return false;
         for (int i = 0; i < a.Length; i++)
         {
-            if (!EqA.Equals(a[i], b[i])) return false;
+            if (!Equals(a[i], b[i])) return false;
         }
         return true;
     }

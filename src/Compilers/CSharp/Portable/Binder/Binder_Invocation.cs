@@ -771,6 +771,16 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var receiver = ReplaceTypeOrValueReceiver(methodGroup.Receiver, method.IsStatic && !invokedAsExtensionMethod, diagnostics);
 
+            // @t-mawind
+            //   Witness invocations, which manifest as null receiver and
+            //   witness-method symbol, need to become dictionary lookups.
+            //   At some point it might be nice to clean up all of the
+            //   disparate invocations of this lookup synthesis.
+            if (receiver == null && method is SynthesizedWitnessMethodSymbol)
+            {
+                receiver = SynthesizeWitnessInvocationReceiver(expression, ((SynthesizedWitnessMethodSymbol)method).Parent);
+            }
+
             // Note: we specifically want to do final validation (7.6.5.1) without checking delegate compatibility (15.2),
             // so we're calling MethodGroupFinalValidation directly, rather than via MethodGroupConversionHasErrors.
             // Note: final validation wants the receiver that corresponds to the source representation
@@ -829,13 +839,13 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             // @t-mawind
             //   If we're non-statically calling a type expression at this
-            //   stage, we're invoking against an instance (hopefully).
+            //   stage, we're invoking against an explicit instance (hopefully).
             //   Desugar the instance call to a dictionary construction before
             //   we continue.
-            if (!method.IsStatic && receiver.Kind == BoundKind.TypeExpression)
+            if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression)
             {
                 Debug.Assert(receiver.Type.IsInstanceType());
-                receiver = new BoundDefaultOperator(receiver.Syntax, receiver.Type) { WasCompilerGenerated = true };
+                receiver = SynthesizeWitnessInvocationReceiver(receiver.Syntax, receiver.Type);
             }
 
             // What if some of the arguments are implicit?  Dev10 reports unsafe errors

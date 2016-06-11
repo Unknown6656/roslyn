@@ -166,6 +166,7 @@
     <Compile Include="Binder\Semantics\OverloadResolution\MemberResolutionResult.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\MethodGroup.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\MethodTypeInference.cs" />
+    <Compile Include="Binder\Semantics\OverloadResolution\MethodTypeInference_Concept.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolution.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolution_ArgsToParameters.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolutionResult.cs" />
@@ -182,6 +183,8 @@
     <Compile Include="Binder\WithMethodTypeParametersBinder.cs" />
     <Compile Include="Binder\WithParametersBinder.cs" />
     <Compile Include="Binder\WithTypeParametersBinder.cs" />
+    <Compile Include="Binder\Binder_Concepts.cs" />
+    <Compile Include="Binder\WithWitnessesBinder.cs" />
     <Compile Include="BoundTree\BoundExpression.cs" />
     <Compile Include="BoundTree\BoundExpressionExtensions.cs" />
     <Compile Include="BoundTree\BoundMethodGroup.cs" />
@@ -638,6 +641,7 @@
     <Compile Include="Symbols\Source\SourceMemberContainerSymbol_ImplementationChecks.cs" />
     <Compile Include="Symbols\Source\SourceMemberFieldSymbol.cs" />
     <Compile Include="Symbols\Source\SourceMemberMethodSymbol.cs" />
+    <Compile Include="Symbols\Synthesized\SynthesizedWitnessMethodSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedWitnessTypeParameterSymbol.cs" />
     <Compile Include="Symbols\Source\SourceMethodSymbol.cs" />
     <Compile Include="Symbols\Source\SourceModuleSymbol.cs" />

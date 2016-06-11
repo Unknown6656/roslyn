@@ -11,17 +11,14 @@ public class Foo
 
     instance ShowInt : Show<int>
     {
-        public string Show(int toShow)
-        {
-            return toShow.ToString();
-        }
+        string Show(int toShow) => toShow.ToString();
     }
 
     class Printer
     {
         public virtual void Print<A>(A toPrint) where ShowA: Show<A>
         {
-            Console.Out.WriteLine(default(ShowA).Show(toPrint));
+            Console.Out.WriteLine(ShowA.Show(toPrint));
         }
     }
 
@@ -30,7 +27,7 @@ public class Foo
         public override void Print<B>(B toPrint) where ShowB: concept
         {
             Console.Out.WriteLine("oOo");
-            Console.Out.WriteLine(default(ShowB).Show(toPrint));
+            Console.Out.WriteLine(ShowB.Show(toPrint));
             Console.Out.WriteLine("oOo");
         }
     }

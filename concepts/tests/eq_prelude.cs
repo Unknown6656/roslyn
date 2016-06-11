@@ -20,7 +20,7 @@ class Program {
         new Tester<A, EqA>(count, l, r, false).Test();
         count++;
     }
-    
+
     class Tester<A> where EqA: Eq<A>
     {
         int _num;

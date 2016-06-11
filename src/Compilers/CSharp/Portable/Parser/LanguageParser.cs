@@ -1986,11 +1986,19 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
             while (this.CurrentToken.ContextualKind == SyntaxKind.WhereKeyword)
             {
                 var constraint = this.ParseTypeParameterConstraintClause();
-                if (!isAllowed)
-                {
-                    constraint = this.AddErrorToFirstToken(constraint, ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl);
-                    isAllowed = true; // silence any further errors
-                }
+                // @t-mawind
+                //   isAllowed seemingly only ever means we've parsed a type
+                //   parameter list.  With concepts, we're allowed to pretend
+                //   we have one if our constraint is a concept.
+                //
+                //   Alas, we don't know if this _is_ a concept until we've
+                //   done symbolic analysis.  Thus, for now, we kill this.
+                //
+                //if (!isAllowed)
+                //{
+                //    constraint = this.AddErrorToFirstToken(constraint, ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl);
+                //    isAllowed = true; // silence any further errors
+                //}
 
                 list.Add(constraint);
             }

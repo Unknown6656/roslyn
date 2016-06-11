@@ -1016,9 +1016,21 @@ namespace Microsoft.CodeAnalysis.CSharp
                 return null;
             }
 
-            var declaringType = members[0].ContainingType;
+            // @t-mawind
+            //   Witnesses are in their own binder, so if we see one witness
+            //   method, all of the methods in the method group are witnesses.
+            if (members[0] is SynthesizedWitnessMethodSymbol)
+            {
+                // However, we can't tell at this stage what the receiver _is_,
+                // as the method group may contain bindings from multiple
+                // receivers, so we rely on later binding to work it out.
+                return null;
+            }
+
+            NamedTypeSymbol declaringType = members[0].ContainingType;
 
             HashSet<DiagnosticInfo> unused = null;
+
             if (currentType.IsEqualToOrDerivedFrom(declaringType, ignoreDynamic: false, useSiteDiagnostics: ref unused))
             {
                 return ThisReference(syntax, currentType, wasCompilerGenerated: true);
@@ -4640,8 +4652,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                                 //@t-mawind Attempts to get a member of a witness parameter construct a dictionary of that parameter type.
                                 if (leftType.IsConceptWitness)
                                 {
-                                    //@t-mawind Can we do this without building a fake AST?
-                                    BoundExpression newBoundLeft = new BoundDefaultOperator(boundLeft.Syntax, leftType) { WasCompilerGenerated = true };
+                                    BoundExpression newBoundLeft = this.SynthesizeWitnessInvocationReceiver(boundLeft.Syntax, leftType);
                                     newBoundLeft = CheckValue(newBoundLeft, BindValueKind.RValue, diagnostics);
                                     return BindInstanceMemberAccess(node, right, newBoundLeft, rightName, rightArity, typeArgumentsSyntax, typeArguments, invoked, diagnostics);
                                 }

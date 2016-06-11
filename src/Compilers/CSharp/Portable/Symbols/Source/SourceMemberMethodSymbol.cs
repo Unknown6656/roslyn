@@ -94,7 +94,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             this.MakeFlags(methodKind, declarationModifiers, returnsVoid, isExtensionMethod, isMetadataVirtualIgnoringModifiers);
 
-            _typeParameters = (syntax.Arity == 0) ?
+            // @t-mawind
+            //   We have to make type parameters when we have constraints,
+            //   even if the syntactic arity is 0.  This is because the
+            //   constraints could induce concept witnesses.
+            var noTypeParameters =
+                syntax.Arity == 0 && syntax.ConstraintClauses.IsEmpty();
+            // We, of course, have to deal with the possibility of the
+            // type parameter list being null in MakeTypeParameters now.
+            _typeParameters = noTypeParameters ?
                 ImmutableArray<TypeParameterSymbol>.Empty :
                 MakeTypeParameters(syntax, diagnostics);
 
@@ -702,7 +710,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private DeclarationModifiers MakeModifiers(SyntaxTokenList modifiers, MethodKind methodKind, Location location, DiagnosticBag diagnostics, out bool modifierErrors)
         {
             bool isInterface = this.ContainingType.IsInterface;
-            var defaultAccess = isInterface ? DeclarationModifiers.Public : DeclarationModifiers.Private;
+            bool isConceptInstance = this.ContainingType.IsInstance;
+
+            // @t-mawind
+            //    Concept instances default to public method access: indeed,
+            //    the only thing allowed in a concept instance is a public
+            //    method.
+            var defaultAccess = (isInterface || isConceptInstance) ? DeclarationModifiers.Public : DeclarationModifiers.Private;
 
             // Check that the set of modifiers is allowed
             var allowedModifiers = DeclarationModifiers.Partial | DeclarationModifiers.Unsafe;
@@ -754,7 +768,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private ImmutableArray<TypeParameterSymbol> MakeTypeParameters(MethodDeclarationSyntax syntax, DiagnosticBag diagnostics)
         {
-            Debug.Assert(syntax.TypeParameterList != null);
+            // @t-mawind If the type parameter list is null, then we must have
+            //   at least one constraint.  All of those constraints must name
+            //   concepts, but we check that later.
+            Debug.Assert(
+                syntax.TypeParameterList != null ||
+                !syntax.ConstraintClauses.IsEmpty());
 
             OverriddenMethodTypeParameterMapBase typeMap = null;
             if (this.IsOverride)
@@ -766,7 +785,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 typeMap = new ExplicitInterfaceMethodTypeParameterMap(this);
             }
 
-            var typeParameters = syntax.TypeParameterList.Parameters;
+            // @t-mawind Deal with the possibility of empty parameter list but
+            //   non-empty constraint list, by mocking up an empty list.
+            var typeParameters =
+                syntax.TypeParameterList?.Parameters
+                    ?? SyntaxFactory.TypeParameterList().Parameters;
+
             var result = ArrayBuilder<TypeParameterSymbol>.GetInstance();
 
             for (int ordinal = 0; ordinal < typeParameters.Count; ordinal++)

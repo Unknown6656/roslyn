@@ -8,12 +8,12 @@ concept Eq<A>
 
 instance EqInt : Eq<int>
 {
-    public bool Equals(int a, int b) => a == b;
+    bool Equals(int a, int b) => a == b;
 }
 
 instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
 {
-    public bool Equals(A[] a, A[] b)
+    bool Equals(A[] a, A[] b)
     {
         if (a == null) return b == null;
         if (b == null) return false;
