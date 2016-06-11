@@ -230,7 +230,7 @@ byte-code format is fully generic (all source level type information,
 including class and method type parameters, are represented in the
 metadata and virtual instruction set).  Parameterized code is JIT-compiled to type passing code,
 with type parameters having run-time representations as (second-order)
-values.  The JIT compiler uses the refied types to generate
+values.  The JIT compiler uses the reified types to generate
 specialized memory representations (for instantiated generic types)
 and specialized (and thus more efficient) code for generic
 methods. For example, scalar types and compounds of scalars called
@@ -321,7 +321,7 @@ Invoking a method on a default value of reference type would simply raise a null
 However, methods on structs (including interface methods) can always be properly invoked
 by calling the method on the struct's default value. 
 
-Thus an operation over some class can be represented as static generic method, 
+Thus an operation over some class can be represented as a static generic method, 
 parameterized by an additional dictionary type parameter (here \lstinline{EqA}).
 Similarly, derived operations with type class constraints can be represented by generic methods with suitably constrained type parameters.
 
@@ -411,7 +411,7 @@ instance Eq 'a => Eq (List 'a) where
 We do not have space to describe the representations of other features but suffice to say that we can encode:
 Haskell type class operations that themselves have constrained types in their signatures (using interface methods that are generic);
 Haskell type class hierarchies  using interface inheritance; default operations using shared static methods; instances requiring 
-polymorphic recursion, instances as data (to constrained term constructors) and multi-parameter type classes. Moreover, choosing to provide named witness rather than anonymous one allows us to support
+polymorphic recursion; instances as data (to constrained term constructors) and multi-parameter type classes. Moreover, choosing to provide named witness rather than anonymous one allows us to support
 explicit as well as implicit instances.
 The only feature we cannot currently support is higher-kinded type classes (like \lstinline{Monad}), but this is because .NET does not yet support higher kinds.
 
