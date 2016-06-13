@@ -297,6 +297,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             //    instance :- dependency1; dependency2; ...
             // by trying to establish the dependencies as separare queries.
             //
+            // After the second part, if we have multiple possible instances,
+            // we try to see if one implements a subconcept of all of the other
+            // instances.  If so, we narrow to that specific instance.
+            //
             // If we have multiple satisfying instances, or zero, we fail.
 
             // TODO: We don't yet have #2, so we presume that if we have any
@@ -313,9 +317,13 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var secondPassInstances = this.TryInferConceptWitnessSecondPass(firstPassInstances, allInstances, boundParams);
 
+            // We only do the third pass if the second pass returned too many items.
+            var thirdPassInstances = secondPassInstances;
+            if (secondPassInstances.Length > 1) thirdPassInstances = this.TryInferConceptWitnessThirdPass(secondPassInstances, fixedMap);
+
             // Either ambiguity, or an outright lack of inference success.
-            if (secondPassInstances.Length != 1) return null;
-            return secondPassInstances[0];
+            if (thirdPassInstances.Length != 1) return null;
+            return thirdPassInstances[0];
         }
 
         /// <summary>
@@ -624,5 +632,66 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         #endregion Second pass
+        #region Third pass
+
+        /// <summary>
+        /// Performs the third pass of concept witness type inference.
+        /// <para>
+        /// This pass tries to find a single instance in the candidate set that
+        /// dominates all other instances, eg. its concept is a strict
+        /// super-interface of all other candidate instances' concepts.
+        /// </para>
+        /// </summary>
+        /// <param name="candidateInstances">
+        /// The set of instances to narrow.
+        /// </param>
+        /// <param name="fixedMap">
+        /// A map mapping fixed type parameters to their type arguments.
+        /// </param>
+        /// <returns>
+        /// An array of candidate instances after the third pass.  If there is
+        /// no dominating instance, this will be
+        /// <paramref name="candidateInstances"/>.
+        /// </returns>
+        ImmutableArray<TypeSymbol> TryInferConceptWitnessThirdPass(ImmutableArray<TypeSymbol> candidateInstances, MutableTypeMap fixedMap)
+        {
+            var ignore = new HashSet<DiagnosticInfo>();
+
+            // TODO: This can invariably be made more efficient.
+            foreach (var instance in candidateInstances)
+            {
+                bool isDominator = true;
+
+                foreach (var otherInstance in candidateInstances)
+                {
+                    if (otherInstance == instance) continue;
+
+                    foreach (var iface in otherInstance.AllInterfacesNoUseSiteDiagnostics)
+                    {
+                        if (!iface.IsConcept) continue;
+                        if (!instance.ImplementsInterface(iface, ref ignore))
+                        {
+                            isDominator = false;
+                            break;
+                        }
+                    }
+
+                    if (!isDominator) break;
+                }
+
+                if (isDominator)
+                {
+                    var arb = new ArrayBuilder<TypeSymbol>();
+                    arb.Add(instance);
+                    return arb.ToImmutableAndFree();
+                }
+            }
+
+            // If we didn't find a dominator, we didn't shrink the list, so
+            // we have to return the original unshrunk list here.
+            return candidateInstances;
+        }
+
+        #endregion Third pass
     }
 }
