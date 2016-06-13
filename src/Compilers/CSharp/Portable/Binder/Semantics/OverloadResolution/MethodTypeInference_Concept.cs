@@ -63,11 +63,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                success = TryInferConceptWitness(j, allInstances, fixedMap, boundParams);
-
-                if (!success) break;
+                var maybeFixed = TryInferConceptWitness(_methodTypeParameters[j], allInstances, fixedMap, boundParams);
+                if (maybeFixed == null) break;
+                Debug.Assert(maybeFixed != null && maybeFixed.IsInstanceType());
+                _fixedResults[j] = maybeFixed;
             }
-            
+
             return success;
         }
 
@@ -127,10 +128,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         /// <summary>
-        /// Tries to infer the concept witness at the given index.
+        /// Tries to infer the concept witness for the given type parameter.
         /// </summary>
-        /// <param name="index">
-        /// The index of the concept witness to infer.
+        /// <param name="typeParam">
+        /// The type parameter of the concept witness to infer.
         /// </param>
         /// <param name="allInstances">
         /// The set of instances available for this witness.
@@ -143,10 +144,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// containing scope, and thus cannot be substituted by unification.
         /// </param>
         /// <returns>
-        /// True if the witness was inferred and fixed in the parameter set;
-        /// false otherwise.
+        /// Null if inference failed; else, the inferred concept instance.
         /// </returns>
-        private bool TryInferConceptWitness(int index,
+        private TypeSymbol TryInferConceptWitness(TypeParameterSymbol typeParam,
             ImmutableArray<TypeSymbol> allInstances,
             MutableTypeMap fixedMap,
             ImmutableHashSet<TypeParameterSymbol> boundParams)
@@ -170,10 +170,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             //
             // If we have multiple satisfying instances, or zero, we fail.
 
-            // TODO: We don't yet have #2, so we presume that if we have any
-            // concept-witness type parameters we've failed.
+        // TODO: We don't yet have #2, so we presume that if we have any
+        // concept-witness type parameters we've failed.
 
-            var requiredConcepts = this.GetRequiredConceptsFor(index, fixedMap);
+        var requiredConcepts = this.GetRequiredConceptsFor(typeParam, fixedMap);
 
             // First, collect all of the instances satisfying 1).
             var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
@@ -197,7 +197,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // However, if we have more than one candidate instance at this
             // point, we shouldn't bail until we've made sure only one of them
             // passes 2).
-            if (firstPassInstances.IsEmpty) return false;
+            if (firstPassInstances.IsEmpty) return null;
 
             // TODO: implement the next phase properly
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
@@ -226,9 +226,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             var secondPassInstances = secondPassInstanceBuilder.ToImmutableAndFree();
 
             // Either ambiguity, or an outright lack of inference success.
-            if (secondPassInstances.Length != 1) return false;
-            _fixedResults[index] = secondPassInstances[0];
-            return true;
+            if (secondPassInstances.Length != 1) return null;
+            return secondPassInstances[0];
         }
 
         /// <summary>
@@ -291,18 +290,18 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         /// <summary>
         /// Deduces the set of concepts that must be implemented by any witness
-        /// supplied to the given type parameter index.
+        /// supplied to the given type parameter.
         /// </summary>
-        /// <param name="index">
-        /// The index of the type parameter being inferred.
+        /// <param name="typeParam">
+        /// The type parameter being inferred.
         /// </param>
         /// <param name="fixedMap">
         /// A map mapping fixed type parameters to their type arguments.
         /// </param>
         /// <returns></returns>
-        private ImmutableArray<TypeSymbol> GetRequiredConceptsFor(int index, MutableTypeMap fixedMap)
+        private ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
         {
-            var rawRequiredConcepts = this._methodTypeParameters[index].AllEffectiveInterfacesNoUseSiteDiagnostics;
+            var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
 
             // The concepts from above are in terms of the method's type
             // parameters.  In order to be able to unify properly, we need to
