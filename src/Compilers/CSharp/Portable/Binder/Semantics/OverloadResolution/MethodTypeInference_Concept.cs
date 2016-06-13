@@ -362,7 +362,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 var needed = true;
                 foreach (var c2 in rc)
                 {
-                    if (c1.ImplementsInterface(c2, ref unused))
+                    if (c2.ImplementsInterface(c1, ref unused))
                     {
                         needed = false;
                         break;
