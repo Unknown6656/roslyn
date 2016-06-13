@@ -41,7 +41,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // First, make sure every unfixed type parameter is a concept, and
             // that we know where they all are so we can infer them later.
             var conceptIndexBuilder = new ArrayBuilder<int>();
-            if (!GetUnfixedConceptWitnesses(ref conceptIndexBuilder)) return false;
+            if (!GetMethodUnfixedConceptWitnesses(ref conceptIndexBuilder)) return false;
             var conceptIndices = conceptIndexBuilder.ToImmutableAndFree();
 
             // If we got this far, we should have at least something to infer.
@@ -52,7 +52,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // are checking something on the method definition, but need it
             // in terms of our fixed type arguments, we must make a mapping
             // from parameters to arguments.
-            var fixedMap = this.MakeFixedMap();
+            var fixedMap = this.MakeMethodFixedMap();
 
             // TODO: Ideally this should be cached at some point, perhaps on the
             // compilation or binder.
@@ -72,328 +72,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             return success;
         }
 
-        /// <summary>
-        /// Finds all of the type parameters in a given scope that have been
-        /// bound by methods or classes.
-        /// </summary>
-        /// <param name="binder">
-        /// The binder providing scope for this query.
-        /// </param>
-        /// <returns>
-        /// </returns>
-        private ImmutableHashSet<TypeParameterSymbol> GetAlreadyBoundTypeParameters(Binder binder)
-        {
-            // TODO: combine with other binder traversal?
-            var tps = new ArrayBuilder<TypeParameterSymbol>();
-
-            for (var b = binder; b != null; b = b.Next)
-            {
-                var container = b.ContainingMemberOrLambda;
-                if (container == null ||
-                    !(container.Kind == SymbolKind.NamedType || container.Kind == SymbolKind.Method)) continue;
-
-                var containertps =
-                    ((container as MethodSymbol)?.TypeParameters)
-                    ?? ((container as NamedTypeSymbol)?.TypeParameters)
-                    ?? ImmutableArray<TypeParameterSymbol>.Empty;
-
-                tps.AddRange(containertps);
-            }
-
-            // TODO: We're doing something wrong here that is causing duplicates.
-            tps.RemoveDuplicates();
-            return tps.ToImmutableAndFree().ToImmutableHashSet();
-        }
-
-        /// <summary>
-        /// Constructs a map from fixed method type parameters to their
-        /// inferred arguments.
-        /// </summary>
-        /// <returns>
-        /// A map mapping each fixed parameter to its argument.
-        /// </returns>
-        private MutableTypeMap MakeFixedMap()
-        {
-            MutableTypeMap mt = new MutableTypeMap();
-
-            for (int i = 0; i < _methodTypeParameters.Length; i++)
-            {
-                if (_fixedResults[i] != null)
-                {
-                    mt.Add(_methodTypeParameters[i], new TypeWithModifiers(_fixedResults[i]));
-                }
-            }
-
-            return mt;
-        }
-
-        /// <summary>
-        /// Tries to infer the concept witness for the given type parameter.
-        /// </summary>
-        /// <param name="typeParam">
-        /// The type parameter of the concept witness to infer.
-        /// </param>
-        /// <param name="allInstances">
-        /// The set of instances available for this witness.
-        /// </param>
-        /// <param name="fixedMap">
-        /// The map from fixed type parameters to their arguments.
-        /// </param>
-        /// <param name="boundParams">
-        /// A list of all type parameters that have been bound by the
-        /// containing scope, and thus cannot be substituted by unification.
-        /// </param>
-        /// <returns>
-        /// Null if inference failed; else, the inferred concept instance.
-        /// </returns>
-        private TypeSymbol TryInferConceptWitness(TypeParameterSymbol typeParam,
-            ImmutableArray<TypeSymbol> allInstances,
-            MutableTypeMap fixedMap,
-            ImmutableHashSet<TypeParameterSymbol> boundParams)
-        {
-            // @t-mawind
-            // An instance satisfies inference if:
-            //
-            // 1) for all concepts required by the type parameter, at least
-            //    one concept on the witness unifies with that concept without
-            //    capturing bound type parameters;
-            // 2) all of the type parameters of that instance can be bound,
-            //    both by the substitutions from the unification above and also
-            //    by recursively trying to infer any missing concept witnesses.
-            //
-            // The first part is equivalent to establishing
-            //    witness :- instance.
-            //
-            // The second part is equivalent to resolving
-            //    instance :- dependency1; dependency2; ...
-            // by trying to establish the dependencies as separare queries.
-            //
-            // If we have multiple satisfying instances, or zero, we fail.
-
-            // TODO: We don't yet have #2, so we presume that if we have any
-            // concept-witness type parameters we've failed.
-
-            var requiredConcepts = this.GetRequiredConceptsFor(typeParam, fixedMap);
-
-            // First, collect all of the instances satisfying 1).
-            var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
-            foreach (var instance in allInstances)
-            {
-                MutableTypeMap unifyingSubstitutions = new MutableTypeMap();
-                if (AllRequiredConceptsProvided(requiredConcepts, instance, boundParams, ref unifyingSubstitutions))
-                {
-                    // The unification may have provided us with substitutions
-                    // that were needed to make the provided concepts fit the
-                    // required concepts.
-                    //
-                    // It may be that some of these substitutions also need to
-                    // apply to the actual instance so it can satisfy #2.
-                    var result = unifyingSubstitutions.SubstituteType(instance).AsTypeSymbolOnly();
-                    firstPassInstanceBuilder.Add(result);
-                }
-            }
-            var firstPassInstances = firstPassInstanceBuilder.ToImmutableAndFree();
-            // We can't infer if none of the instances implement our concept!
-            // However, if we have more than one candidate instance at this
-            // point, we shouldn't bail until we've made sure only one of them
-            // passes 2).
-            if (firstPassInstances.IsEmpty) return null;
-
-            var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
-            foreach (var instance in firstPassInstances)
-            {
-                // Assumption: no witness parameter can depend on any other
-                // witness parameter, so we can do recursive inference in
-                // one pass.
-                var unfixedWitnessBuilder = new ArrayBuilder<TypeParameterSymbol>();
-                if (!FindUnfixedWitnesses(instance, ref unfixedWitnessBuilder))
-                {
-                    // This instance has some unfixed non-witness type
-                    // parameters.  We can't infer these, so give up on this
-                    // candidate instance.
-                    continue;
-                }
-                var unfixedWitnesses = unfixedWitnessBuilder.ToImmutableAndFree();
-
-                // If there were no unfixed witnesses, we don't need to bother
-                // with recursive inference--there's nothing to infer!
-                if (!unfixedWitnesses.IsEmpty)
-                {
-                    var success = false;
-                    // TODO: do stuff here
-
-                    // We couldn't infer all of the witnesses.  By our
-                    // assumption, we can't infer anything more on this
-                    // instance, so we give up on it.
-                    if (!success) continue;
-                }
-
-                // If we got this far, the instance _should_ have no unfixed
-                // parameters, and can now be considered as a candidate for
-                // inference.
-                secondPassInstanceBuilder.Add(instance);
-            }
-            var secondPassInstances = secondPassInstanceBuilder.ToImmutableAndFree();
-
-            // Either ambiguity, or an outright lack of inference success.
-            if (secondPassInstances.Length != 1) return null;
-            return secondPassInstances[0];
-        }
-
-        /// <summary>
-        /// Tries to find all unfixed type parameters in a candidate instance,
-        /// adds those which are witnesses to a list, and fails if any is not
-        /// a witness.
-        /// </summary>
-        /// <param name="instance">
-        /// The candidate instance to investigate.
-        /// </param>
-        /// <param name="unfixed">
-        /// The list of unfixed witness parameters to populate.
-        /// </param>
-        /// <returns>
-        /// True if we didn't see any unfixed non-witness type parameters,
-        /// which is a blocker on accepting <paramref name="instance"/> as a
-        /// witness; false otherwise.
-        /// </returns>
-        bool FindUnfixedWitnesses(TypeSymbol instance, ref ArrayBuilder<TypeParameterSymbol> unfixed)
-        {
-            Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
-
-            // Only named types (ie instance declarations) can contain
-            // unresolved concept witnesses.
-            if (instance.Kind != SymbolKind.NamedType) return true;
-
-            var nt = (NamedTypeSymbol)instance;
-            var targs = nt.TypeArguments;
-            var tpars = nt.TypeParameters;
-            for (int i = 0; i < tpars.Length; i++)
-            {
-                // If a type parameter is its own argument, we assume this
-                // means it hasn't yet been fixed.
-                if (tpars[i] == targs[i])
-                {
-                    if (tpars[i].IsConceptWitness)
-                    {
-                        unfixed.Add(tpars[i]);
-                    }
-                    else
-                    {
-                        // This is an unfixed non-witness, which kills off our
-                        // attempt to use this instance completely.
-                        return false;
-                    }
-                }
-            }
-
-            // If we got here, then we haven't seen any unfixed non-witnesses.
-            return true;
-        }
-
-        /// <summary>
-        /// Checks whether a list of required concepts is implemented by a
-        /// candidate instance modulo unifying substitutions.
-        /// <para>
-        /// We don't check yet that the instance itself is satisfiable, just that
-        /// it will satisfy our concept list if it is.
-        /// </para>
-        /// </summary>
-        /// <param name="requiredConcepts">
-        /// The list of required concepts to implement.
-        /// </param>
-        /// <param name="instance">
-        /// The candidate instance.
-        /// </param>
-        /// <param name="boundParams">
-        /// A list of all type parameters that have been bound by the
-        /// containing scope, and thus cannot be substituted by unification.
-        /// </param>
-        /// <param name="unifyingSubstitutions">
-        /// A map of type substitutions, populated by this method, which are
-        /// required in order to make the instance implement the concepts.
-        /// </param>
-        /// <returns>
-        /// True if, and only if, the given instance implements the given list
-        /// of concepts.
-        /// </returns>
-        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
-                                                 TypeSymbol instance,
-                                                 ImmutableHashSet<TypeParameterSymbol> boundParams,
-                                                 ref MutableTypeMap unifyingSubstitutions)
-        {
-            var providedConcepts =
-                ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
-                 ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
-                 ?? ImmutableArray<NamedTypeSymbol>.Empty);
-
-            foreach (var requiredConcept in requiredConcepts)
-            {
-                bool thisProvided = false;
-                foreach (var providedConcept in providedConcepts)
-                {
-                    if (TypeUnification.CanUnify(providedConcept,
-                            requiredConcept,
-                            ref unifyingSubstitutions,
-                            boundParams))
-                    {
-                        thisProvided = true;
-                        break;
-                    }
-                }
-
-                if (!thisProvided) return false;
-            }
-
-            // If we got here, all required concepts must have been provided.
-            return true;
-        }
-
-        /// <summary>
-        /// Deduces the set of concepts that must be implemented by any witness
-        /// supplied to the given type parameter.
-        /// </summary>
-        /// <param name="typeParam">
-        /// The type parameter being inferred.
-        /// </param>
-        /// <param name="fixedMap">
-        /// A map mapping fixed type parameters to their type arguments.
-        /// </param>
-        /// <returns></returns>
-        private ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
-        {
-            var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
-
-            // The concepts from above are in terms of the method's type
-            // parameters.  In order to be able to unify properly, we need to
-            // substitute the inferences we've made so far.
-            var rc = new ArrayBuilder<TypeSymbol>();
-            foreach (var con in rawRequiredConcepts)
-            {
-                rc.Add(fixedMap.SubstituteType(con).AsTypeSymbolOnly());
-            }
-
-            var unused = new HashSet<DiagnosticInfo>();
-
-            // Now we can do some optimisation: if we're asking for a concept,
-            // we don't need to ask for its base concepts.
-            var rc2 = new ArrayBuilder<TypeSymbol>();
-            foreach (var c1 in rc)
-            {
-                var needed = true;
-                foreach (var c2 in rc)
-                {
-                    if (c1.ImplementsInterface(c2, ref unused))
-                    {
-                        needed = false;
-                        break;
-                    }
-                }
-                if (needed) rc2.Add(c1);
-            }
-
-            rc.Free();
-            return rc2.ToImmutableAndFree();
-        }
+        #region Setup
 
         /// <summary>
         /// Checks that every unfixed type parameter is a concept witness, and
@@ -406,7 +85,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, every unfixed type parameter is a concept
         /// witness.
         /// </returns>
-        private bool GetUnfixedConceptWitnesses(ref ArrayBuilder<int> indices)
+        private bool GetMethodUnfixedConceptWitnesses(ref ArrayBuilder<int> indices)
         {
             for (int i = 0; i < _methodTypeParameters.Length; i++)
             {
@@ -417,6 +96,28 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
             return true;
+        }
+
+        /// <summary>
+        /// Constructs a map from fixed method type parameters to their
+        /// inferred arguments.
+        /// </summary>
+        /// <returns>
+        /// A map mapping each fixed parameter to its argument.
+        /// </returns>
+        private MutableTypeMap MakeMethodFixedMap()
+        {
+            MutableTypeMap mt = new MutableTypeMap();
+
+            for (int i = 0; i < _methodTypeParameters.Length; i++)
+            {
+                if (_fixedResults[i] != null)
+                {
+                    mt.Add(_methodTypeParameters[i], new TypeWithModifiers(_fixedResults[i]));
+                }
+            }
+
+            return mt;
         }
 
         /// <summary>
@@ -518,5 +219,410 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
         }
+
+        /// <summary>
+        /// Finds all of the type parameters in a given scope that have been
+        /// bound by methods or classes.
+        /// </summary>
+        /// <param name="binder">
+        /// The binder providing scope for this query.
+        /// </param>
+        /// <returns>
+        /// </returns>
+        private ImmutableHashSet<TypeParameterSymbol> GetAlreadyBoundTypeParameters(Binder binder)
+        {
+            // TODO: combine with other binder traversal?
+            var tps = new ArrayBuilder<TypeParameterSymbol>();
+
+            for (var b = binder; b != null; b = b.Next)
+            {
+                var container = b.ContainingMemberOrLambda;
+                if (container == null ||
+                    !(container.Kind == SymbolKind.NamedType || container.Kind == SymbolKind.Method)) continue;
+
+                var containertps =
+                    ((container as MethodSymbol)?.TypeParameters)
+                    ?? ((container as NamedTypeSymbol)?.TypeParameters)
+                    ?? ImmutableArray<TypeParameterSymbol>.Empty;
+
+                tps.AddRange(containertps);
+            }
+
+            // TODO: We're doing something wrong here that is causing duplicates.
+            tps.RemoveDuplicates();
+            return tps.ToImmutableAndFree().ToImmutableHashSet();
+        }
+
+        #endregion Setup
+        #region Main driver
+
+        /// <summary>
+        /// Tries to infer the concept witness for the given type parameter.
+        /// </summary>
+        /// <param name="typeParam">
+        /// The type parameter of the concept witness to infer.
+        /// </param>
+        /// <param name="allInstances">
+        /// The set of instances available for this witness.
+        /// </param>
+        /// <param name="fixedMap">
+        /// The map from fixed type parameters to their arguments.
+        /// </param>
+        /// <param name="boundParams">
+        /// A list of all type parameters that have been bound by the
+        /// containing scope, and thus cannot be substituted by unification.
+        /// </param>
+        /// <returns>
+        /// Null if inference failed; else, the inferred concept instance.
+        /// </returns>
+        private TypeSymbol TryInferConceptWitness(TypeParameterSymbol typeParam,
+            ImmutableArray<TypeSymbol> allInstances,
+            MutableTypeMap fixedMap,
+            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        {
+            // @t-mawind
+            // An instance satisfies inference if:
+            //
+            // 1) for all concepts required by the type parameter, at least
+            //    one concept on the witness unifies with that concept without
+            //    capturing bound type parameters;
+            // 2) all of the type parameters of that instance can be bound,
+            //    both by the substitutions from the unification above and also
+            //    by recursively trying to infer any missing concept witnesses.
+            //
+            // The first part is equivalent to establishing
+            //    witness :- instance.
+            //
+            // The second part is equivalent to resolving
+            //    instance :- dependency1; dependency2; ...
+            // by trying to establish the dependencies as separare queries.
+            //
+            // If we have multiple satisfying instances, or zero, we fail.
+
+            // TODO: We don't yet have #2, so we presume that if we have any
+            // concept-witness type parameters we've failed.
+
+            var requiredConcepts = this.GetRequiredConceptsFor(typeParam, fixedMap);
+            var firstPassInstances = this.TryInferConceptWitnessFirstPass(allInstances, requiredConcepts, boundParams);
+
+            // We can't infer if none of the instances implement our concept!
+            // However, if we have more than one candidate instance at this
+            // point, we shouldn't bail until we've made sure only one of them
+            // passes 2).
+            if (firstPassInstances.IsEmpty) return null;
+
+            var secondPassInstances = this.TryInferConceptWitnessSecondPass(firstPassInstances, allInstances, boundParams);
+
+            // Either ambiguity, or an outright lack of inference success.
+            if (secondPassInstances.Length != 1) return null;
+            return secondPassInstances[0];
+        }
+
+        /// <summary>
+        /// Deduces the set of concepts that must be implemented by any witness
+        /// supplied to the given type parameter.
+        /// </summary>
+        /// <param name="typeParam">
+        /// The type parameter being inferred.
+        /// </param>
+        /// <param name="fixedMap">
+        /// A map mapping fixed type parameters to their type arguments.
+        /// </param>
+        /// <returns>
+        /// An array of concepts required by <paramref name="typeParam"/>.
+        /// </returns>
+        private ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
+        {
+            var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
+
+            // The concepts from above are in terms of the method's type
+            // parameters.  In order to be able to unify properly, we need to
+            // substitute the inferences we've made so far.
+            var rc = new ArrayBuilder<TypeSymbol>();
+            foreach (var con in rawRequiredConcepts)
+            {
+                rc.Add(fixedMap.SubstituteType(con).AsTypeSymbolOnly());
+            }
+
+            var unused = new HashSet<DiagnosticInfo>();
+
+            // Now we can do some optimisation: if we're asking for a concept,
+            // we don't need to ask for its base concepts.
+            var rc2 = new ArrayBuilder<TypeSymbol>();
+            foreach (var c1 in rc)
+            {
+                var needed = true;
+                foreach (var c2 in rc)
+                {
+                    if (c1.ImplementsInterface(c2, ref unused))
+                    {
+                        needed = false;
+                        break;
+                    }
+                }
+                if (needed) rc2.Add(c1);
+            }
+
+            rc.Free();
+            return rc2.ToImmutableAndFree();
+        }
+
+        #endregion Main driver
+        #region First pass
+
+        /// <summary>
+        /// Performs the first pass of concept witness type inference.
+        /// <para>
+        /// This pass filters down a list of all possible instances into a set
+        /// of candidate instances, such that each candidate instance
+        /// implements all of the concepts required by the parameter being
+        /// inferred.
+        /// </para>
+        /// </summary>
+        /// <param name="allInstances">
+        /// The set of instances available for this witness.
+        /// </param>
+        /// <param name="requiredConcepts">
+        /// The list of concepts required by the type parameter being inferred.
+        /// </param>
+        /// <param name="boundParams">
+        /// A list of all type parameters that have been bound by the
+        /// containing scope, and thus cannot be substituted by unification.
+        /// </param>
+        /// <returns>
+        /// An array of candidate instances after the first pass.
+        /// </returns>
+        private ImmutableArray<TypeSymbol> TryInferConceptWitnessFirstPass(ImmutableArray<TypeSymbol> allInstances,
+            ImmutableArray<TypeSymbol> requiredConcepts,
+            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        {
+            // First, collect all of the instances satisfying 1).
+            var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
+            foreach (var instance in allInstances)
+            {
+                MutableTypeMap unifyingSubstitutions = new MutableTypeMap();
+                if (AllRequiredConceptsProvided(requiredConcepts, instance, boundParams, ref unifyingSubstitutions))
+                {
+                    // The unification may have provided us with substitutions
+                    // that were needed to make the provided concepts fit the
+                    // required concepts.
+                    //
+                    // It may be that some of these substitutions also need to
+                    // apply to the actual instance so it can satisfy #2.
+                    var result = unifyingSubstitutions.SubstituteType(instance).AsTypeSymbolOnly();
+                    firstPassInstanceBuilder.Add(result);
+                }
+            }
+            return firstPassInstanceBuilder.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Checks whether a list of required concepts is implemented by a
+        /// candidate instance modulo unifying substitutions.
+        /// <para>
+        /// We don't check yet that the instance itself is satisfiable, just that
+        /// it will satisfy our concept list if it is.
+        /// </para>
+        /// </summary>
+        /// <param name="requiredConcepts">
+        /// The list of required concepts to implement.
+        /// </param>
+        /// <param name="instance">
+        /// The candidate instance.
+        /// </param>
+        /// <param name="boundParams">
+        /// A list of all type parameters that have been bound by the
+        /// containing scope, and thus cannot be substituted by unification.
+        /// </param>
+        /// <param name="unifyingSubstitutions">
+        /// A map of type substitutions, populated by this method, which are
+        /// required in order to make the instance implement the concepts.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, the given instance implements the given list
+        /// of concepts.
+        /// </returns>
+        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
+                                                 TypeSymbol instance,
+                                                 ImmutableHashSet<TypeParameterSymbol> boundParams,
+                                                 ref MutableTypeMap unifyingSubstitutions)
+        {
+            var providedConcepts =
+                ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
+                 ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
+                 ?? ImmutableArray<NamedTypeSymbol>.Empty);
+
+            foreach (var requiredConcept in requiredConcepts)
+            {
+                bool thisProvided = false;
+                foreach (var providedConcept in providedConcepts)
+                {
+                    if (TypeUnification.CanUnify(providedConcept,
+                            requiredConcept,
+                            ref unifyingSubstitutions,
+                            boundParams))
+                    {
+                        thisProvided = true;
+                        break;
+                    }
+                }
+
+                if (!thisProvided) return false;
+            }
+
+            // If we got here, all required concepts must have been provided.
+            return true;
+        }
+
+        #endregion First pass
+        #region Second pass
+
+        /// <summary>
+        /// Performs the second pass of concept witness type inference.
+        /// <para>
+        /// This pass tries to fix any witness parameters in each candidate
+        /// instance, eliminating it if it either has unfixed non-witness
+        /// parameters, or the witness parameters cannot be fixed.  To do this,
+        /// it recursively begins inference on the missing witnesses.
+        /// </para>
+        /// </summary>
+        /// <param name="candidateInstances">
+        /// The set of candidate instances after the first pass.
+        /// </param>
+        /// <param name="allInstances">
+        /// The original list of all instances, used for recursive calls.
+        /// </param>
+        /// <param name="boundParams">
+        /// A list of all type parameters that have been bound by the
+        /// containing scope, and thus cannot be substituted by unification.
+        /// </param>
+        /// <returns>
+        /// An array of candidate instances after the first pass.
+        /// </returns>
+        private ImmutableArray<TypeSymbol> TryInferConceptWitnessSecondPass(ImmutableArray<TypeSymbol> candidateInstances,
+            ImmutableArray<TypeSymbol> allInstances,
+            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        {
+            var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
+            foreach (var instance in candidateInstances)
+            {
+                // Assumption: no witness parameter can depend on any other
+                // witness parameter, so we can do recursive inference in
+                // one pass.
+                var unfixedWitnessBuilder = new ArrayBuilder<TypeParameterSymbol>();
+                if (!GetRecursiveUnfixedConceptWitnesses(instance, ref unfixedWitnessBuilder))
+                {
+                    // This instance has some unfixed non-witness type
+                    // parameters.  We can't infer these, so give up on this
+                    // candidate instance.
+                    continue;
+                }
+                var unfixedWitnesses = unfixedWitnessBuilder.ToImmutableAndFree();
+
+                var fixedInstance = instance;
+                // If there were no unfixed witnesses, we don't need to bother
+                // with recursive inference--there's nothing to infer!
+                if (!unfixedWitnesses.IsEmpty)
+                {
+                    // Type parameters can't have unfixed witnesses.
+                    Debug.Assert(instance.Kind == SymbolKind.NamedType);
+                    var nt = (NamedTypeSymbol)instance;
+
+                    // To do recursive inference, we need to supply the current
+                    // fixed type parameters as a type map again.
+                    var recurFixedMap = new MutableTypeMap();
+                    var targs = nt.TypeArguments;
+                    var tpars = nt.TypeParameters;
+                    for (int i = 0; i < tpars.Length; i++)
+                    {
+                        if (tpars[i] != targs[i]) recurFixedMap.Add(tpars[i], new TypeWithModifiers(targs[i]));
+                    }
+
+                    // Now try to infer the unfixed witnesses, recursively.
+                    // TODO: can this be flattened into an iterative process?
+                    // It shouldn't be a massive performance or stack issue,
+                    // but still...
+                    var success = true;
+                    var recurSubstMap = new MutableTypeMap();
+                    foreach (var unfixed in unfixedWitnesses)
+                    {
+                        var maybeFixed = TryInferConceptWitness(unfixed, allInstances, recurFixedMap, boundParams);
+                        if (maybeFixed == null)
+                        {
+                            success = false;
+                            break;
+                        }
+                        recurSubstMap.Add(unfixed, new TypeWithModifiers(maybeFixed));
+                    }
+
+                    // We couldn't infer all of the witnesses.  By our
+                    // assumption, we can't infer anything more on this
+                    // instance, so we give up on it.
+                    if (!success) continue;
+
+                    // Else, we now have a map that should fix all of the
+                    // remaining parameters.
+                    fixedInstance = recurSubstMap.SubstituteType(instance).AsTypeSymbolOnly();
+                }
+
+                // If we got this far, the instance _should_ have no unfixed
+                // parameters, and can now be considered as a candidate for
+                // inference.
+                secondPassInstanceBuilder.Add(fixedInstance);
+            }
+            return secondPassInstanceBuilder.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Tries to find all unfixed type parameters in a candidate instance,
+        /// adds those which are witnesses to a list, and fails if any is not
+        /// a witness.
+        /// </summary>
+        /// <param name="instance">
+        /// The candidate instance to investigate.
+        /// </param>
+        /// <param name="unfixed">
+        /// The list of unfixed witness parameters to populate.
+        /// </param>
+        /// <returns>
+        /// True if we didn't see any unfixed non-witness type parameters,
+        /// which is a blocker on accepting <paramref name="instance"/> as a
+        /// witness; false otherwise.
+        /// </returns>
+        private bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, ref ArrayBuilder<TypeParameterSymbol> unfixed)
+        {
+            Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
+
+            // Only named types (ie instance declarations) can contain
+            // unresolved concept witnesses.
+            if (instance.Kind != SymbolKind.NamedType) return true;
+
+            var nt = (NamedTypeSymbol)instance;
+            var targs = nt.TypeArguments;
+            var tpars = nt.TypeParameters;
+            for (int i = 0; i < tpars.Length; i++)
+            {
+                // If a type parameter is its own argument, we assume this
+                // means it hasn't yet been fixed.
+                if (tpars[i] == targs[i])
+                {
+                    if (tpars[i].IsConceptWitness)
+                    {
+                        unfixed.Add(tpars[i]);
+                    }
+                    else
+                    {
+                        // This is an unfixed non-witness, which kills off our
+                        // attempt to use this instance completely.
+                        return false;
+                    }
+                }
+            }
+
+            // If we got here, then we haven't seen any unfixed non-witnesses.
+            return true;
+        }
+
+        #endregion Second pass
     }
 }
