@@ -64,7 +64,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             foreach (int j in conceptIndices)
             {
                 var maybeFixed = TryInferConceptWitness(_methodTypeParameters[j], allInstances, fixedMap, boundParams);
-                if (maybeFixed == null) break;
+                if (maybeFixed == null) return false;
                 Debug.Assert(maybeFixed != null && maybeFixed.IsInstanceType());
                 _fixedResults[j] = maybeFixed;
             }
@@ -170,10 +170,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             //
             // If we have multiple satisfying instances, or zero, we fail.
 
-        // TODO: We don't yet have #2, so we presume that if we have any
-        // concept-witness type parameters we've failed.
+            // TODO: We don't yet have #2, so we presume that if we have any
+            // concept-witness type parameters we've failed.
 
-        var requiredConcepts = this.GetRequiredConceptsFor(typeParam, fixedMap);
+            var requiredConcepts = this.GetRequiredConceptsFor(typeParam, fixedMap);
 
             // First, collect all of the instances satisfying 1).
             var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
@@ -199,35 +199,95 @@ namespace Microsoft.CodeAnalysis.CSharp
             // passes 2).
             if (firstPassInstances.IsEmpty) return null;
 
-            // TODO: implement the next phase properly
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in firstPassInstances)
             {
-                var hasUnfixedWitnesses = false;
-                // Only named types (ie instance declarations) can contain
-                // unresolved concept witnesses.
-                if (instance.Kind == SymbolKind.NamedType)
+                // Assumption: no witness parameter can depend on any other
+                // witness parameter, so we can do recursive inference in
+                // one pass.
+                var unfixedWitnessBuilder = new ArrayBuilder<TypeParameterSymbol>();
+                if (!FindUnfixedWitnesses(instance, ref unfixedWitnessBuilder))
                 {
-                    var nt = (NamedTypeSymbol)instance;
-                    var targs = nt.TypeArguments;
-                    var tpars = nt.TypeParameters;
-                    for (int i = 0; i < tpars.Length; i++)
-                    {
-                        if (tpars[i].IsConceptWitness && tpars[i] == targs[i])
-                        {
-                            // TODO: try to infer this
-                            hasUnfixedWitnesses = true;
-                        }
-                    }
+                    // This instance has some unfixed non-witness type
+                    // parameters.  We can't infer these, so give up on this
+                    // candidate instance.
+                    continue;
+                }
+                var unfixedWitnesses = unfixedWitnessBuilder.ToImmutableAndFree();
+
+                // If there were no unfixed witnesses, we don't need to bother
+                // with recursive inference--there's nothing to infer!
+                if (!unfixedWitnesses.IsEmpty)
+                {
+                    var success = false;
+                    // TODO: do stuff here
+
+                    // We couldn't infer all of the witnesses.  By our
+                    // assumption, we can't infer anything more on this
+                    // instance, so we give up on it.
+                    if (!success) continue;
                 }
 
-                if (!hasUnfixedWitnesses) secondPassInstanceBuilder.Add(instance);
+                // If we got this far, the instance _should_ have no unfixed
+                // parameters, and can now be considered as a candidate for
+                // inference.
+                secondPassInstanceBuilder.Add(instance);
             }
             var secondPassInstances = secondPassInstanceBuilder.ToImmutableAndFree();
 
             // Either ambiguity, or an outright lack of inference success.
             if (secondPassInstances.Length != 1) return null;
             return secondPassInstances[0];
+        }
+
+        /// <summary>
+        /// Tries to find all unfixed type parameters in a candidate instance,
+        /// adds those which are witnesses to a list, and fails if any is not
+        /// a witness.
+        /// </summary>
+        /// <param name="instance">
+        /// The candidate instance to investigate.
+        /// </param>
+        /// <param name="unfixed">
+        /// The list of unfixed witness parameters to populate.
+        /// </param>
+        /// <returns>
+        /// True if we didn't see any unfixed non-witness type parameters,
+        /// which is a blocker on accepting <paramref name="instance"/> as a
+        /// witness; false otherwise.
+        /// </returns>
+        bool FindUnfixedWitnesses(TypeSymbol instance, ref ArrayBuilder<TypeParameterSymbol> unfixed)
+        {
+            Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
+
+            // Only named types (ie instance declarations) can contain
+            // unresolved concept witnesses.
+            if (instance.Kind != SymbolKind.NamedType) return true;
+
+            var nt = (NamedTypeSymbol)instance;
+            var targs = nt.TypeArguments;
+            var tpars = nt.TypeParameters;
+            for (int i = 0; i < tpars.Length; i++)
+            {
+                // If a type parameter is its own argument, we assume this
+                // means it hasn't yet been fixed.
+                if (tpars[i] == targs[i])
+                {
+                    if (tpars[i].IsConceptWitness)
+                    {
+                        unfixed.Add(tpars[i]);
+                    }
+                    else
+                    {
+                        // This is an unfixed non-witness, which kills off our
+                        // attempt to use this instance completely.
+                        return false;
+                    }
+                }
+            }
+
+            // If we got here, then we haven't seen any unfixed non-witnesses.
+            return true;
         }
 
         /// <summary>
