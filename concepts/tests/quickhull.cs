@@ -142,25 +142,6 @@ public struct Line<A>
     }
 
     /// <summary>
-    ///     Decides whether two points are on the same side of a line.
-    /// </summary>
-    /// <param name="p1">
-    ///     The first point to consider.
-    /// </param>
-    /// <param name="p2">
-    ///     The second point to consider.
-    /// </param>
-    /// <returns>
-    ///     True if the two points are on the same side of the line.
-    /// </returns>
-    public bool SameSide(Point<A> p1, Point<A> p2)
-        where OrdA : Ord<A>
-        where NumA : Num<A>
-    {
-        return OnRight(p1) == OnRight(p2);
-    }
-
-    /// <summary>
     ///     Calculates the distance from a point to this line.
     /// </summary>
     /// <param name="point">
@@ -406,9 +387,7 @@ public class Quickhull<A>
     {
         if (points.Count == 0) return;
 
-        var outlier = MaximumBy<A, Point<A>, OrdA>(
-            points, (x) => line.PointDistance(x)
-        );
+        var outlier = MaximumBy(points, (x) => line.PointDistance(x));
         _hull.Add(outlier);
 
         var ac = new Line<A> { P1 = line.P1, P2 = outlier };
@@ -505,7 +484,7 @@ public class QuickhullDriver
 
         var hull = new Quickhull<double>(pts);
         // TODO: improve inference here.
-        hull.Run<OrdDouble, FloatingDouble>();
+        hull.Run();
 
         Draw(hull.Points, Color.Green);
         Draw(hull.Lines, Color.Red);
