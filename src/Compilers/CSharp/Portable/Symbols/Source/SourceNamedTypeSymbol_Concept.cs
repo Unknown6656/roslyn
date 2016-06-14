@@ -18,9 +18,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         /// <returns>
         /// The number of constraints, which is an upper bound on the number
-        /// of implicit parameters, if this symbol was declared as an instance
-        /// in any source references.
-        /// Otherwise, 0.
+        /// of implicit parameters.
         /// </returns>
         private int MaxWitnesses()
         {
@@ -29,11 +27,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // There must be a better way...
             foreach (var syntaxRef in this.SyntaxReferences)
             {
-                var typeDecl = (CSharpSyntaxNode)syntaxRef.GetSyntax();
-                if (SyntaxFacts.IsTypeDeclaration(typeDecl.Kind()))
+                var typeDecl = syntaxRef.GetSyntax() as TypeDeclarationSyntax;
+                if (typeDecl != null)
                 {
-                    var instDecl = (TypeDeclarationSyntax)typeDecl;
-                    maxImplicits = Math.Max(maxImplicits, instDecl.ConstraintClauses.Count);
+                    maxImplicits = Math.Max(maxImplicits, typeDecl.ConstraintClauses.Count);
                 }
             }
 
