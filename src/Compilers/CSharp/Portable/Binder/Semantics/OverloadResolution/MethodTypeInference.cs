@@ -216,10 +216,14 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(!argumentTypes.IsDefault);
             Debug.Assert(!arguments.IsDefault && arguments.Length == argumentTypes.Length);
 
-            // Early out: if the method has no formal parameters then we know that inference will fail.
+            // Early out: if the method has no formal parameters then we know that inference will fail...
+            // ..unless the only type parameters to infer are concept witnesses (@t-mawind)
             if (formalParameterTypes.Length == 0)
             {
-                return new MethodTypeInferenceResult(false, default(ImmutableArray<TypeSymbol>));
+                foreach (var tp in methodTypeParameters)
+                {
+                    if (!tp.IsConceptWitness) return new MethodTypeInferenceResult(false, default(ImmutableArray<TypeSymbol>));
+                }
 
                 // UNDONE: OPTIMIZATION: We could check to see whether there is a type
                 // UNDONE: parameter which is never used in any formal parameter; if
