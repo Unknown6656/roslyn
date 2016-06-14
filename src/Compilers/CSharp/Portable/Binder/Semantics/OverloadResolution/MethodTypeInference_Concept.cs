@@ -54,11 +54,15 @@ namespace Microsoft.CodeAnalysis.CSharp
             // from parameters to arguments.
             var fixedMap = this.MakeMethodFixedMap();
 
+            // We need two things from the outer scope:
+            // 1) All instances visible to this method call;
+            // 2) All type parameters bound in the method and class.
+            // For efficiency, we do these in one go.
             // TODO: Ideally this should be cached at some point, perhaps on the
             // compilation or binder.
-            var allInstances = GetAllVisibleInstances(binder);
-
-            var boundParams = GetAlreadyBoundTypeParameters(binder);
+            ImmutableArray<TypeSymbol> allInstances;
+            ImmutableHashSet<TypeParameterSymbol> boundParams;
+            SearchScopeForInstancesAndParams(binder, out allInstances, out boundParams);
 
             bool success = true;
             foreach (int j in conceptIndices)
@@ -121,34 +125,46 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         /// <summary>
-        /// Gets a list of all instances in scope at the given binder.
+        /// Traverses the scope induced by the given binder for visible
+        /// instances and fixed type parameters
         /// </summary>
         /// <param name="binder">
         /// The binder providing scope for this query.
         /// </param>
-        /// <returns>
+        /// <param name="allInstances">
         /// An immutable array of symbols (either type parameters or named
         /// types) representing concept instances available in the scope
         /// of <paramref name="binder"/>.
-        /// </returns>
-        private ImmutableArray<TypeSymbol> GetAllVisibleInstances(Binder binder)
+        /// </param>
+        /// <param name="fixedParams">
+        /// An immutable array of symbols (either type parameters or named
+        /// types) representing concept instances available in the scope
+        /// of <paramref name="binder"/>.
+        /// </param>
+        private void SearchScopeForInstancesAndParams(Binder binder,
+            out ImmutableArray<TypeSymbol> allInstances,
+            out ImmutableHashSet<TypeParameterSymbol> fixedParams)
         {
-            var instances = new ArrayBuilder<TypeSymbol>();
+            var iBuilder = new ArrayBuilder<TypeSymbol>();
+            var fpBuilder = new HashSet<TypeParameterSymbol>();
 
-            for (var b = binder;
-                 b != null;
-                 b = b.Next)
+            // This is used to make sure we don't traverse the same container twice.
+            Symbol oldContainer = null;
+            for (var b = binder; b != null; b = b.Next)
             {
                 // ContainingMember crashes if we're in a BuckStopsHereBinder.
                 var container = b.ContainingMemberOrLambda;
-                if (container == null) continue;
+                if (container == null) break;
+                if (container == oldContainer) continue;
+                oldContainer = container;
 
                 // We can see two types of instance:
                 // 1) Any instances witnessed on a method or type between us and
-                //    the global namespace;
-                GetConstraintWitnessInstances(container, ref instances);
+                //    the global namespace (this is also where we can find
+                //    fixed type parameters);
+                SearchContainerForInstancesAndParams(container, ref iBuilder, ref fpBuilder);
                 // 2) Any visible named instance.  (See below, too).
-                GetNamedInstances(binder, container, ref instances);
+                GetNamedInstances(binder, container, ref iBuilder);
 
                 // The above is ok if we just want to get all instances in
                 // a straight line up the scope from here to the global
@@ -156,13 +172,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                 foreach (var u in b.GetImports(null).Usings)
                 {
                     // TODO: Do we need to recurse into nested types/namespaces?
-                    GetNamedInstances(binder, u.NamespaceOrType, ref instances);
+                    GetNamedInstances(binder, u.NamespaceOrType, ref iBuilder);
                 }
             }
 
-            // TODO: find out why we're getting duplicates in the first place.
-            instances.RemoveDuplicates();
-            return instances.ToImmutableAndFree();
+            allInstances = iBuilder.ToImmutableAndFree();
+            fixedParams = fpBuilder.ToImmutableHashSet();
         }
 
         /// <summary>
@@ -174,18 +189,24 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="instances">
         /// The instance array to populate with witnesses.
         /// </param>
-        private void GetConstraintWitnessInstances(Symbol container, ref ArrayBuilder<TypeSymbol> instances)
+        /// <param name="fixedParams">
+        /// The set to populate with fixed type parameters.
+        /// </param>
+        private void SearchContainerForInstancesAndParams(Symbol container,
+            ref ArrayBuilder<TypeSymbol> instances,
+            ref HashSet<TypeParameterSymbol> fixedParams)
         {
             // Only methods and named types have constrained witnesses.
             if (container.Kind != SymbolKind.Method && container.Kind != SymbolKind.NamedType) return;
 
-            var tps = (((container as MethodSymbol)?.TypeParameters)
+            var tps = (((container as MethodSymbol)?.TypeParameters) //@crusso: does this include class type parameters?
                        ?? (container as NamedTypeSymbol)?.TypeParameters)
                        ?? ImmutableArray<TypeParameterSymbol>.Empty;
 
             foreach (var tp in tps)
             {
                 if (tp.IsConceptWitness) instances.Add(tp);
+                fixedParams.Add(tp);
             }
         }
 
@@ -220,39 +241,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
         }
 
-        /// <summary>
-        /// Finds all of the type parameters in a given scope that have been
-        /// bound by methods or classes.
-        /// </summary>
-        /// <param name="binder">
-        /// The binder providing scope for this query.
-        /// </param>
-        /// <returns>
-        /// </returns>
-        private ImmutableHashSet<TypeParameterSymbol> GetAlreadyBoundTypeParameters(Binder binder)
-        {
-            // TODO: combine with other binder traversal?
-            var tps = new ArrayBuilder<TypeParameterSymbol>();
-
-            for (var b = binder; b != null; b = b.Next)
-            {
-                var container = b.ContainingMemberOrLambda;
-                if (container == null ||
-                    !(container.Kind == SymbolKind.NamedType || container.Kind == SymbolKind.Method)) continue;
-
-                var containertps =
-                    ((container as MethodSymbol)?.TypeParameters)
-                    ?? ((container as NamedTypeSymbol)?.TypeParameters)
-                    ?? ImmutableArray<TypeParameterSymbol>.Empty;
-
-                tps.AddRange(containertps);
-            }
-
-            // TODO: We're doing something wrong here that is causing duplicates.
-            tps.RemoveDuplicates();
-            return tps.ToImmutableAndFree().ToImmutableHashSet();
-        }
-
         #endregion Setup
         #region Main driver
 
@@ -260,7 +248,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// Tries to infer the concept witness for the given type parameter.
         /// </summary>
         /// <param name="typeParam">
-        /// The type parameter of the concept witness to infer.
+        /// The type parameter that is the concept witness to infer.
         /// </param>
         /// <param name="allInstances">
         /// The set of instances available for this witness.
@@ -284,7 +272,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // An instance satisfies inference if:
             //
             // 1) for all concepts required by the type parameter, at least
-            //    one concept on the witness unifies with that concept without
+            //    one concept implemented by the instances unifies with that concept without
             //    capturing bound type parameters;
             // 2) all of the type parameters of that instance can be bound,
             //    both by the substitutions from the unification above and also
@@ -295,7 +283,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             //
             // The second part is equivalent to resolving
             //    instance :- dependency1; dependency2; ...
-            // by trying to establish the dependencies as separare queries.
+            // by trying to establish the dependencies as separate queries.
             //
             // After the second part, if we have multiple possible instances,
             // we try to see if one implements a subconcept of all of the other
