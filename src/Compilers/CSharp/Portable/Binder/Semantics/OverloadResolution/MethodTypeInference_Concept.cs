@@ -40,9 +40,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             // First, make sure every unfixed type parameter is a concept, and
             // that we know where they all are so we can infer them later.
-            var conceptIndexBuilder = new ArrayBuilder<int>();
-            if (!GetMethodUnfixedConceptWitnesses(ref conceptIndexBuilder)) return false;
-            var conceptIndices = conceptIndexBuilder.ToImmutableAndFree();
+            ImmutableArray<int> conceptIndices;
+            if (!GetMethodUnfixedConceptWitnesses(out conceptIndices)) return false;
 
             // If we got this far, we should have at least something to infer.
             Debug.Assert(!conceptIndices.IsEmpty);
@@ -83,22 +82,30 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// stores their indices into an array.
         /// </summary>
         /// <param name="indices">
-        /// The array-builder of unfixed concept witnesses.
+        /// The outgoing array of unfixed concept witnesses.
         /// </param>
         /// <returns>
         /// True if, and only if, every unfixed type parameter is a concept
         /// witness.
         /// </returns>
-        private bool GetMethodUnfixedConceptWitnesses(ref ArrayBuilder<int> indices)
+        private bool GetMethodUnfixedConceptWitnesses(out ImmutableArray<int> indices)
         {
+            var iBuilder = new ArrayBuilder<int>();
+
             for (int i = 0; i < _methodTypeParameters.Length; i++)
             {
                 if (IsUnfixed(i))
                 {
-                    if (!_methodTypeParameters[i].IsConceptWitness) return false;
-                    indices.Add(i);
+                    if (!_methodTypeParameters[i].IsConceptWitness)
+                    {
+                        iBuilder.Free();
+                        return false;
+                    }
+                    iBuilder.Add(i);
                 }
             }
+
+            indices = iBuilder.ToImmutableAndFree();
             return true;
         }
 
@@ -396,8 +403,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in allInstances)
             {
-                MutableTypeMap unifyingSubstitutions = new MutableTypeMap();
-                if (AllRequiredConceptsProvided(requiredConcepts, instance, boundParams, ref unifyingSubstitutions))
+                MutableTypeMap unifyingSubstitutions;
+                if (AllRequiredConceptsProvided(requiredConcepts, instance, boundParams, out unifyingSubstitutions))
                 {
                     // The unification may have provided us with substitutions
                     // that were needed to make the provided concepts fit the
@@ -441,8 +448,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
                                                  TypeSymbol instance,
                                                  ImmutableHashSet<TypeParameterSymbol> boundParams,
-                                                 ref MutableTypeMap unifyingSubstitutions)
+                                                 out MutableTypeMap unifyingSubstitutions)
         {
+            unifyingSubstitutions = new MutableTypeMap();
+
             var providedConcepts =
                 ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
                  ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
@@ -505,15 +514,14 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // Assumption: no witness parameter can depend on any other
                 // witness parameter, so we can do recursive inference in
                 // one pass.
-                var unfixedWitnessBuilder = new ArrayBuilder<TypeParameterSymbol>();
-                if (!GetRecursiveUnfixedConceptWitnesses(instance, ref unfixedWitnessBuilder))
+                ImmutableArray<TypeParameterSymbol> unfixedWitnesses;
+                if (!GetRecursiveUnfixedConceptWitnesses(instance, out unfixedWitnesses))
                 {
                     // This instance has some unfixed non-witness type
                     // parameters.  We can't infer these, so give up on this
                     // candidate instance.
                     continue;
                 }
-                var unfixedWitnesses = unfixedWitnessBuilder.ToImmutableAndFree();
 
                 var fixedInstance = instance;
                 // If there were no unfixed witnesses, we don't need to bother
@@ -585,13 +593,19 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// which is a blocker on accepting <paramref name="instance"/> as a
         /// witness; false otherwise.
         /// </returns>
-        private bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, ref ArrayBuilder<TypeParameterSymbol> unfixed)
+        private bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableArray<TypeParameterSymbol> unfixed)
         {
             Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
 
+            var uBuilder = new ArrayBuilder<TypeParameterSymbol>();
+
             // Only named types (ie instance declarations) can contain
             // unresolved concept witnesses.
-            if (instance.Kind != SymbolKind.NamedType) return true;
+            if (instance.Kind != SymbolKind.NamedType)
+            {
+                unfixed = uBuilder.ToImmutableAndFree();
+                return true;
+            }
 
             var nt = (NamedTypeSymbol)instance;
             var targs = nt.TypeArguments;
@@ -604,18 +618,20 @@ namespace Microsoft.CodeAnalysis.CSharp
                 {
                     if (tpars[i].IsConceptWitness)
                     {
-                        unfixed.Add(tpars[i]);
+                        uBuilder.Add(tpars[i]);
                     }
                     else
                     {
                         // This is an unfixed non-witness, which kills off our
                         // attempt to use this instance completely.
+                        uBuilder.Free();
                         return false;
                     }
                 }
             }
 
             // If we got here, then we haven't seen any unfixed non-witnesses.
+            unfixed = uBuilder.ToImmutableAndFree();
             return true;
         }
 
