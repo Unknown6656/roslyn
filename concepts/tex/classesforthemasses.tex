@@ -354,7 +354,7 @@ struct EqInt : Eq<int>  {
 \end{lstlisting}
 
 For F\#, we introduce the shorter \lstinline{instance} declaration:
-\lstset{language={FSharp}}
+%\lstset{language={FSharp}}
 \begin{lstlisting}
 instance Eq int where 
   Equals (a, b) = a = b
@@ -378,16 +378,28 @@ instance (Eq a) => Eq ([a]) where
 
 We can represent such a Haskell parameterized instance as a \emph{generic} struct:
 
+%\lstset{language={CSharpLatest}}
+%\begin{lstlisting}
+%struct EqList<A, EqA> : Eq<List<A>>
+%       where EqA : struct, Eq<A>  {
+%  public bool Equals(List<A> a, List<A> b) {
+%    if (a.IsNull != b.IsNull) return true;
+%    else if (a.IsCons & b.IsCons) 
+%         return default(EqA).Equals(a.Head,b.Head) 
+%                && Equals(a.Tail,b.Tail);
+%         else false;
+%  }}
+%\end{lstlisting}
+
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
 struct EqList<A, EqA> : Eq<List<A>>
        where EqA : struct, Eq<A>  {
   public bool Equals(List<A> a, List<A> b) {
-    if (a.IsNull != b.IsNull) return true;
-    else if (a.IsCons & b.IsCons) 
-         return default(EqA).Equals(a.Head,b.Head) 
-                && Equals(a.Tail,b.Tail);
-         else false;
+    return     (a.IsNull && b.IsNull)
+              ||  (a.IsCons && b.IsCons 
+                    && default(EqA).Equals(a.Head,b.Head) 
+                    && Equals(a.Tail,b.Tail));
   }}
 \end{lstlisting}
 
@@ -402,7 +414,7 @@ For F\# we adopt the mode concise, nameless declaration:
 instance Eq 'a => Eq (List 'a) where 
   Equals(a,b) = match a,b with
     | [],[] -> true
-    | (a::l,b::m) -> Equals(a,b) && Equals(l,m)
+    | (a::l),(b::m) -> Equals(a,b) && Equals(l,m)
     | _,_ -> false
 \end{lstlisting}
 
