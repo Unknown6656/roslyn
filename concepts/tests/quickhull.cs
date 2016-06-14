@@ -142,6 +142,25 @@ public struct Line<A>
     }
 
     /// <summary>
+    ///     Decides whether two points are on the same side of a line.
+    /// </summary>
+    /// <param name="p1">
+    ///     The first point to consider.
+    /// </param>
+    /// <param name="p2">
+    ///     The second point to consider.
+    /// </param>
+    /// <returns>
+    ///     True if the two points are on the same side of the line.
+    /// </returns>
+    public bool SameSide(Point<A> p1, Point<A> p2)
+        where OrdA : Ord<A>
+        where NumA : Num<A>
+    {
+        return OnRight(p1) == OnRight(p2);
+    }
+
+    /// <summary>
     ///     Calculates the distance from a point to this line.
     /// </summary>
     /// <param name="point">
@@ -368,7 +387,7 @@ public class Quickhull<A>
 {
     private List<Line<A>> _lines;
     private readonly Point<A>[] _points;
-    private List<Point<A>> _hull;
+    private HashSet<Point<A>> _hull;
 
     public IEnumerable<Line<A>>  Lines  => _lines;
     public IEnumerable<Point<A>> Points => _points;
@@ -378,18 +397,43 @@ public class Quickhull<A>
     {
         _lines  = new List<Line<A>>();
         _points = ps;
-        _hull   = new List<Point<A>>();
+        _hull   = new HashSet<Point<A>>();
     }
 
-    public void Recur(Line<A> line, IEnumerable<Point<A>> points)
+    public void Recur(Line<A> line, List<Point<A>> points)
         where OrdA : Ord<A>
         where FloatA : Floating<A>
     {
-        // TODO: inference...
+        if (points.Count == 0) return;
+
         var outlier = MaximumBy<A, Point<A>, OrdA>(
             points, (x) => line.PointDistance(x)
         );
         _hull.Add(outlier);
+
+        var ac = new Line<A> { P1 = line.P1, P2 = outlier };
+        var cb = new Line<A> { P1 = outlier, P2 = line.P2 };
+
+        _lines.Add(ac);
+        _lines.Add(cb);
+
+        var pastac = new List<Point<A>>();
+        var pastcb = new List<Point<A>>();
+        foreach (var point in Points)
+        {
+            if (_hull.Contains(point)) continue;
+            if (ac.OnRight(point))
+            {
+                pastac.Add(point);
+            }
+            else if (cb.OnRight(point))
+            {
+                pastcb.Add(point);
+            }
+        }
+
+        Recur(ac, pastac);
+        Recur(cb, pastcb);
     }
 
     public void Run()
@@ -397,7 +441,7 @@ public class Quickhull<A>
         where FloatA : Floating<A>
     {
         _lines  = new List<Line<A>>();
-        _hull   = new List<Point<A>>();
+        _hull   = new HashSet<Point<A>>();
 
         var minX = Minimum<Point<A>, OrdPointX<A, OrdA>>(_points);
         var maxX = Maximum<Point<A>, OrdPointX<A, OrdA>>(_points);
@@ -409,15 +453,22 @@ public class Quickhull<A>
         _lines.Add(ln);
 
 
-        var onRight = from Point<A> point in Points
-                      where ln.OnRight(point)
-                      select point;
-        Recur(ln, onRight);
+        var onRight = new List<Point<A>>();
+        var onLeft = new List<Point<A>>();
+        foreach (var point in Points)
+        {
+            if (ln.OnRight(point))
+            {
+                onRight.Add(point);
+            }
+            else
+            {
+                onLeft.Add(point);
+            }
+        }
 
-        var onLeft = from Point<A> point in Points
-                     where !ln.OnRight(point)
-                     select point;
-        Recur(ln, onLeft);
+        Recur(ln, onRight);
+        Recur(ln.Flip(), onLeft);
     }
 }
 
