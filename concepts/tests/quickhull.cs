@@ -8,40 +8,57 @@ using static System.Concepts.Monoid.Utils;
 using static Utils;
 
 /// <summary>
-///     Concept for numbers convertible to 32-bit integers.
+///     Concept for numbers convertible to single-precision floats.
 /// </summary>
 /// <typeparam name="A">
 ///    The type to convert.
 /// </typeparam>
-public concept ToInt32<A>
+public concept ToSingle<A>
 {
     /// <summary>
-    ///     Converts a number to an Int32.
+    ///     Converts a number to an Single.
     /// </summary>
     /// <param name="x">
     ///     The number to convert.
     /// </param>
     /// <returns>
-    ///     The number as an Int32.
+    ///     The number as an Single.
     /// </returns>
-    Int32 ToInt32(A x);
+    Single ToSingle(A x);
 }
 
 /// <summary>
-///     Instance of ToIn32 for 32-bit integers.
+///     Instance of ToSingle for single-precision floats..
 /// </summary>
-public instance ToInt32Int32 : ToInt32<Int32>
+public instance ToSingleFloat : ToSingle<float>
 {
     /// <summary>
-    ///     Converts a number to an Int32.
+    ///     Converts a number to an Single.
     /// </summary>
     /// <param name="x">
     ///     The number to convert.
     /// </param>
     /// <returns>
-    ///     The number as an Int32.
+    ///     The number as an Single.
     /// </returns>
-    Int32 ToInt32(Int32 x) => x;
+    float ToSingle(float x) => x;
+}
+
+/// <summary>
+///     Instance of ToSingle for double-precision floats..
+/// </summary>
+public instance ToSingleDouble : ToSingle<double>
+{
+    /// <summary>
+    ///     Converts a number to an Single.
+    /// </summary>
+    /// <param name="x">
+    ///     The number to convert.
+    /// </param>
+    /// <returns>
+    ///     The number as an Single.
+    /// </returns>
+    float ToSingle(double x) => (float)x;
 }
 
 /// <summary>
@@ -123,6 +140,41 @@ public struct Line<A>
             )
         );
     }
+
+    /// <summary>
+    ///     Calculates the distance from a point to this line.
+    /// </summary>
+    /// <param name="point">
+    ///     The point to consider.
+    /// </param>
+    /// <returns>
+    ///     The distance from the point to this line.
+    /// </returns>
+    public A PointDistance(Point<A> point)
+        where OrdA : Ord<A>
+        where FloatA : Floating<A>
+    {
+        return Div(
+            Abs(
+                Add(
+                    Sub(
+                        Mul(Sub(P2.Y, P1.Y), point.X),
+                        Mul(Sub(P2.X, P1.X), point.Y)
+                    ),
+                    Sub(
+                        Mul(P2.X, P1.Y),
+                        Mul(P2.Y, P1.X)
+                    )
+                )
+            ),
+            Sqrt(
+                Add(
+                    Mul(Sub(P2.Y, P1.Y), Sub(P2.Y, P1.Y)),
+                    Mul(Sub(P2.X, P1.X), Sub(P2.X, P1.X))
+                )
+            )
+        );
+    }
 }
 
 /// <summary>
@@ -170,13 +222,13 @@ public concept Drawable<A>
 ///     Drawable instance for points.
 /// </summary>
 public instance DrawPoint<A> : Drawable<Point<A>>
-    where TA : ToInt32<A>
+    where TA : ToSingle<A>
 {
     void Draw(Point<A> item, Color colour, Graphics gfx)
     {
         var brush = new SolidBrush(colour);
-        var x = ToInt32(item.X);
-        var y = ToInt32(item.Y);
+        var x = ToSingle(item.X);
+        var y = ToSingle(item.Y);
 
         gfx.FillEllipse(brush, x - 4, y - 4, 8, 8);
     }
@@ -186,15 +238,15 @@ public instance DrawPoint<A> : Drawable<Point<A>>
 ///     Drawable instance for lines.
 /// </summary>
 public instance DrawLine<A> : Drawable<Line<A>>
-    where TA : ToInt32<A>
+    where TA : ToSingle<A>
 {
     void Draw(Line<A> item, Color colour, Graphics gfx)
     {
         var pen = new Pen(colour, 5.0f);
-        var x1 = ToInt32(item.P1.X);
-        var y1 = ToInt32(item.P1.Y);
-        var x2 = ToInt32(item.P2.X);
-        var y2 = ToInt32(item.P2.Y);
+        var x1 = ToSingle(item.P1.X);
+        var y1 = ToSingle(item.P1.Y);
+        var x2 = ToSingle(item.P2.X);
+        var y2 = ToSingle(item.P2.Y);
 
         gfx.DrawLine(pen, x1, y1, x2, y2);
     }
@@ -215,6 +267,16 @@ public instance DrawEnum<A> : Drawable<IEnumerable<A>>
     }
 }
 
+/// <summary>
+///     Allows 2-tuples to be ordered by their first item.
+/// </summary>
+public instance Ord21<A, B> : Ord<Tuple<A, B>>
+    where OrdA : Ord<A>
+{
+    bool Equals(Tuple<A, B> a, Tuple<A, B> b) => Equals(a.Item1, b.Item1);
+    bool Leq(Tuple<A, B> a, Tuple<A, B> b) => Leq(a.Item1, b.Item1);
+}
+
 static class Utils
 {
     /// <summary>
@@ -226,8 +288,38 @@ static class Utils
     /// <returns>
     ///     The maximum element of the list <paramref name="xs"/>.
     /// </returns>
-    public static A Maximum<A>(A[] xs) where OrdA : Ord<A>
+    /// <typeparam name="A">
+    ///     The type of the ordered elements.
+    /// </typeparam>
+    public static A Maximum<A>(IEnumerable<A> xs) where OrdA : Ord<A>
         => ConcatNonEmpty<A, Max<A, OrdA>>(xs);
+
+    /// <summary>
+    ///     Computes the maximum of a non-empty list of ordered items
+    ///     after applying a given function to them.
+    /// </summary>
+    /// <param name="xs">
+    ///     The list of ordered items to consider.  Must be non-empty.
+    /// </param>
+    /// <param name="f">
+    ///     The function to apply to each item of <paramref name="xs"/>
+    ///     before taking the maximum.
+    /// </param>
+    /// <returns>
+    ///     The maximum element of the list <paramref name="xs"/> after
+    ///     mapping with <param name="f">.
+    /// </returns>
+    /// <typeparam name="A">
+    ///     The type of the ordered elements after mapping..
+    /// </typeparam>
+    /// <typeparam name="B">
+    ///     The type of the initial list.
+    /// </typeparam>
+    public static B MaximumBy<A, B>(IEnumerable<B> xs, Func<B, A> f)
+        where OrdA : Ord<A>
+        => ConcatMapNonEmpty<Tuple<A, B>, B, Max<Tuple<A, B>, Ord21<A, B, OrdA>>>(
+               xs, (x) => Tuple.Create(f(x), x)
+           ).Item2;
 
     /// <summary>
     ///     Computes the maximum of a non-empty list of ordered items.
@@ -238,8 +330,38 @@ static class Utils
     /// <returns>
     ///     The minimum element of the list <paramref name="xs"/>.
     /// </returns>
-    public static A Minimum<A>(A[] xs) where OrdA : Ord<A>
+    /// <typeparam name="A">
+    ///     The type of the ordered elements.
+    /// </typeparam>
+    public static A Minimum<A>(IEnumerable<A> xs) where OrdA : Ord<A>
         => ConcatNonEmpty<A, Min<A, OrdA>>(xs);
+
+    /// <summary>
+    ///     Computes the minimum of a non-empty list of ordered items
+    ///     after applying a given function to them.
+    /// </summary>
+    /// <param name="xs">
+    ///     The list of ordered items to consider.  Must be non-empty.
+    /// </param>
+    /// <param name="f">
+    ///     The function to apply to each item of <paramref name="xs"/>
+    ///     before taking the minimum.
+    /// </param>
+    /// <returns>
+    ///     The minimum element of the list <paramref name="xs"/> after
+    ///     mapping with <param name="f">.
+    /// </returns>
+    /// <typeparam name="A">
+    ///     The type of the ordered elements after mapping..
+    /// </typeparam>
+    /// <typeparam name="B">
+    ///     The type of the initial list.
+    /// </typeparam>
+    public static B MinimumBy<A, B>(IEnumerable<B> xs, Func<B, A> f)
+        where OrdA : Ord<A>
+        => ConcatMapNonEmpty<Tuple<A, B>, B, Min<Tuple<A, B>, Ord21<A, B, OrdA>>>(
+               xs, (x) => Tuple.Create(f(x), x)
+           ).Item2;
 }
 
 public class Quickhull<A>
@@ -261,14 +383,18 @@ public class Quickhull<A>
 
     public void Recur(Line<A> line, IEnumerable<Point<A>> points)
         where OrdA : Ord<A>
-        where NumA : Num<A>
+        where FloatA : Floating<A>
     {
-        _hull.AddRange(points);
+        // TODO: inference...
+        var outlier = MaximumBy<A, Point<A>, OrdA>(
+            points, (x) => line.PointDistance(x)
+        );
+        _hull.Add(outlier);
     }
 
     public void Run()
         where OrdA : Ord<A>
-        where NumA : Num<A>
+        where FloatA : Floating<A>
     {
         _lines  = new List<Line<A>>();
         _hull   = new List<Point<A>>();
@@ -316,19 +442,19 @@ public class QuickhullDriver
     public Bitmap Run()
     {
         var rando = new Random();
-        var pts = new Point<Int32>[c];
+        var pts = new Point<double>[c];
 
         var maxx = w - 1;
         var maxy = h - 1;
 
         for (int i = 0; i < c; i++)
         {
-            pts[i] = new Point<Int32> { X = rando.Next(0, maxx), Y = rando.Next(0, maxy) };
+            pts[i] = new Point<double> { X = rando.Next(0, maxx), Y = rando.Next(0, maxy) };
         }
 
-        var hull = new Quickhull<Int32>(pts);
+        var hull = new Quickhull<double>(pts);
         // TODO: improve inference here.
-        hull.Run<OrdInt, NumInt>();
+        hull.Run<OrdDouble, FloatingDouble>();
 
         Draw(hull.Points, Color.Green);
         Draw(hull.Lines, Color.Red);
