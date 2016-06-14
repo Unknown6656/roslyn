@@ -5,10 +5,11 @@ using System.Concepts.Monoid;
 using System.Text;
 using System;
 using static System.Concepts.Monoid.Utils;
+using static ArrayHelp;
 
-static class ArrayHelp<A>
+static class ArrayHelp
 {
-    public static string ShowArray(A[] xs) {
+    public static string ShowArray<A>(A[] xs) {
         var sb = new StringBuilder("[");
         var l = xs.Length;
         for (int i = 0; i < l; i++)
@@ -33,7 +34,7 @@ class NumMonoidTest<A> where NumA: Num<A>
 
     public void Run()
     {
-        var xss = ArrayHelp<A>.ShowArray(_xs);
+        var xss = ShowArray(_xs);
 
         var sum = Concat<A, Sum<A, NumA>>(_xs);
         Console.Out.WriteLine($"Sum {xss} = {sum}");
@@ -55,7 +56,7 @@ class OrdSemiTest<A> where OrdA: Ord<A>
 
     public void Run()
     {
-        var xss = ArrayHelp<A>.ShowArray(_xs);
+        var xss = ShowArray(_xs);
 
         var min = ConcatNonEmpty<A, Min<A, OrdA>>(_xs);
         Console.Out.WriteLine($"Min {xss} = {min}");
@@ -78,11 +79,11 @@ static class MonoidExamples
     public static void Main()
     {
         new NumMonoidTest<int, NumInt>(new int[] {}).Run();
-        RunNumOrd<int, NumInt, OrdInt>(new int[] {6, 3, 1, 2, 10, 121});
-        RunNumOrd<double, NumDouble, OrdDouble>(new double[] {6.2, 3.3, 1.1, 2.4, 10.5, 121.6});
+        RunNumOrd(new int[] {6, 3, 1, 2, 10, 121});
+        RunNumOrd(new double[] {6.2, 3.3, 1.1, 2.4, 10.5, 121.6});
 
         var bools = new bool[] { true, true, false, true, false };
-        var boolss = ArrayHelp<bool>.ShowArray(bools);
+        var boolss = ShowArray(bools);
         var any = Concat<bool, Any>(bools);
         Console.Out.WriteLine($"Any {boolss} = {any}");
         var all = Concat<bool, All>(bools);

@@ -45,10 +45,10 @@ class Program {
 
     static void Main()
     {
-        ShouldEq<int, EqInt>(new int[] { }, new int[] { });
-        ShouldEq<int, EqInt>(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 });
-        ShouldNotEq<int, EqInt>(new int[] { 1, 2, 3 }, new int[] { 1, 2 });
-        ShouldNotEq<int, EqInt>(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 });
+        ShouldEq(new int[] { }, new int[] { });
+        ShouldEq(new int[] { 1, 2, 3 }, new int[] { 1, 2, 3 });
+        ShouldNotEq(new int[] { 1, 2, 3 }, new int[] { 1, 2 });
+        ShouldNotEq(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 });
     }
 }
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Concepts.Prelude;
 
 /// <summary>
@@ -149,18 +150,54 @@ namespace System.Concepts.Monoid
         /// <typeparam name="A">
         ///     The semigroup on which this function is being defined.
         /// </typeparam>
-        public static A ConcatNonEmpty<A>(A[] xs) where SA : Semigroup<A>
+        public static A ConcatNonEmpty<A>(IEnumerable<A> xs)
+            where SA : Semigroup<A>
         {
-            var lxs = xs.Length;
-
-            if (lxs == 0) throw new ArgumentException(
-                "SConcat: list must be non-empty"
+            var en = xs.GetEnumerator();
+            if (en.MoveNext() == false) throw new ArgumentException(
+                "ConcatNonEmpty: list must be non-empty"
             );
 
-            A result = xs[0];
-            for (int i = 1; i < lxs; i++)
+            A result = en.Current;
+            while (en.MoveNext())
             {
-                result = Append(result, xs[i]);
+                result = Append(result, en.Current);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        ///     Applies a function to each item of a non-empty list, and folds
+        ///     the results using a semigroup.
+        /// </summary>
+        /// <param name="xs">
+        ///     The list to fold; must be non-empty.
+        /// </param>
+        /// <param name="f">
+        ///     The function to apply on each item.
+        /// </param>
+        /// <returns>
+        ///     The result of folding.
+        /// </returns>
+        /// <typeparam name="A">
+        ///     The semigroup on which this function is being defined.
+        /// </typeparam>
+        /// <typeparam name="B">
+        ///     The domain of the function <paramref name="f" />.
+        /// </typeparam>
+        public static A ConcatMapNonEmpty<A, B>(IEnumerable<B> xs, Func<B, A> f)
+            where SA : Semigroup<A>
+        {
+            var en = xs.GetEnumerator();
+            if (en.MoveNext() == false) throw new ArgumentException(
+                "ConcatMapNonEmpty: list must be non-empty"
+            );
+
+            A result = f(en.Current);
+            while (en.MoveNext())
+            {
+                result = Append(result, f(en.Current));
             }
 
             return result;
@@ -178,12 +215,43 @@ namespace System.Concepts.Monoid
         /// <returns>
         ///     The result of folding.
         /// </returns>
-        public static A Concat<A>(A[] xs) where MA : Monoid<A>
+        public static A Concat<A>(IEnumerable<A> xs)
+            where MA : Monoid<A>
         {
             A result = Empty();
             foreach (A x in xs)
             {
                 result = Append(result, x);
+            }
+            return result;
+        }
+
+        /// <summary>
+        ///     Applies a function to each item of a list, and folds
+        ///     the results using a monoid.
+        /// </summary>
+        /// <param name="xs">
+        ///     The list to fold.
+        /// </param>
+        /// <param name="f">
+        ///     The function to apply on each item.
+        /// </param>
+        /// <returns>
+        ///     The result of folding.
+        /// </returns>
+        /// <typeparam name="A">
+        ///     The monoid on which this function is being defined.
+        /// </typeparam>
+        /// <typeparam name="B">
+        ///     The domain of the function <paramref name="f" />.
+        /// </typeparam>
+        public static A ConcatMap<A, B>(IEnumerable<B> xs, Func<B, A> f)
+            where MA : Monoid<A>
+        {
+            A result = Empty();
+            foreach (B x in xs)
+            {
+                result = Append(result, f(x));
             }
             return result;
         }

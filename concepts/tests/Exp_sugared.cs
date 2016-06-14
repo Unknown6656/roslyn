@@ -124,9 +124,9 @@ namespace Exp
         {
 			Lit one = new Lit(1);
 			Add<Lit, Lit> oneplusone = new Add<Lit, Lit>(one, one);
-			int two = Eval<Add<Lit, Lit>, EvalAdd<Lit, Lit, EvalLit, EvalLit>>(oneplusone);
+			int two = Eval(oneplusone);
 			Console.Write("Print(\"1+1\")=\"");
-			Overloads.Print<Add<Lit, Lit>, PrintAdd<Lit, Lit, PrintLit, PrintLit>>(oneplusone);
+			Overloads.Print(oneplusone);
 			Console.WriteLine("\"");
 			Console.WriteLine("Eval(\"1+1\")={0}", two);
 		}

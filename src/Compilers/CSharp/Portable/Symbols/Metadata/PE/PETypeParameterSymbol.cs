@@ -362,5 +362,21 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols.Metadata.PE
         {
             get { return null; }
         }
+
+        internal sealed override bool IsConceptWitness
+        {
+            get
+            {
+                // Usually, types are concept witnesses if they have
+                // [ConceptWitness]. @t-mawind
+                foreach (var attribute in this.GetAttributes())
+                {
+                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptWitnessAttribute)) return true;
+                }
+
+                return false;
+            }
+        }
+
     }
 }
