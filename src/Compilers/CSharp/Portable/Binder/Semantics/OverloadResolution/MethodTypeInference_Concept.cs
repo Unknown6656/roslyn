@@ -642,7 +642,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// Performs the third pass of concept witness type inference.
         /// <para>
         /// This pass tries to find a single instance in the candidate set that
-        /// dominates all other instances, eg. its concept is a strict
+        /// is 'better' than all other instances, eg. its concept is a strict
         /// super-interface of all other candidate instances' concepts.
         /// </para>
         /// </summary>
@@ -653,47 +653,58 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// A map mapping fixed type parameters to their type arguments.
         /// </param>
         /// <returns>
-        /// An array of candidate instances after the third pass.  If there is
-        /// no dominating instance, this will be
-        /// <paramref name="candidateInstances"/>.
+        /// An array of candidate instances after the third pass.
         /// </returns>
         ImmutableArray<TypeSymbol> TryInferConceptWitnessThirdPass(ImmutableArray<TypeSymbol> candidateInstances, MutableTypeMap fixedMap)
         {
-            var ignore = new HashSet<DiagnosticInfo>();
+            var arb = new ArrayBuilder<TypeSymbol>();
 
             // TODO: This can invariably be made more efficient.
             foreach (var instance in candidateInstances)
             {
-                bool isDominator = true;
+                if (ImplementsConceptsOfOtherInstances(instance, candidateInstances)) arb.Add(instance);
+                // Note that this will only break ties if one instance
+                // implements effectively sub-concepts of all other
+                // instances: if two instances implement precisely the
+                // same concept set, both will be added to arb and the
+                // check will fail.
+            }
 
-                foreach (var otherInstance in candidateInstances)
+            return arb.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Checks whether one instance implements all of the concepts, either
+        /// directly or through sub-concepts, of a set of other concepts.
+        /// </summary>
+        /// <param name="instance">
+        /// The instance to compare.
+        /// </param>
+        /// <param name="otherInstances">
+        /// A list of other instances to which this instance should be compared.
+        /// This may include <paramref name="instance"/>, in which case it will
+        /// be ignored.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, <paramref name="instance"/> implements all of
+        /// the concepts of instances in <paramref name="otherInstances"/>.
+        /// </returns>
+        bool ImplementsConceptsOfOtherInstances(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
+        {
+            var ignore = new HashSet<DiagnosticInfo>();
+
+            foreach (var otherInstance in otherInstances)
+            {
+                if (otherInstance == instance) continue;
+
+                foreach (var iface in otherInstance.AllInterfacesNoUseSiteDiagnostics)
                 {
-                    if (otherInstance == instance) continue;
-
-                    foreach (var iface in otherInstance.AllInterfacesNoUseSiteDiagnostics)
-                    {
-                        if (!iface.IsConcept) continue;
-                        if (!instance.ImplementsInterface(iface, ref ignore))
-                        {
-                            isDominator = false;
-                            break;
-                        }
-                    }
-
-                    if (!isDominator) break;
-                }
-
-                if (isDominator)
-                {
-                    var arb = new ArrayBuilder<TypeSymbol>();
-                    arb.Add(instance);
-                    return arb.ToImmutableAndFree();
+                    if (!iface.IsConcept) continue;
+                    if (!instance.ImplementsInterface(iface, ref ignore)) return false;
                 }
             }
 
-            // If we didn't find a dominator, we didn't shrink the list, so
-            // we have to return the original unshrunk list here.
-            return candidateInstances;
+            return true;
         }
 
         #endregion Third pass
