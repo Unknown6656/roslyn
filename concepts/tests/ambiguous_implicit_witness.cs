@@ -29,8 +29,8 @@ public class Fail
     public static void Main()
     {
         var f = new Fail();
-        Console.Out.WriteLine(f.FailEq<int, EqInt, OrdInt>(1, 2) ? "fail" : "pass");
-        Console.Out.WriteLine(f.FailEq2<EqBool, OrdInt>(1, 2) ? "fail" : "pass");
-        Console.Out.WriteLine(f.FailEq3<EqInt, OrdBool>(1, 2) ? "fail" : "pass");
+        Console.Out.WriteLine(f.FailEq<int, OrdInt, OrdInt>(1, 2) ? "fail" : "pass");
+        Console.Out.WriteLine(f.FailEq2<OrdBool, OrdInt>(1, 2) ? "fail" : "pass");
+        Console.Out.WriteLine(f.FailEq3<OrdInt, OrdBool>(1, 2) ? "fail" : "pass");
     }
 }
