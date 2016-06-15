@@ -101,14 +101,14 @@ Monoid.dll: $(CSC) ../Monoid.cs Prelude.dll ConceptAttributes.dll
 	       ../Monoid.cs
 	peverify $@
 
-Prelude.dll: $(CSC) ConceptAttributes.dll
+Prelude.dll: $(CSC) ../Prelude.cs ConceptAttributes.dll
 	$(CSC) /target:library \
 	       /reference:ConceptAttributes.dll \
 	       /out:$@ \
 	       ../Prelude.cs
 	peverify $@
 
-ConceptAttributes.dll:$(CSC) 
+ConceptAttributes.dll: $(CSC) ../ConceptAttributes.cs
 	$(CSC) /target:library \
 	       /out:$@ \
 	       ../ConceptAttributes.cs
