@@ -218,8 +218,8 @@ by type classes, with different implementation techniques.  Scala has
 \emph{implicits}\cite{scalaimplicits}, implicit method arguments denoting dictionaries, that
 are inferred by the compiler but represented, at run-time, as additional
 heap-allocated arguments to methods (with commensurate overhead).  C++ came very
-close to adopting \emph{concepts} \cite{cppconcepts}, a rather different compile-time template mechanism, 
-directly inspired by Haskell's type classes but emphasize compile-time code specialization. Rust has \emph{traits} \cite{Rust} and Swift has
+close to adopting \emph{concepts} \cite{cppconcepts}, a rather different extension of the template mechanism, 
+directly inspired by Haskell's type classes but enforcing  compile-time code specialization for performance. Rust has \emph{traits} \cite{Rust} and Swift has
 \emph{protocols} \cite{Swift}.
 
 {\bf Contribution} We describe a simple encoding that allows us to add type classes to
@@ -240,22 +240,21 @@ elements without boxing when instantiated at scalar types.  This run-time
 specialization allows the JIT to avoid the uniform (i.e.\ lowest-common-denominator) representations adopted by many implementations of ML, 
 Haskell, the JVM and most dynamic languages.
 
-Haskell compilers typically compile type classes using the so-called
+Haskell compilers typically compile type cla
+sses using the so-called
 \emph{dictionary translation}.  The translation, guided by source
-types, inserts terms that justify type class constraints. These terms,
-or witnesses, are records of functions that provide implementations
-for all of the constraint's methods. Although similar to
-object-oriented virtual method tables, witness are not attached to
+types, inserts evidence terms that justify type class constraints. The evidence terms are dictionaries (i.e.\ records) of functions that provide implementations (and thus proofs) for all of the constraint's methods. Although similar to
+object-oriented virtual method tables, dictionaries are not attached to
 objects, but passed separately as function arguments.  Because type
-classes are resolved statically, aggressive inlining can remove most,
-but not all, indirection through witness parameters. This leads to
-efficient code with few indirect calls and leaner representations of values than full-blown objects. Objects, in contrast, must lug their method-tables wherever they go.
+classes are resolved statically, aggressive in-lining can remove most,
+but not all, indirection through dictionary parameters. This leads to
+efficient code with fewer indirect calls and leaner representations of values than full-blown objects. Objects, in contrast, must lug their method-tables wherever they go.
 
 Given the obvious similarity between type passing and dictionary
 passing, it is perhaps not surprising that type passing forms an
 excellent implementation technique for Haskell's dictionary passing. 
 This talk will give on overview of the technique that we are applying to provide
-efficient, interoperable type class implementations to both C\# and F\#.
+efficient, inter-operable type class implementations to both C\# and F\#.
 
 
 \section{The Representation}
@@ -311,10 +310,10 @@ This generic operation can be represent in C\# by the method:
         return default(EqA).Equals(a, b); }
 \end{lstlisting}
 This method has not one, but \emph{two}, type parameters. The first, \lstinline{A}, is just the type parameter from the declaration.
-The second, \lstinline{EqA}, is a type parameter that is constrained to be a struct and witnesses the constraint that \lstinline{A} supports interface \lstinline{Eq<A>}.
+The second, \lstinline{EqA}, is a type parameter that is constrained to be a struct and is evidence for the constraint that \lstinline{A} supports interface \lstinline{Eq<A>}.
 
 The use of the \lstinline{struct} constraint on \lstinline{EqA} is significant and subtle. Structs are stack allocated so essentially free to create.
-Moreover, every struct, including type parameters \lstinline{T} of kind struct, has a default (all-zero) value that is created by 
+Moreover, every struct type, including a type parameter \lstinline{T} of kind struct, has a default (all-zero) value that is created by 
 calling \lstinline{default(T)}.
 
 Invoking a method on a default value of reference type would simply raise a null-reference exception because the receiver is \lstinline{null}.
@@ -404,11 +403,11 @@ struct EqList<A, EqA> : Eq<List<A>>
   }}
 \end{lstlisting}
 
-This struct implements the interface \lstinline{Eq<List<A>>}, but only when instantiated with a suitable type argument and witness for constraint \lstinline{Eq<A>}.
-Notice that \lstinline{EqList} has, once again, an additional type parameter witnessing \lstinline{Eq<A>}.
-Instantiations of \lstinline{EqList} constuct witnesses for \lstinline{Eq<List<A>>}.
+This struct implements the interface \lstinline{Eq<List<A>>}, but only when instantiated with a suitable type argument and evidence for constraint \lstinline{Eq<A>}.
+Notice that \lstinline{EqList} has, once again, an additional evidence type parameter  \lstinline{EqA} for constraint \lstinline{Eq<A>}.
+Instantiations of the generic struct \lstinline{EqList<->}, in turn, construct evidence for \lstinline{Eq<List<A>>}.
 
-For F\# we adopt the mode concise, nameless declaration:
+For F\# we adopt the more concise, nameless declaration:
 
 \lstset{language={FSharp}}
 \begin{lstlisting}
@@ -424,12 +423,12 @@ instance Eq 'a => Eq (List 'a) where
 We do not have space to describe the representations of other features but suffice to say that we can encode:
 Haskell type class operations that themselves have constrained types in their signatures (using interface methods that are generic);
 Haskell type class hierarchies  using interface inheritance; default operations using shared static methods; instances requiring 
-polymorphic recursion; instances as data (to constrained term constructors) and multi-parameter type classes. Moreover, choosing to provide named witness rather than anonymous one allows us to support
-explicit as well as implicit instances.
+polymorphic recursion; instances as data (to constrained term constructors) and multi-parameter type classes. Moreover, choosing to provide named rather than anonymous instances would allow us to selectively support
+explicit as well as implicit evidence when preferable.
 The only feature we cannot currently support is higher-kinded type classes (like \lstinline{Monad}), but this is because .NET does not yet support higher kinds.
 
 Much of the concision of Haskell comes not only from the declaration of type class hierarchies but from the implicit solution of constraints during type inference.
-For C\#, we envision witness inference to be a mild generalization of type argument inference, with instantiations derived from the pervasive and locally assumed concept hierarchy.
+For C\#, we envision evidence inference to be a mild generalization of type argument inference, with instantiations derived from the pervasive and locally assumed concept hierarchy.
 For F\#, we hope to adapt Haskell's more elaborate techniques for not only solving but also implicitly propagating inferred type class constraints.
 \section{Implementation}
 
