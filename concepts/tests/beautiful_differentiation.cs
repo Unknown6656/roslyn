@@ -641,8 +641,8 @@ namespace BD {
 
         public static void Main()
         {
-            Test<BD.Mark1.FloatingDA<double, FloatingDouble>>();
-            Test<BD.Mark2.FloatingDA<double, FloatingDouble>>();
+            Test<BD.Mark1.FloatingDA<double, PreludeDouble>>();
+            Test<BD.Mark2.FloatingDA<double, PreludeDouble>>();
         }
     }
 }

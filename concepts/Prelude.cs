@@ -39,9 +39,9 @@ namespace System.Concepts.Prelude
     }
 
     // Subconcept implementations of Eq:
-    // - Eq<bool>   -> OrdBool
-    // - Eq<int>    -> OrdInt.
-    // - Eq<double> -> OrdDouble.
+    // - Eq<bool>   -> PreludeBool.
+    // - Eq<int>    -> PreludeInt.
+    // - Eq<double> -> PreludeDouble.
 
     /// <summary>
     ///     Implementation of <see cref="Eq{A}"/> for arrays.
@@ -95,36 +95,10 @@ namespace System.Concepts.Prelude
         // <=.
     }
 
-    /// <summary>
-    ///     Implementation of <see cref="Ord{A}"/> for booleans.
-    /// </summary>
-    /// <remarks>
-    ///     Order is specified by having <c>true > false</c>.
-    /// </remarks>
-    public instance OrdBool : Ord<bool>
-    {
-        bool Equals(bool x, bool y) => x == y;
-        bool Leq(bool x, bool y) => !x || y;
-    }
-
-    /// <summary>
-    ///     Implementation of <see cref="Ord{A}"/> for integers.
-    /// </summary>
-    public instance OrdInt : Ord<int>
-    {
-        bool Equals(int x, int y) => x == y;
-        bool Leq(int x, int y) => x <= y;
-    }
-
-    /// <summary>
-    ///     Implementation of <see cref="Ord{A}"/> for doubles.
-    /// </summary>
-    public instance OrdDouble : Ord<double>
-    {
-        bool Equals(double x, double y) => x == y;
-        bool Leq(double x, double y) => x <= y;
-    }
-
+    // Subconcept implementations of Ord:
+    // - Ord<bool>   -> PreludeBool.
+    // - Ord<int>    -> PreludeInt.
+    // - Ord<double> -> PreludeDouble
     #endregion Ord
 
 
@@ -233,21 +207,9 @@ namespace System.Concepts.Prelude
         // should do too?
     }
 
-    /// <summary>
-    ///     Implementation of <see cref="Num{A}"/> for integers.
-    /// </summary>
-    public instance NumInt : Num<int>
-    {
-        int Add(int x, int y)  => x + y;
-        int Sub(int x, int y)  => x - y;
-        int Mul(int x, int y)  => x * y;
-        int Abs(int x)         => Math.Abs(x);
-        int Signum(int x)      => Math.Sign(x);
-        int FromInteger(int x) => x;
-    }
-
     // Subconcept implementations of Num:
-    // Num<double> is implemented by FloatingDouble.
+    // - Num<int>    -> PreludeInt
+    // - Num<double> -> PreludeDouble
 
     #endregion Num
 
@@ -316,9 +278,10 @@ namespace System.Concepts.Prelude
     }
 
     // Subconcept implementations of Fractional:
-    // - Fractional<double> -> FloatingDouble
+    // - Fractional<double> -> PreludeDouble
 
     #endregion Fractional
+
 
     #region Floating
 
@@ -546,13 +509,74 @@ namespace System.Concepts.Prelude
         A Atanh(A x);
     }
 
+    // Subconcept implementations of Floating:
+    // - Floating<double> -> PreludeDouble
+
+    #endregion Floating
+
+
+    #region Ground instances
+
     /// <summary>
-    ///     Implementation of <see cref="Floating{A}"/> for doubles.
+    ///     Implementation of <see cref="Ord{A}"/> for booleans.
     /// </summary>
-    public instance FloatingDouble : Floating<double>
+    /// <remarks>
+    ///     Order is specified by having <c>true > false</c>.
+    /// </remarks>
+    public instance PreludeBool : Ord<bool>
+    {
+        // Eq (via Ord)
+        bool Equals(bool x, bool y) => x == y;
+
+        // Ord
+        bool Leq(bool x, bool y) => !x || y;
+    }
+
+    /// <summary>
+    ///     Implementation of <see cref="Ord{A}"/> and
+    ///     <see cref="Num{A}"/> for integers.
+    /// </summary>
+    public instance PreludeInt : Ord<int>, Num<int>
     {
         //
+        // Eq (via Ord)
+        //
+        bool Equals(int x, int y) => x == y;
+
+        //
+        // Ord
+        //
+        bool Leq(int x, int y) => x <= y;
+
+        //
         // Num
+        //
+        int Add(int x, int y)  => x + y;
+        int Sub(int x, int y)  => x - y;
+        int Mul(int x, int y)  => x * y;
+        int Abs(int x)         => Math.Abs(x);
+        int Signum(int x)      => Math.Sign(x);
+        int FromInteger(int x) => x;
+    }
+
+    /// <summary>
+    ///     Implementation of <see cref="Ord{A}"/> and
+    ///     <see cref="Floating{A}"/> for doubles.
+    /// </summary>
+    public instance PreludeDouble : Ord<double>, Floating<double>
+    {
+        //
+        // Eq (via Ord)
+        //
+        bool Equals(double x, double y) => x == y;
+
+        //
+        // Ord
+        //
+        bool Leq(double x, double y) => x <= y;
+
+        //
+        // Num (via Floating)
         //
         double Add(double x, double y)     => x + y;
         double Sub(double x, double y)     => x - y;
@@ -562,12 +586,14 @@ namespace System.Concepts.Prelude
         double FromInteger(int x)          => (double)x;
 
         //
-        // Fractional
+        // Fractional (via Floating)
         //
         double Div(double x, double y)     => x / y;
         double FromRational(Ratio<int> x)  => x.num / x.den;
 
+        //
         // Floating
+        //
         double Pi()                        => Math.PI;
         double Exp(double x)               => Math.Exp(x);
         double Sqrt(double x)              => Math.Sqrt(x);
@@ -595,5 +621,5 @@ namespace System.Concepts.Prelude
             => 0.5 * Math.Log((1.0 + x) / (1.0 - x));
     }
 
-    #endregion Floating
+    #endregion Ground instances
 }

@@ -23,7 +23,7 @@ static class ArrayHelp
     }
 }
 
-class NumMonoidTest<A> where NumA: Num<A>
+class NumMonoidTest<A>
 {
     private A[] _xs;
 
@@ -32,7 +32,7 @@ class NumMonoidTest<A> where NumA: Num<A>
         _xs = xs;
     }
 
-    public void Run()
+    public void Run() where NumA : Num<A>
     {
         var xss = ShowArray(_xs);
 
@@ -44,7 +44,7 @@ class NumMonoidTest<A> where NumA: Num<A>
     }
 }
 
-class OrdSemiTest<A> where OrdA: Ord<A>
+class OrdSemiTest<A>
 {
     private A[] _xs;
 
@@ -54,7 +54,7 @@ class OrdSemiTest<A> where OrdA: Ord<A>
     }
 
 
-    public void Run()
+    public void Run() where OrdA : Ord<A>
     {
         var xss = ShowArray(_xs);
 
@@ -72,13 +72,13 @@ static class MonoidExamples
         where NumA : Num<A>
         where OrdA : Ord<A>
     {
-        new NumMonoidTest<A, NumA>(xs).Run();
-        new OrdSemiTest<A, OrdA>(xs).Run();
+        new NumMonoidTest<A>(xs).Run();
+        new OrdSemiTest<A>(xs).Run();
     }
 
     public static void Main()
     {
-        new NumMonoidTest<int, NumInt>(new int[] {}).Run();
+        new NumMonoidTest<int>(new int[] {}).Run();
         RunNumOrd(new int[] {6, 3, 1, 2, 10, 121});
         RunNumOrd(new double[] {6.2, 3.3, 1.1, 2.4, 10.5, 121.6});
 
