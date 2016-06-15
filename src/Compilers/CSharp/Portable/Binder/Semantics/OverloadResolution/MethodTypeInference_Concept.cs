@@ -148,7 +148,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// types) representing concept instances available in the scope
         /// of <paramref name="binder"/>.
         /// </param>
-        private void SearchScopeForInstancesAndParams(Binder binder,
+        private static void SearchScopeForInstancesAndParams(Binder binder,
             out ImmutableArray<TypeSymbol> allInstances,
             out ImmutableHashSet<TypeParameterSymbol> fixedParams)
         {
@@ -199,21 +199,42 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="fixedParams">
         /// The set to populate with fixed type parameters.
         /// </param>
-        private void SearchContainerForInstancesAndParams(Symbol container,
+        private static void SearchContainerForInstancesAndParams(Symbol container,
             ref ArrayBuilder<TypeSymbol> instances,
             ref HashSet<TypeParameterSymbol> fixedParams)
         {
             // Only methods and named types have constrained witnesses.
             if (container.Kind != SymbolKind.Method && container.Kind != SymbolKind.NamedType) return;
 
-            var tps = (((container as MethodSymbol)?.TypeParameters) //@crusso: does this include class type parameters?
-                       ?? (container as NamedTypeSymbol)?.TypeParameters)
-                       ?? ImmutableArray<TypeParameterSymbol>.Empty;
+            ImmutableArray<TypeParameterSymbol> tps = GetTypeParametersOf(container);
 
             foreach (var tp in tps)
             {
                 if (tp.IsConceptWitness) instances.Add(tp);
                 fixedParams.Add(tp);
+            }
+        }
+
+        /// <summary>
+        /// Gets the type parameters of an arbitrary symbol.
+        /// </summary>
+        /// <param name="symbol">
+        /// The symbol for which we are getting type parameters.
+        /// </param>
+        /// <returns>
+        /// If the symbol is a generic method or named type, its parameters;
+        /// else, the empty list.
+        /// </returns>
+        private static ImmutableArray<TypeParameterSymbol> GetTypeParametersOf(Symbol symbol)
+        {
+            switch (symbol.Kind)
+            {
+                case SymbolKind.Method:
+                    return ((MethodSymbol)symbol).TypeParameters;
+                case SymbolKind.NamedType:
+                    return ((NamedTypeSymbol)symbol).TypeParameters;
+                default:
+                    return ImmutableArray<TypeParameterSymbol>.Empty;
             }
         }
 
@@ -229,7 +250,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="instances">
         /// The instance array to populate with witnesses.
         /// </param>
-        private void GetNamedInstances(Binder binder, Symbol container, ref ArrayBuilder<TypeSymbol> instances)
+        private static void GetNamedInstances(Binder binder, Symbol container, ref ArrayBuilder<TypeSymbol> instances)
         {
             var ignore = new HashSet<DiagnosticInfo>();
 
@@ -270,7 +291,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// Null if inference failed; else, the inferred concept instance.
         /// </returns>
-        private TypeSymbol TryInferConceptWitness(TypeParameterSymbol typeParam,
+        private static TypeSymbol TryInferConceptWitness(TypeParameterSymbol typeParam,
             ImmutableArray<TypeSymbol> allInstances,
             MutableTypeMap fixedMap,
             ImmutableHashSet<TypeParameterSymbol> boundParams)
@@ -301,8 +322,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             // TODO: We don't yet have #2, so we presume that if we have any
             // concept-witness type parameters we've failed.
 
-            var requiredConcepts = this.GetRequiredConceptsFor(typeParam, fixedMap);
-            var firstPassInstances = this.TryInferConceptWitnessFirstPass(allInstances, requiredConcepts, boundParams);
+            var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
+            var firstPassInstances = TryInferConceptWitnessFirstPass(allInstances, requiredConcepts, boundParams);
 
             // We can't infer if none of the instances implement our concept!
             // However, if we have more than one candidate instance at this
@@ -310,11 +331,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             // passes 2).
             if (firstPassInstances.IsEmpty) return null;
 
-            var secondPassInstances = this.TryInferConceptWitnessSecondPass(firstPassInstances, allInstances, boundParams);
+            var secondPassInstances = TryInferConceptWitnessSecondPass(firstPassInstances, allInstances, boundParams);
 
             // We only do the third pass if the second pass returned too many items.
             var thirdPassInstances = secondPassInstances;
-            if (secondPassInstances.Length > 1) thirdPassInstances = this.TryInferConceptWitnessThirdPass(secondPassInstances, fixedMap);
+            if (secondPassInstances.Length > 1) thirdPassInstances = TryInferConceptWitnessThirdPass(secondPassInstances, fixedMap);
 
             // Either ambiguity, or an outright lack of inference success.
             if (thirdPassInstances.Length != 1) return null;
@@ -334,7 +355,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// An array of concepts required by <paramref name="typeParam"/>.
         /// </returns>
-        private ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
+        private static ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
         {
             var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
 
@@ -395,7 +416,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// An array of candidate instances after the first pass.
         /// </returns>
-        private ImmutableArray<TypeSymbol> TryInferConceptWitnessFirstPass(ImmutableArray<TypeSymbol> allInstances,
+        private static ImmutableArray<TypeSymbol> TryInferConceptWitnessFirstPass(ImmutableArray<TypeSymbol> allInstances,
             ImmutableArray<TypeSymbol> requiredConcepts,
             ImmutableHashSet<TypeParameterSymbol> boundParams)
         {
@@ -445,10 +466,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, the given instance implements the given list
         /// of concepts.
         /// </returns>
-        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
-                                                 TypeSymbol instance,
-                                                 ImmutableHashSet<TypeParameterSymbol> boundParams,
-                                                 out MutableTypeMap unifyingSubstitutions)
+        private static bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
+                                                        TypeSymbol instance,
+                                                        ImmutableHashSet<TypeParameterSymbol> boundParams,
+                                                        out MutableTypeMap unifyingSubstitutions)
         {
             unifyingSubstitutions = new MutableTypeMap();
 
@@ -504,7 +525,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// An array of candidate instances after the first pass.
         /// </returns>
-        private ImmutableArray<TypeSymbol> TryInferConceptWitnessSecondPass(ImmutableArray<TypeSymbol> candidateInstances,
+        private static ImmutableArray<TypeSymbol> TryInferConceptWitnessSecondPass(ImmutableArray<TypeSymbol> candidateInstances,
             ImmutableArray<TypeSymbol> allInstances,
             ImmutableHashSet<TypeParameterSymbol> boundParams)
         {
@@ -593,7 +614,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// which is a blocker on accepting <paramref name="instance"/> as a
         /// witness; false otherwise.
         /// </returns>
-        private bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableArray<TypeParameterSymbol> unfixed)
+        private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableArray<TypeParameterSymbol> unfixed)
         {
             Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
 
@@ -655,8 +676,40 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// An array of candidate instances after the third pass.
         /// </returns>
-        ImmutableArray<TypeSymbol> TryInferConceptWitnessThirdPass(ImmutableArray<TypeSymbol> candidateInstances, MutableTypeMap fixedMap)
+        private static ImmutableArray<TypeSymbol> TryInferConceptWitnessThirdPass(ImmutableArray<TypeSymbol> candidateInstances, MutableTypeMap fixedMap)
         {
+            // This pass is useless if we have zero or one witnesses.
+            Debug.Assert(1 < candidateInstances.Length);
+
+            // We now perform an array of 'better concept witness' checks to
+            // try to narrow the list of instances to zero or one.
+
+            var mostSpecificConceptInstances = FilterToMostSpecificConceptInstances(candidateInstances);
+            Debug.Assert(mostSpecificConceptInstances.Length <= candidateInstances.Length);
+            if (mostSpecificConceptInstances.Length <= 1) return mostSpecificConceptInstances;
+
+            var mostSpecificParamInstances = FilterToMostSpecificParamInstances(mostSpecificConceptInstances);
+            Debug.Assert(mostSpecificParamInstances.Length <= mostSpecificConceptInstances.Length);
+
+            return mostSpecificParamInstances;
+        }
+
+        /// <summary>
+        /// Filters a set of candidate instances to those that implement at
+        /// least all of the concepts of every other candidate instance.
+        /// </summary>
+        /// <param name="candidateInstances">
+        /// The set of instances to filter.
+        /// </param>
+        /// <returns>
+        /// <paramref name="candidateInstances"/>, filtered to contain only
+        /// those instances that implement every concept of every other
+        /// instance in <paramref name="candidateInstances"/>.
+        /// </returns>
+        private static ImmutableArray<TypeSymbol> FilterToMostSpecificConceptInstances(ImmutableArray<TypeSymbol> candidateInstances)
+        {
+            Debug.Assert(1 < candidateInstances.Length);
+
             var arb = new ArrayBuilder<TypeSymbol>();
 
             // TODO: This can invariably be made more efficient.
@@ -689,8 +742,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, <paramref name="instance"/> implements all of
         /// the concepts of instances in <paramref name="otherInstances"/>.
         /// </returns>
-        bool ImplementsConceptsOfOtherInstances(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
+        private static bool ImplementsConceptsOfOtherInstances(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
         {
+            Debug.Assert(!otherInstances.IsEmpty);
+
             var ignore = new HashSet<DiagnosticInfo>();
 
             foreach (var otherInstance in otherInstances)
@@ -705,6 +760,104 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Filters a set of candidate instances to those whose type parameters
+        /// are no less specific than those of any other instance.
+        /// <para>
+        /// If any instance is more specific than the others, then the others
+        /// are less specific and removed, returning the one 'best' instance.
+        /// </para>
+        /// <para>
+        /// Currently, we only rule that one instance is more specific than the
+        /// other if it has non-witness type parameters whereas the other does
+        /// not.  This is probably overly conservative, however.
+        /// </para>
+        /// </summary>
+        /// <param name="candidateInstances">
+        /// The set of instances to filter.
+        /// </param>
+        /// <returns>
+        /// <paramref name="candidateInstances"/>, filtered to contain only
+        /// those instances whose type parameters are more specific than those
+        /// of any other instance in <paramref name="candidateInstances"/>.
+        /// </returns>
+        private static ImmutableArray<TypeSymbol> FilterToMostSpecificParamInstances(ImmutableArray<TypeSymbol> candidateInstances)
+        {
+            Debug.Assert(1 < candidateInstances.Length);
+
+            var arb = new ArrayBuilder<TypeSymbol>();
+
+            // TODO: This can invariably be made more efficient.
+            foreach (var instance in candidateInstances)
+            {
+                if (!ParamsLessSpecific(instance, candidateInstances)) arb.Add(instance);
+            }
+
+            return arb.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Decides whether an instance is strictly less specific than at least
+        /// one other instance.
+        /// </summary>
+        /// <param name="instance">
+        /// The instance to compare.
+        /// </param>
+        /// <param name="otherInstances">
+        /// A list of other instances to which this instance should be compared.
+        /// This may include <paramref name="instance"/>, in which case it will
+        /// be ignored.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, <paramref name="instance"/> is strictly less
+        /// specific than any of the other instances in
+        /// <paramref name="otherInstances"/>.
+        /// </returns>
+        private static bool ParamsLessSpecific(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
+        {
+            // Currently, we do a very basic check based on non-witness type
+            // parameter counts.  This could be much more sophisticated.
+
+            bool instanceHasNonWitnesses = false;
+            foreach (var typeParam in GetTypeParametersOf(instance))
+            {
+                if (!typeParam.IsConceptWitness)
+                {
+                    instanceHasNonWitnesses = true;
+                    break;
+                }
+            }
+
+            // No need to do the below check if we don't have non-witness type
+            // params: the only way something can be more specific than us at
+            // the moment is if we weren't.
+            // This will need to go if we do something more sophisticated.
+            if (!instanceHasNonWitnesses) return false;
+
+            foreach (var otherInstance in otherInstances)
+            {
+                if (instance == otherInstance) continue;
+
+                // TODO: cache this per instance?
+                bool otherHasNonWitnesses = false;
+                foreach (var typeParam in GetTypeParametersOf(otherInstance))
+                {
+                    if (!typeParam.IsConceptWitness)
+                    {
+                        otherHasNonWitnesses = true;
+                        break;
+                    }
+                }
+
+                // An instance is more specific if it has no non-witness type
+                // parameters, but the other instance does.  Flip this logic to
+                // get an early less-specific result.
+                if (instanceHasNonWitnesses && !otherHasNonWitnesses) return true;
+            }
+
+            return false;
         }
 
         #endregion Third pass
