@@ -13,7 +13,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         public static IEnumerable<SyntaxKind> GetReservedKeywordKinds()
         {
-            for (int i = (int)SyntaxKind.BoolKeyword; i <= (int)SyntaxKind.ImplicitKeyword; i++)
+            //@t-mawind We've added two keywords, so the upper bound has gone up.
+            for (int i = (int)SyntaxKind.BoolKeyword; i <= (int)SyntaxKind.InstanceKeyword; i++)
             {
                 yield return (SyntaxKind)i;
             }
@@ -34,7 +35,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         public static bool IsReservedKeyword(SyntaxKind kind)
         {
-            return kind >= SyntaxKind.BoolKeyword && kind <= SyntaxKind.ImplicitKeyword;
+            //@t-mawind We've added two keywords, so the upper bound has gone up.
+            return kind >= SyntaxKind.BoolKeyword && kind <= SyntaxKind.InstanceKeyword;
         }
 
         public static bool IsAttributeTargetSpecifier(SyntaxKind kind)

@@ -55,6 +55,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Utilities
         public static readonly ISet<SyntaxKind> AllTypeDeclarations = new HashSet<SyntaxKind>(SyntaxFacts.EqualityComparer)
         {
             SyntaxKind.ConceptDeclaration, //@t-mawind
+            SyntaxKind.InstanceDeclaration, //@t-mawind
             SyntaxKind.InterfaceDeclaration,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,
@@ -64,6 +65,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Utilities
         public static readonly ISet<SyntaxKind> ClassInterfaceStructTypeDeclarations = new HashSet<SyntaxKind>(SyntaxFacts.EqualityComparer)
         {
             SyntaxKind.ConceptDeclaration, //@t-mawind correct?
+            SyntaxKind.InstanceDeclaration, //@t-mawind correct?
             SyntaxKind.InterfaceDeclaration,
             SyntaxKind.ClassDeclaration,
             SyntaxKind.StructDeclaration,

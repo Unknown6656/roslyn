@@ -95,6 +95,14 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 switch (syntax.Kind())
                 {
+                    case SyntaxKind.ConceptConstraint:
+                        // @t-mawind
+                        //   TODO: This should never be reached, as 'concept'
+                        //   is a hack to get override witnesses to propagate
+                        //   properly.  However, I've noticed VS can sometimes
+                        //   get this far, so this is a quick-fix until someone
+                        //   can figure out how to make it not happen.
+                        break;
                     case SyntaxKind.ClassConstraint:
                         constraints |= TypeParameterConstraintKind.ReferenceType;
                         break;
