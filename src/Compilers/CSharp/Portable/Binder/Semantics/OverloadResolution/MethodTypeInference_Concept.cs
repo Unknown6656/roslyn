@@ -67,7 +67,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap);
+                var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap, ImmutableHashSet<NamedTypeSymbol>.Empty);
                 if (maybeFixed == null) return false;
                 Debug.Assert(maybeFixed != null && maybeFixed.IsInstanceType());
                 _fixedResults[j] = maybeFixed;
@@ -302,10 +302,16 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// same type parameter list as <paramref name="typeParam"/>
         /// to their arguments.
         /// </param>
+        /// <param name="chain">
+        /// The set of instances we've passed through recursively to get here,
+        /// used to abort recursive calls if they will create cycles.
+        /// </param>
         /// <returns>
         /// Null if inference failed; else, the inferred concept instance.
         /// </returns>
-        internal TypeSymbol Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
+        internal TypeSymbol Infer(TypeParameterSymbol typeParam,
+            MutableTypeMap fixedMap,
+            ImmutableHashSet<NamedTypeSymbol> chain)
         {
             // @t-mawind
             // An instance satisfies inference if:
@@ -342,7 +348,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // passes 2).
             if (firstPassInstances.IsEmpty) return null;
 
-            var secondPassInstances = ToSatisfiableInstances(firstPassInstances);
+            var secondPassInstances = ToSatisfiableInstances(firstPassInstances, chain);
 
             // We only do the third pass if the second pass returned too many items.
             var thirdPassInstances = secondPassInstances;
@@ -535,10 +541,15 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="candidateInstances">
         /// The set of candidate instances after the first pass.
         /// </param>
+        /// <param name="chain">
+        /// The set of instances we've passed through recursively to get here,
+        /// used to abort recursive calls if they will create cycles.
+        /// </param>
         /// <returns>
         /// An array of candidate instances after the first pass.
         /// </returns>
-        private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances)
+        private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances,
+            ImmutableHashSet<NamedTypeSymbol> chain)
         {
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in candidateInstances)
@@ -546,7 +557,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // Assumption: no witness parameter can depend on any other
                 // witness parameter, so we can do recursive inference in
                 // one pass.
-                ImmutableArray<TypeParameterSymbol> unfixedWitnesses;
+                ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses;
                 if (!GetRecursiveUnfixedConceptWitnesses(instance, out unfixedWitnesses))
                 {
                     // This instance has some unfixed non-witness type
@@ -564,37 +575,16 @@ namespace Microsoft.CodeAnalysis.CSharp
                     Debug.Assert(instance.Kind == SymbolKind.NamedType);
                     var nt = (NamedTypeSymbol)instance;
 
-                    // To do recursive inference, we need to supply the current
-                    // fixed type parameters as a type map again.
-                    var recurFixedMap = new MutableTypeMap();
-                    var targs = nt.TypeArguments;
-                    var tpars = nt.TypeParameters;
-                    for (int i = 0; i < tpars.Length; i++)
-                    {
-                        if (tpars[i] != targs[i]) recurFixedMap.Add(tpars[i], new TypeWithModifiers(targs[i]));
-                    }
+                    // Do cycle detection: have we already set up a recursive
+                    // call for this instance with these type parameters?
+                    if (chain.Contains(nt)) continue;
+                    var newChain = chain.Add(nt);
 
-                    // Now try to infer the unfixed witnesses, recursively.
-                    // TODO: can this be flattened into an iterative process?
-                    // It shouldn't be a massive performance or stack issue,
-                    // but still...
-                    var success = true;
-                    var recurSubstMap = new MutableTypeMap();
-                    foreach (var unfixed in unfixedWitnesses)
-                    {
-                        var maybeFixed = Infer(unfixed, recurFixedMap);
-                        if (maybeFixed == null)
-                        {
-                            success = false;
-                            break;
-                        }
-                        recurSubstMap.Add(unfixed, new TypeWithModifiers(maybeFixed));
-                    }
-
-                    // We couldn't infer all of the witnesses.  By our
-                    // assumption, we can't infer anything more on this
-                    // instance, so we give up on it.
-                    if (!success) continue;
+                    // If this call fails, we couldn't infer all of the
+                    // witnesses.  By our assumption, we can't infer anything
+                    // more on this instance, so we give up on it.
+                    MutableTypeMap recurSubstMap;
+                    if (!InferRecursively(nt, unfixedWitnesses, newChain, out recurSubstMap)) continue;
 
                     // Else, we now have a map that should fix all of the
                     // remaining parameters.
@@ -607,6 +597,60 @@ namespace Microsoft.CodeAnalysis.CSharp
                 secondPassInstanceBuilder.Add(fixedInstance);
             }
             return secondPassInstanceBuilder.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Prepares a recursive inference round on an instance.
+        /// </summary>
+        /// <param name="instance">
+        /// The instance whose missing witnesses are to be inferred.
+        /// </param>
+        /// <param name="unfixedWitnesses">
+        /// The set of unfixed witness parameters to infer.
+        /// </param>
+        /// <param name="chain">
+        /// The set of instances we've passed through recursively to get here,
+        /// used to abort the recursive call if it will create a cycle.
+        /// </param>
+        /// <param name="recurSubstMap">
+        /// The map of witness-fixing substitutions to return on success.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, we were able to infer every unfixed witness
+        /// for this instance without generating cycles.
+        /// </returns>
+        private bool InferRecursively(NamedTypeSymbol instance,
+            ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses,
+            ImmutableHashSet<NamedTypeSymbol> chain,
+            out MutableTypeMap recurSubstMap)
+        {
+            // This ensures cycle detection will work.
+            Debug.Assert(chain.Contains(instance));
+
+            // In recursive inference, the set of known type argument
+            // substitutions is those we made when fixing this instance.
+            // We thus need to re-make the fixedMap.
+            var recurFixedMap = new MutableTypeMap();
+            var targs = instance.TypeArguments;
+            var tpars = instance.TypeParameters;
+            for (int i = 0; i < tpars.Length; i++)
+            {
+                if (tpars[i] != targs[i]) recurFixedMap.Add(tpars[i], new TypeWithModifiers(targs[i]));
+            }
+
+            // Now try to infer the unfixed witnesses, recursively.
+            // TODO: can this be flattened into an iterative process?
+            // It shouldn't be a massive performance or stack issue,
+            // but still...
+            recurSubstMap = new MutableTypeMap();
+            foreach (var unfixed in unfixedWitnesses)
+            {
+                var maybeFixed = Infer(unfixed, recurFixedMap, chain);
+                if (maybeFixed == null) return false;
+                recurSubstMap.Add(unfixed, new TypeWithModifiers(maybeFixed));
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -625,7 +669,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// which is a blocker on accepting <paramref name="instance"/> as a
         /// witness; false otherwise.
         /// </returns>
-        private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableArray<TypeParameterSymbol> unfixed)
+        private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableHashSet<TypeParameterSymbol> unfixed)
         {
             Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
 
@@ -635,7 +679,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             // unresolved concept witnesses.
             if (instance.Kind != SymbolKind.NamedType)
             {
-                unfixed = uBuilder.ToImmutableAndFree();
+                unfixed = uBuilder.ToImmutableHashSet();
+                uBuilder.Free();
                 return true;
             }
 
@@ -656,6 +701,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     {
                         // This is an unfixed non-witness, which kills off our
                         // attempt to use this instance completely.
+                        unfixed = ImmutableHashSet<TypeParameterSymbol>.Empty;
                         uBuilder.Free();
                         return false;
                     }
@@ -663,7 +709,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             // If we got here, then we haven't seen any unfixed non-witnesses.
-            unfixed = uBuilder.ToImmutableAndFree();
+            unfixed = uBuilder.ToImmutableHashSet();
+            uBuilder.Free();
             return true;
         }
 
