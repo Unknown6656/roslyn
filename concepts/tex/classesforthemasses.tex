@@ -54,6 +54,7 @@
 \usepackage{url}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \usepackage{listings}
+\usepackage{hyperref}
 \definecolor{StringRed}{rgb}{.637,0.082,0.082}
 \definecolor{CommentGreen}{rgb}{0,0.5,0}
 \definecolor{KeywordBlue}{rgb}{0,0,1}
@@ -183,6 +184,7 @@ Matt Windsor \affaddr{(University of York)}\\
 }
 
 
+
 \makeatletter
 \def\@copyrightspace{\relax}
 \makeatother
@@ -218,9 +220,9 @@ by type classes, with different implementation techniques.  Scala has
 \emph{implicits}\cite{scalaimplicits}, implicit method arguments denoting dictionaries, that
 are inferred by the compiler but represented, at run-time, as additional
 heap-allocated arguments to methods (with commensurate overhead).  C++ came very
-close to adopting \emph{concepts} \cite{cppconcepts}, a rather different extension of the template mechanism, 
-directly inspired by Haskell's type classes but enforcing  compile-time code specialization for performance. Rust has \emph{traits} \cite{Rust} and Swift has
-\emph{protocols} \cite{Swift}.
+close to adopting \emph{concepts}\cite{cppconcepts}, a rather different extension of the template mechanism, 
+directly inspired by Haskell's type classes but enforcing  compile-time code specialization for performance. Rust has \emph{traits}\cite{Rust} and Swift has
+\emph{protocols}\cite{Swift}.
 
 {\bf Contribution} We describe a simple encoding that allows us to add type classes to
 any .NET language, allowing interoperable definitions of type
@@ -312,9 +314,9 @@ This generic operation can be represent in C\# by the method:
 This method has not one, but \emph{two}, type parameters. The first, \lstinline{A}, is just the type parameter from the declaration.
 The second, \lstinline{EqA}, is a type parameter that is constrained to be a struct and is evidence for the constraint that \lstinline{A} supports interface \lstinline{Eq<A>}.
 
-The use of the \lstinline{struct} constraint on \lstinline{EqA} is significant and subtle. Structs are stack allocated so essentially free to create.
-Moreover, every struct type, including a type parameter \lstinline{T} of kind struct, has a default (all-zero) value that is created by 
-calling \lstinline{default(T)}.
+The use of the \lstinline{struct} constraint on \lstinline{EqA} is significant and subtle. Structs are stack-allocated so essentially free to create, especially when they contain no fields.
+Moreover, every struct type, including a type parameter \lstinline{T} of kind struct, has a default (all-zero) value denoted by
+ expression \lstinline{default(T)}.
 
 Invoking a method on a default value of reference type would simply raise a null-reference exception because the receiver is \lstinline{null}.
 However, methods on structs (including interface methods) can always be properly invoked
@@ -332,7 +334,7 @@ So a Haskell dictionary \emph{value} corresponds to a  C\# dictionary \emph{type
 
 \subsection{Haskell Instances}
 
-A Haskell instances declarations is represented by the declaration of an empty (field-less) .NET generic struct that implements the associated type class (itself an interface).
+A Haskell instance declaration is represented by the declaration of an empty (field-less) .NET  struct that implements the associated type class (itself an interface).
 This gives us a cheap representation of Haskell instances. 
 %A Haskell instance declaration can be represented by the declaration of a C\# struct type.
 %Moreover, the dictionary parameter corresponding to a Haskell type constraint can just be represented by a C\# type parameter; in particular, by a type parameter that is both a struct and implements the corresponding C\# interface.
@@ -366,7 +368,7 @@ In Haskell, instances are anonymous.
 
 \subsection{Derived Instances}
 
-This Haskell code defines, given an equality on (any) type \lstinline{a}'s, an equality operation on lists of a.
+This Haskell code defines a family of derived instances: given an equality  type \lstinline{a}, it defines equality over lists of \lstinline{a}.
 \lstset{language={Haskell}}
 \begin{lstlisting}
 instance (Eq a) => Eq ([a]) where 
@@ -420,19 +422,20 @@ instance Eq 'a => Eq (List 'a) where
 
 \subsection{Other features}
 
-We do not have space to describe the representations of other features but suffice to say that we can encode:
-Haskell type class operations that themselves have constrained types in their signatures (using interface methods that are generic);
-Haskell type class hierarchies  using interface inheritance; default operations using shared static methods; instances requiring 
+We do not have space to describe the representations of other features but suffice to say that we can encode \cite{natural}:
+type class operations that themselves have constrained types in their signatures (using interface methods that are generic);
+type class hierarchies  using interface inheritance; default operations using shared static methods; instances requiring 
 polymorphic recursion; instances as data (to constrained term constructors) and multi-parameter type classes. Moreover, choosing to provide named rather than anonymous instances would allow us to selectively support
-explicit as well as implicit evidence when preferable.
-The only feature we cannot currently support is higher-kinded type classes (like \lstinline{Monad}), but this is because .NET does not yet support higher kinds.
+explicit as well as implicit evidence when preferable. 
+We cannot support  higher-kinded type classes (like \lstinline{Monad}), because .NET lacks higher-kinds.
+First-order associated types are in reach.
 
 Much of the concision of Haskell comes not only from the declaration of type class hierarchies but from the implicit solution of constraints during type inference.
 For C\#, we envision evidence inference to be a mild generalization of type argument inference, with instantiations derived from the pervasive and locally assumed concept hierarchy.
 For F\#, we hope to adapt Haskell's more elaborate techniques for not only solving but also implicitly propagating inferred type class constraints.
 \section{Implementation}
 
-We are currently proiritizing our efforts on our C\# implementation of type classes \cite{Roslynfork}, forked from Microsoft's open source Roslyn compiler \cite{Roslyn}, adopting a syntax loosely inspired by C++ concept proposal 
+We are currently prioritizing our efforts on designing and implementing concepts for C\# in a fork\cite{Roslynfork}  of  Microsoft's open source Roslyn compiler\cite{Roslyn}, adopting a syntax loosely inspired  by C++ concepts\cite{cppconcepts}.
 %This is primarily because of interest from the C\# team, because C\# still has wider reach than F\# and because C\# is arguably in greater need of abstraction facilities.
 However, we hope to turn our attention to F\# over the second half of the summer.
 
