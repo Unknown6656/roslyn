@@ -63,10 +63,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             ImmutableHashSet<TypeParameterSymbol> boundParams;
             SearchScopeForInstancesAndParams(binder, out allInstances, out boundParams);
 
+            var inferrer = new ConceptWitnessInferrer(allInstances, boundParams);
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                var maybeFixed = TryInferConceptWitness(_methodTypeParameters[j], allInstances, fixedMap, boundParams);
+                var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap);
                 if (maybeFixed == null) return false;
                 Debug.Assert(maybeFixed != null && maybeFixed.IsInstanceType());
                 _fixedResults[j] = maybeFixed;
@@ -206,35 +207,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Only methods and named types have constrained witnesses.
             if (container.Kind != SymbolKind.Method && container.Kind != SymbolKind.NamedType) return;
 
-            ImmutableArray<TypeParameterSymbol> tps = GetTypeParametersOf(container);
+            ImmutableArray<TypeParameterSymbol> tps = ConceptWitnessInferrer.GetTypeParametersOf(container);
 
             foreach (var tp in tps)
             {
                 if (tp.IsConceptWitness) instances.Add(tp);
                 fixedParams.Add(tp);
-            }
-        }
-
-        /// <summary>
-        /// Gets the type parameters of an arbitrary symbol.
-        /// </summary>
-        /// <param name="symbol">
-        /// The symbol for which we are getting type parameters.
-        /// </param>
-        /// <returns>
-        /// If the symbol is a generic method or named type, its parameters;
-        /// else, the empty list.
-        /// </returns>
-        private static ImmutableArray<TypeParameterSymbol> GetTypeParametersOf(Symbol symbol)
-        {
-            switch (symbol.Kind)
-            {
-                case SymbolKind.Method:
-                    return ((MethodSymbol)symbol).TypeParameters;
-                case SymbolKind.NamedType:
-                    return ((NamedTypeSymbol)symbol).TypeParameters;
-                default:
-                    return ImmutableArray<TypeParameterSymbol>.Empty;
             }
         }
 
@@ -270,6 +248,47 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         #endregion Setup
+    }
+
+    /// <summary>
+    /// An object that, given a series of viable instances and bound type
+    /// parameters, can perform concept witness inference.
+    /// </summary>
+    internal class ConceptWitnessInferrer
+    {
+        /// <summary>
+        /// The list of all instances in scope for this inferrer.
+        /// These can be either type parameters (eg. witnesses passed in
+        /// through constraints at the method or class level) or named
+        /// types (instance declarations).
+        /// </summary>
+        private ImmutableArray<TypeSymbol> _allInstances;
+
+        /// <summary>
+        /// The set of all type parameters in scope that are bound:
+        /// we cannot substitute for them in unification.  Usually this is
+        /// the set of type parameters introduced through type parameter
+        /// lists on methods and classes in scope.
+        /// </summary>
+        private ImmutableHashSet<TypeParameterSymbol> _boundParams;
+
+        /// <summary>
+        /// Constructs a new ConceptWitnessInferrer.
+        /// </summary>
+        /// <param name="allInstances">
+        /// The list of all instances in scope for this inferrer.
+        /// </param>
+        /// <param name="boundParams">
+        /// The set of all type parameters in scope that are bound, and
+        /// cannot be substituted out in unification.
+        /// </param>
+        public ConceptWitnessInferrer(ImmutableArray<TypeSymbol> allInstances,
+            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        {
+            _allInstances = allInstances;
+            _boundParams = boundParams;
+        }
+
         #region Main driver
 
         /// <summary>
@@ -278,30 +297,22 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="typeParam">
         /// The type parameter that is the concept witness to infer.
         /// </param>
-        /// <param name="allInstances">
-        /// The set of instances available for this witness.
-        /// </param>
         /// <param name="fixedMap">
-        /// The map from fixed type parameters to their arguments.
-        /// </param>
-        /// <param name="boundParams">
-        /// A list of all type parameters that have been bound by the
-        /// containing scope, and thus cannot be substituted by unification.
+        /// The map from all of the fixed, non-witness type parameters in the
+        /// same type parameter list as <paramref name="typeParam"/>
+        /// to their arguments.
         /// </param>
         /// <returns>
         /// Null if inference failed; else, the inferred concept instance.
         /// </returns>
-        private static TypeSymbol TryInferConceptWitness(TypeParameterSymbol typeParam,
-            ImmutableArray<TypeSymbol> allInstances,
-            MutableTypeMap fixedMap,
-            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        internal TypeSymbol Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
         {
             // @t-mawind
             // An instance satisfies inference if:
             //
             // 1) for all concepts required by the type parameter, at least
-            //    one concept implemented by the instances unifies with that concept without
-            //    capturing bound type parameters;
+            //    one concept implemented by the instances unifies with that
+            //    concept without capturing bound type parameters;
             // 2) all of the type parameters of that instance can be bound,
             //    both by the substitutions from the unification above and also
             //    by recursively trying to infer any missing concept witnesses.
@@ -323,7 +334,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // concept-witness type parameters we've failed.
 
             var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
-            var firstPassInstances = TryInferConceptWitnessFirstPass(allInstances, requiredConcepts, boundParams);
+            var firstPassInstances = AllInstancesSatisfyingGoal(requiredConcepts);
 
             // We can't infer if none of the instances implement our concept!
             // However, if we have more than one candidate instance at this
@@ -331,11 +342,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             // passes 2).
             if (firstPassInstances.IsEmpty) return null;
 
-            var secondPassInstances = TryInferConceptWitnessSecondPass(firstPassInstances, allInstances, boundParams);
+            var secondPassInstances = ToSatisfiableInstances(firstPassInstances);
 
             // We only do the third pass if the second pass returned too many items.
             var thirdPassInstances = secondPassInstances;
-            if (secondPassInstances.Length > 1) thirdPassInstances = TryInferConceptWitnessThirdPass(secondPassInstances, fixedMap);
+            if (secondPassInstances.Length > 1) thirdPassInstances = TieBreakInstances(secondPassInstances);
 
             // Either ambiguity, or an outright lack of inference success.
             if (thirdPassInstances.Length != 1) return null;
@@ -391,6 +402,29 @@ namespace Microsoft.CodeAnalysis.CSharp
             return rc2.ToImmutableAndFree();
         }
 
+        /// <summary>
+        /// Gets the type parameters of an arbitrary symbol.
+        /// </summary>
+        /// <param name="symbol">
+        /// The symbol for which we are getting type parameters.
+        /// </param>
+        /// <returns>
+        /// If the symbol is a generic method or named type, its parameters;
+        /// else, the empty list.
+        /// </returns>
+        internal static ImmutableArray<TypeParameterSymbol> GetTypeParametersOf(Symbol symbol)
+        {
+            switch (symbol.Kind)
+            {
+                case SymbolKind.Method:
+                    return ((MethodSymbol)symbol).TypeParameters;
+                case SymbolKind.NamedType:
+                    return ((NamedTypeSymbol)symbol).TypeParameters;
+                default:
+                    return ImmutableArray<TypeParameterSymbol>.Empty;
+            }
+        }
+
         #endregion Main driver
         #region First pass
 
@@ -403,29 +437,20 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// inferred.
         /// </para>
         /// </summary>
-        /// <param name="allInstances">
-        /// The set of instances available for this witness.
-        /// </param>
         /// <param name="requiredConcepts">
         /// The list of concepts required by the type parameter being inferred.
-        /// </param>
-        /// <param name="boundParams">
-        /// A list of all type parameters that have been bound by the
-        /// containing scope, and thus cannot be substituted by unification.
         /// </param>
         /// <returns>
         /// An array of candidate instances after the first pass.
         /// </returns>
-        private static ImmutableArray<TypeSymbol> TryInferConceptWitnessFirstPass(ImmutableArray<TypeSymbol> allInstances,
-            ImmutableArray<TypeSymbol> requiredConcepts,
-            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        private ImmutableArray<TypeSymbol> AllInstancesSatisfyingGoal(ImmutableArray<TypeSymbol> requiredConcepts)
         {
             // First, collect all of the instances satisfying 1).
             var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
-            foreach (var instance in allInstances)
+            foreach (var instance in _allInstances)
             {
                 MutableTypeMap unifyingSubstitutions;
-                if (AllRequiredConceptsProvided(requiredConcepts, instance, boundParams, out unifyingSubstitutions))
+                if (AllRequiredConceptsProvided(requiredConcepts, instance, out unifyingSubstitutions))
                 {
                     // The unification may have provided us with substitutions
                     // that were needed to make the provided concepts fit the
@@ -454,10 +479,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="instance">
         /// The candidate instance.
         /// </param>
-        /// <param name="boundParams">
-        /// A list of all type parameters that have been bound by the
-        /// containing scope, and thus cannot be substituted by unification.
-        /// </param>
         /// <param name="unifyingSubstitutions">
         /// A map of type substitutions, populated by this method, which are
         /// required in order to make the instance implement the concepts.
@@ -466,10 +487,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, the given instance implements the given list
         /// of concepts.
         /// </returns>
-        private static bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
-                                                        TypeSymbol instance,
-                                                        ImmutableHashSet<TypeParameterSymbol> boundParams,
-                                                        out MutableTypeMap unifyingSubstitutions)
+        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
+                                                 TypeSymbol instance,
+                                                 out MutableTypeMap unifyingSubstitutions)
         {
             unifyingSubstitutions = new MutableTypeMap();
 
@@ -486,7 +506,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     if (TypeUnification.CanUnify(providedConcept,
                             requiredConcept,
                             ref unifyingSubstitutions,
-                            boundParams))
+                            _boundParams))
                     {
                         thisProvided = true;
                         break;
@@ -515,19 +535,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="candidateInstances">
         /// The set of candidate instances after the first pass.
         /// </param>
-        /// <param name="allInstances">
-        /// The original list of all instances, used for recursive calls.
-        /// </param>
-        /// <param name="boundParams">
-        /// A list of all type parameters that have been bound by the
-        /// containing scope, and thus cannot be substituted by unification.
-        /// </param>
         /// <returns>
         /// An array of candidate instances after the first pass.
         /// </returns>
-        private static ImmutableArray<TypeSymbol> TryInferConceptWitnessSecondPass(ImmutableArray<TypeSymbol> candidateInstances,
-            ImmutableArray<TypeSymbol> allInstances,
-            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances)
         {
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in candidateInstances)
@@ -571,7 +582,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     var recurSubstMap = new MutableTypeMap();
                     foreach (var unfixed in unfixedWitnesses)
                     {
-                        var maybeFixed = TryInferConceptWitness(unfixed, allInstances, recurFixedMap, boundParams);
+                        var maybeFixed = Infer(unfixed, recurFixedMap);
                         if (maybeFixed == null)
                         {
                             success = false;
@@ -670,13 +681,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="candidateInstances">
         /// The set of instances to narrow.
         /// </param>
-        /// <param name="fixedMap">
-        /// A map mapping fixed type parameters to their type arguments.
-        /// </param>
         /// <returns>
         /// An array of candidate instances after the third pass.
         /// </returns>
-        private static ImmutableArray<TypeSymbol> TryInferConceptWitnessThirdPass(ImmutableArray<TypeSymbol> candidateInstances, MutableTypeMap fixedMap)
+        private static ImmutableArray<TypeSymbol> TieBreakInstances(ImmutableArray<TypeSymbol> candidateInstances)
         {
             // This pass is useless if we have zero or one witnesses.
             Debug.Assert(1 < candidateInstances.Length);
