@@ -840,11 +840,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             // @t-mawind
             //   If we're non-statically calling a type expression at this
             //   stage, we're invoking against an explicit instance (hopefully).
-            //   Desugar the instance call to a dictionary construction before
-            //   we continue.
-            if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression)
+            //   If so, desugar the instance call to a dictionary construction
+            //  before we continue.
+            if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression && receiver.Type.IsInstanceType())
             {
-                Debug.Assert(receiver.Type.IsInstanceType());
                 receiver = SynthesizeWitnessInvocationReceiver(receiver.Syntax, receiver.Type);
             }
 
