@@ -1120,8 +1120,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 return LookupResult.WrongArity(symbol, diagInfo);
             }
-            else if (!InCref && !unwrappedSymbol.CanBeReferencedByNameIgnoringIllegalCharacters)
+            else if (!InCref && ((options & LookupOptions.AllowSpecialMethods) == 0) && !unwrappedSymbol.CanBeReferencedByNameIgnoringIllegalCharacters)
             {
+                // @t-mawind: The new lookup option is a nasty hack.
+
                 // Strictly speaking, this test should actually check CanBeReferencedByName.
                 // However, we don't want to pay that cost in cases where the lookup is based
                 // on a provided name.  As a result, we skip the character check here and let

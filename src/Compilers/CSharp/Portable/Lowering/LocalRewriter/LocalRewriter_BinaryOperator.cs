@@ -695,9 +695,17 @@ namespace Microsoft.CodeAnalysis.CSharp
                 return RewriteLiftedBinaryOperator(syntax, operatorKind, loweredLeft, loweredRight, type, method);
             }
 
-            // Otherwise, nothing special here.
             Debug.Assert((object)method != null);
             Debug.Assert(method.ReturnType == type);
+
+            // @t-mawind
+            //   As usual, concept accesses need to be rewritten down to their 
+            //   default() form.
+            if (method is SynthesizedWitnessMethodSymbol)
+            {
+                return BoundCall.Synthesized(syntax, new BoundDefaultOperator(syntax, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true }, method, loweredLeft, loweredRight);
+            }
+            // Otherwise, nothing special here.
             return BoundCall.Synthesized(syntax, null, method, loweredLeft, loweredRight);
         }
 

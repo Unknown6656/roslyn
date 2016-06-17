@@ -34,7 +34,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             _isExpressionBodied = isExpressionBodied;
 
             // @t-mawind (is this a good idea?)
-            var defaultAccess = ContainingType.IsInstance ? DeclarationModifiers.Public : DeclarationModifiers.Private;
+            var defaultAccess = (ContainingType.IsInstance || ContainingType.IsConcept) ? DeclarationModifiers.Public : DeclarationModifiers.Private;
             var allowedModifiers =
                 DeclarationModifiers.AccessibilityMask |
                 DeclarationModifiers.Static |
@@ -52,13 +52,19 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             this.CheckUnsafeModifier(declarationModifiers, diagnostics);
 
+            if (ContainingType.IsConcept)
+            {
+                // @t-mawind Is there any easier way of doing this?
+                declarationModifiers |= DeclarationModifiers.Abstract;
+            }
+
             // We will bind the formal parameters and the return type lazily. For now,
             // assume that the return type is non-void; when we do the lazy initialization
             // of the parameters and return type we will update the flag if necessary.
 
             this.MakeFlags(methodKind, declarationModifiers, returnsVoid: false, isExtensionMethod: false);
 
-            if (this.ContainingType.IsInterface)
+            if (this.ContainingType.IsInterface && !this.ContainingType.IsConcept)
             {
                 // If we have an operator in an interface, we already have reported that fact as 
                 // an error. No need to cascade the error further.
@@ -77,7 +83,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // @t-mawind
             //   If we're in a concept instance, then operators must be public and
             //   _non_ -static.
-            if (ContainingType.IsInstance)
+            if (ContainingType.IsInstance || ContainingType.IsConcept)
             {
                 if (DeclaredAccessibility != Accessibility.Public || IsStatic)
                 {
