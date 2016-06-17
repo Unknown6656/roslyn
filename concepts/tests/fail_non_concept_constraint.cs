@@ -7,6 +7,7 @@ interface Eq<A>
     bool Equals(A a, A b);
 }
 
+// This should fail...
 instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
 {
     bool Equals(A[] a, A[] b)
@@ -21,6 +22,15 @@ instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
         return true;
     }
 }
+
+// As should this...
+class Foo<A> where EqA: Eq<A> {}
+
+// And this.
+interface Bar {}
+
+class Foo where B : Bar {}
+
 
 class Program {
    static void Main()
