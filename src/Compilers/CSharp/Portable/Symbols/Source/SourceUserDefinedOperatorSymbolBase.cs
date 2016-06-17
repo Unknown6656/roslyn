@@ -33,7 +33,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             _name = name;
             _isExpressionBodied = isExpressionBodied;
 
-            var defaultAccess = DeclarationModifiers.Private;
+            // @t-mawind (is this a good idea?)
+            var defaultAccess = ContainingType.IsInstance ? DeclarationModifiers.Public : DeclarationModifiers.Private;
             var allowedModifiers =
                 DeclarationModifiers.AccessibilityMask |
                 DeclarationModifiers.Static |
@@ -73,12 +74,26 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 return;
             }
 
-            // SPEC: An operator declaration must include both a public and a
-            // SPEC: static modifier
-            if (this.DeclaredAccessibility != Accessibility.Public || !this.IsStatic)
+            // @t-mawind
+            //   If we're in a concept instance, then operators must be public and
+            //   _non_ -static.
+            if (ContainingType.IsInstance)
             {
-                // CS0558: User-defined operator '...' must be declared static and public
-                diagnostics.Add(ErrorCode.ERR_OperatorsMustBeStatic, this.Locations[0], this);
+                if (DeclaredAccessibility != Accessibility.Public || IsStatic)
+                {
+                    // CS4038: User-defined concept operator '...' must be declared non-static and public.
+                    diagnostics.Add(ErrorCode.ERR_ConceptOperatorsMustBeNonStatic, Locations[0], this);
+                }
+            }
+            else
+            {
+                // SPEC: An operator declaration must include both a public and a
+                // SPEC: static modifier
+                if (this.DeclaredAccessibility != Accessibility.Public || !this.IsStatic)
+                {
+                    // CS0558: User-defined operator '...' must be declared static and public
+                    diagnostics.Add(ErrorCode.ERR_OperatorsMustBeStatic, this.Locations[0], this);
+                }
             }
 
             // SPEC: Because an external operator provides no actual implementation, 
@@ -511,6 +526,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // SPEC: of which must have type T or T? and the second of which must
             // SPEC: have type int or int?, and can return any type.
 
+            // @t-mawind TODO: work out how to do this for concepts.
             if (this.ParameterTypes[0].StrippedType() != this.ContainingType ||
                 this.ParameterTypes[1].StrippedType().SpecialType != SpecialType.System_Int32)
             {
@@ -533,7 +549,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // SPEC: A binary nonshift operator must take two parameters, at least
             // SPEC: one of which must have the type T or T?, and can return any type.
 
-            if (this.ParameterTypes[0].StrippedType() != this.ContainingType &&
+            // @t-mawind Suppress this on instances, because instances never
+            // have the same type as their operator types.
+            if (!ContainingType.IsInstance &&
+                this.ParameterTypes[0].StrippedType() != this.ContainingType &&
                 this.ParameterTypes[1].StrippedType() != this.ContainingType)
             {
                 // CS0563: One of the parameters of a binary operator must be the containing type

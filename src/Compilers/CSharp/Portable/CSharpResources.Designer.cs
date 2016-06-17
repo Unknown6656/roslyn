@@ -2717,6 +2717,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to User-defined concept operator &apos;{0}&apos; must be declared non-static and public..
+        /// </summary>
+        internal static string ERR_ConceptOperatorsMustBeNonStatic {
+            get {
+                return ResourceManager.GetString("ERR_ConceptOperatorsMustBeNonStatic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &apos;{0}&apos; must declare a body because it is not marked abstract, extern, or partial.
         /// </summary>
         internal static string ERR_ConcreteMissingBody {

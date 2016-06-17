@@ -1917,9 +1917,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private void CheckForEqualityAndGetHashCode(DiagnosticBag diagnostics)
         {
-            if (this.IsInterfaceType())
+            // @t-mawind Added instances here too.
+            if (this.IsInterfaceType() || this.IsInstanceType())
             {
-                // Interfaces are allowed to define Equals without GetHashCode if they want.
+                // Interfaces and concept instances are allowed to define Equals without GetHashCode if they want.
                 return;
             }
 
@@ -2703,6 +2704,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                             break;
                         case MethodKind.Conversion:
                         case MethodKind.UserDefinedOperator:
+                            // @t-mawind Concepts allow this for concept operator overloading.
+                            if (member.ContainingType.IsConcept) break;
                             diagnostics.Add(ErrorCode.ERR_InterfacesCantContainOperators, member.Locations[0]);
                             break;
                         case MethodKind.Destructor:

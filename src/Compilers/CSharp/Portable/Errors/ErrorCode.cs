@@ -1129,6 +1129,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         ERR_NoSuchMemberOrExtensionNeedUsing = 4036,
 
         ERR_ConceptConstraintOnNonOverride = 4037, //@t-mawind
+        ERR_ConceptOperatorsMustBeNonStatic = 4038, //@t-mawind
 
         // available 4037-4999
 
