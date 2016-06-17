@@ -70,42 +70,10 @@ abstract class A
                 Diagnostic(ErrorCode.ERR_AddRemoveMustHaveBody, ";"));
         }
 
-        [Fact]
-        public void CS0080ERR_ConstraintOnlyAllowedOnGenericDecl()
-        {
-            var test = @"
-interface I {}
-class C where C : I  // CS0080 - C is not generic class
-{
-}
-public class Test
-{
-    public static int Main ()
-    {
-        return 1;
-    }
-}
-";
-            CreateCompilationWithMscorlib(test).VerifyDiagnostics(
-                // (3,9): error CS0080: Constraints are not allowed on non-generic declarations
-                Diagnostic(ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl, "where").WithLocation(3, 9));
-        }
-
-        [WorkItem(527827, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/527827")]
-        [Fact]
-        public void CS0080ERR_ConstraintOnlyAllowedOnGenericDecl_2()
-        {
-            var test = @"
-class C 
-    where C : I
-{
-}
-";
-            CreateCompilationWithMscorlib(test).VerifyDiagnostics(
-                // (3,5): error CS0080: Constraints are not allowed on non-generic declarations
-                //     where C : I
-                Diagnostic(ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl, "where"));
-        }
+        // @t-mawind
+        //   ERR_ConstraintOnlyAllowedOnGenericDecl used to be here, but at
+        //   time of writing this error is not emitted by our version of the
+        //   C# compiler.
 
         [Fact]
         public void CS0107ERR_BadMemberProtection()
@@ -3953,6 +3921,40 @@ class A<out T>
                 // (17,13): error CS1960: Invalid variance modifier. Only interface and delegate type parameters can be specified as variant.
                 Diagnostic(ErrorCode.ERR_IllegalVarianceSyntax, "out").WithLocation(17, 13));
         }
+
+        // @t-mawind
+        //   Hopefully these errors are temporary, since the concept constraint
+        //   is a messy stopgap.
+
+        [Fact]
+        public void CS4037ERR_ConceptConstraintOnNonOverride()
+        {
+            var test = @"
+class C where EqA : concept  // CS4037
+{
+}
+";
+            CreateCompilationWithMscorlib(test).VerifyDiagnostics(
+                // (2,21): error CS4037: Constraint 'concept' may only be used on overrides of methods with concepts.
+                Diagnostic(ErrorCode.ERR_ConceptConstraintOnNonOverride, "concept").WithLocation(2, 21));
+        }
+
+        [Fact]
+        public void CS4037ERR_ConceptConstraintOnNonOverride_2()
+        {
+            var test = @"
+class C
+{
+    void D() where EqA : concept  // CS4037
+    {
+    }
+}
+";
+            CreateCompilationWithMscorlib(test).VerifyDiagnostics(
+                // (4,26): error CS4037: Constraint 'concept' may only be used on overrides of methods with concepts.
+                Diagnostic(ErrorCode.ERR_ConceptConstraintOnNonOverride, "concept").WithLocation(4, 26));
+        }
+
 
         [Fact]
         public void CS7000ERR_UnexpectedAliasedName()

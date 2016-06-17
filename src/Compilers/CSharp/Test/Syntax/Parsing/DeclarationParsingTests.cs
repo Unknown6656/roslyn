@@ -1096,6 +1096,13 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
             Assert.NotNull(cs.CloseBraceToken);
         }
 
+        // @t-mawind
+        //    The old test TestNonGenericClassWithTypeConstraintBound has been
+        //    broken by the fact that constraints on non-generic classes are now
+        //    ok, so long as all of the constraints are concepts.
+        //    Currently, this is not a parsing error anymore: it is, however,
+        //    a semantic error.
+
         [Fact]
         public void TestNonGenericClassWithTypeConstraintBound()
         {
@@ -1106,8 +1113,7 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
             Assert.Equal(1, file.Members.Count);
             Assert.Equal(text, file.ToString());
             var errors = file.Errors();
-            Assert.Equal(1, errors.Length);
-            Assert.Equal((int)ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl, errors[0].Code);
+            Assert.Equal(0, errors.Length); // @t-mawind No longer syntax error
 
             Assert.Equal(SyntaxKind.ClassDeclaration, file.Members[0].Kind());
             var cs = (TypeDeclarationSyntax)file.Members[0];
