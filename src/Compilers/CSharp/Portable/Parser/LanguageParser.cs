@@ -3068,38 +3068,29 @@ namespace Microsoft.CodeAnalysis.CSharp.Syntax.InternalSyntax
                 if (!constraints.IsNull && constraints.Count > 0 &&
                     ((explicitInterfaceOpt != null) || isOverride))
                 {
-                    //@t-mawind Cheekily allow constraints in this case if:
-                    // 1) we're in an override, and
-                    // 2) every constraint is of the form 'Foo : concept'.
+                    //@t-mawind Cheekily allow constraints in this case if
+                    // every constraint is of the form 'Foo : concept'.
                     // This is a horrible hack.
                     var permitted = true;
-                    if (isOverride)
+                    for (int i = 0; i < constraints.Count; i++)
                     {
-                        for (int i = 0; i < constraints.Count; i++)
+                        var clause = constraints[i];
+                        if (clause.Constraints.Count == 1)
                         {
-                            var clause = constraints[i];
-                            if (clause.Constraints.Count == 1)
-                            {
-                                var constraint = clause.Constraints[0];
-                                if (constraint.Kind != SyntaxKind.ConceptConstraint) permitted = false;
-                            }
-                            else
-                            {
-                                permitted = false;
-                            }
-                            if (!permitted) break;
+                            var constraint = clause.Constraints[0];
+                            if (constraint.Kind == SyntaxKind.ConceptConstraint) continue;
                         }
-                    }
-                    else
-                    {
                         permitted = false;
+                        break;
                     }
 
-                    if (!permitted) constraints[0] = this.AddErrorToFirstToken(constraints[0], ErrorCode.ERR_OverrideWithConstraints);
+                    if (!permitted) constraints[0] = AddErrorToFirstToken(constraints[0], ErrorCode.ERR_OverrideWithConstraints);
                 }
-
-                // @t-mawind We don't allow concept constraints on anything other than overrides.
-                if (!constraints.IsNull && !isOverride) this.RejectConceptConstraints(constraints);
+                // @t-mawind We don't allow concept constraints on anything else.
+                else if (!constraints.IsNull)
+                {
+                    RejectConceptConstraints(constraints);
+                }
 
                 _termState = saveTerm;
 
