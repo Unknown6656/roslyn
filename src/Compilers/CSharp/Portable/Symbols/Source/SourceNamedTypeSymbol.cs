@@ -237,13 +237,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 // @t-mawind We can elide some type parameters if they
                 // are a) concept witnesses, and b) mentioned on the left-hand
                 // side of a constraint.  We need to find these and add them here.
-                ResolveWitnessParams(diagnostics,
-                    (TypeDeclarationSyntax)typeDecl,
-                    ref parameterBuilder,
-                    ref typeParameterNames,
-                    ref typeParameterVarianceKeywords,
-                    ref typeParameterMismatchReported,
-                    i);
+                var constraints = new SyntaxList<TypeParameterConstraintClauseSyntax>();
+                switch (typeDecl.Kind())
+                {
+                    case SyntaxKind.InstanceDeclaration:
+                    case SyntaxKind.ConceptDeclaration:
+                    case SyntaxKind.ClassDeclaration:
+                    case SyntaxKind.StructDeclaration:
+                    case SyntaxKind.InterfaceDeclaration:
+                    constraints = ((TypeDeclarationSyntax)typeDecl).ConstraintClauses;
+                    break;
+                    case SyntaxKind.DelegateDeclaration:
+                    constraints = ((DelegateDeclarationSyntax)typeDecl).ConstraintClauses;
+                    break;
+                    default:
+                    break;
+                }
+                if (!constraints.IsEmpty()) ResolveWitnessParams(diagnostics, constraints, ref parameterBuilder, ref typeParameterNames, ref typeParameterVarianceKeywords, ref typeParameterMismatchReported, i);
             }
 
             var parameterBuilders2 = parameterBuilders1.Transpose(); // type arguments are positional

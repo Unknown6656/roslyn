@@ -43,8 +43,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="diagnostics">
         /// The bag of diagnostics into which we report errors.
         /// </param>
-        /// <param name="typeDecl">
-        /// The type declaration to examine.
+        /// <param name="clauses">
+        /// The constraints of the type declaration to examine.
         /// </param>
         /// <param name="parameterBuilder">
         /// The type parameter builder to append onto.
@@ -64,7 +64,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// The number of explicit type parameters.
         /// </param>
         private void ResolveWitnessParams(DiagnosticBag diagnostics,
-            TypeDeclarationSyntax typeDecl,
+            SyntaxList<TypeParameterConstraintClauseSyntax> clauses,
             ref List<AbstractTypeParameterBuilder> parameterBuilder,
             ref string[] typeParameterNames,
             ref string[] typeParameterVarianceKeywords,
@@ -73,7 +73,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             var i = typeParameterCount;
 
-            foreach (var clause in typeDecl.ConstraintClauses)
+            foreach (var clause in clauses)
             {
                 if (!IsPossibleWitness(clause, ref typeParameterNames, typeParameterCount)) continue;
 
