@@ -771,9 +771,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // @t-mawind If the type parameter list is null, then we must have
             //   at least one constraint.  All of those constraints must name
             //   concepts, but we check that later.
-            Debug.Assert(
-                syntax.TypeParameterList != null ||
-                !syntax.ConstraintClauses.IsEmpty());
+            Debug.Assert(syntax.TypeParameterList != null || !syntax.ConstraintClauses.IsEmpty());
 
             OverriddenMethodTypeParameterMapBase typeMap = null;
             if (this.IsOverride)

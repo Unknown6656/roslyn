@@ -31,6 +31,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 case DeclarationKind.Concept: //@t-mawind
                     return SyntaxKind.ConceptKeyword;
+                case DeclarationKind.Instance: //@t-mawind
+                    return SyntaxKind.InstanceKeyword;
                 case DeclarationKind.Class:
                     return SyntaxKind.ClassKeyword;
                 case DeclarationKind.Struct:
