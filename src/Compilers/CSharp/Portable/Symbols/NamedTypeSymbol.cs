@@ -42,17 +42,30 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         public abstract int Arity { get; }
 
         /// <summary>
-        /// Returns the arity of this type, less any implicit parameters.
-        /// This is used to check type parameter counts when we don't know the
-        /// number of implicit parameters, but is fairly hacky.
-        /// </summary>
-        internal abstract int ExplicitArity { get; }
-
-        /// <summary>
         /// Returns the type parameters that this type has. If this is a non-generic type,
         /// returns an empty ImmutableArray.  
         /// </summary>
         public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
+
+        /// <summary>
+        /// Returns the type parameters of this type that are concept
+        /// witnesses.
+        /// </summary>
+        internal ImmutableArray<TypeParameterSymbol> ConceptWitnesses
+        {
+            // @t-mawind TODO: this is possibly very slow, cache it?
+            get
+            {
+                var builder = new ArrayBuilder<TypeParameterSymbol>();
+                var allParams = TypeParameters;
+                int numParams = allParams.Length;
+                for (int i = 0; i < numParams; i++)
+                {
+                    if (allParams[i].IsConceptWitness) builder.Add(allParams[i]);
+                }
+                return builder.ToImmutableAndFree();
+            }
+        }
 
         /// <summary>
         /// Returns the type arguments that have been substituted for the type parameters. 

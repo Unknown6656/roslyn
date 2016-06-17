@@ -181,6 +181,26 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
 
         /// <summary>
+        /// Returns the type parameters of this type that are concept
+        /// witnesses.
+        /// </summary>
+        internal ImmutableArray<TypeParameterSymbol> ConceptWitnesses
+        {
+            // @t-mawind TODO: this is possibly very slow, cache it?
+            get
+            {
+                var builder = new ArrayBuilder<TypeParameterSymbol>();
+                var allParams = TypeParameters;
+                int numParams = allParams.Length;
+                for (int i = 0; i < numParams; i++)
+                {
+                    if (allParams[i].IsConceptWitness) builder.Add(allParams[i]);
+                }
+                return builder.ToImmutableAndFree();
+            }
+        }
+
+        /// <summary>
         /// Call <see cref="TryGetThisParameter"/> and throw if it returns false.
         /// </summary>
         internal ParameterSymbol ThisParameter

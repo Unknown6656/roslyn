@@ -762,8 +762,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
-        internal override int ExplicitArity => declaration.Arity; //@t-mawind (correct?)
-
         public override int Arity
         {
             get
@@ -1021,7 +1019,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name, int arity)
         {
-            return GetTypeMembers(name).WhereAsArray(t => t.ExplicitArity == arity);
+            return GetTypeMembers(name).WhereAsArray(t => t.Arity - t.ConceptWitnesses.Length == arity);
         }
 
         private Dictionary<string, ImmutableArray<NamedTypeSymbol>> GetTypeMembersDictionary()

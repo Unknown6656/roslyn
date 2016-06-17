@@ -199,7 +199,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name, int arity)
         {
-            return GetTypeMembers(name).WhereAsArray(s => s.ExplicitArity == arity);
+            return GetTypeMembers(name).WhereAsArray(s => s.Arity - s.ConceptWitnesses.Length == arity);
         }
 
         internal override ModuleSymbol ContainingModule

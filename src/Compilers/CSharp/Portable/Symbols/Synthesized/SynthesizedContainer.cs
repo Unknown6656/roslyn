@@ -252,8 +252,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             get { return TypeParameters.Length; }
         }
 
-        internal override int ExplicitArity => Arity;
-
         internal override bool MangleName
         {
             get { return Arity > 0; }

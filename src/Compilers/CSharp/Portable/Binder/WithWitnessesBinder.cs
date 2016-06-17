@@ -32,30 +32,17 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             // This binder should only be used on methods or named types,
             // since these are the only places with witnesses.
-            Debug.Assert(
-                parent.Kind == SymbolKind.NamedType
-                || parent.Kind == SymbolKind.Method
-            );
+            Debug.Assert(parent.Kind == SymbolKind.NamedType || parent.Kind == SymbolKind.Method);
 
-            // The witnesses are inside the type parameters: we need to
-            // filter them.
-            var tps = ImmutableArray<TypeParameterSymbol>.Empty;
+            _witnesses = ImmutableArray<TypeParameterSymbol>.Empty;
             if (parent.Kind == SymbolKind.NamedType)
             {
-                tps = ((NamedTypeSymbol)parent).TypeParameters;
+                _witnesses = _witnesses.AddRange(((NamedTypeSymbol)parent).ConceptWitnesses);
             }
             else if (parent.Kind == SymbolKind.Method)
             {
-                tps = ((MethodSymbol)parent).TypeParameters;
+                _witnesses = _witnesses.AddRange(((MethodSymbol)parent).ConceptWitnesses);
             }
-
-            var witnesses = new ArrayBuilder<TypeParameterSymbol>();
-            foreach (var tp in tps)
-            {
-                if (tp.IsConceptWitness) witnesses.Add(tp);
-            }
-
-            _witnesses = witnesses.ToImmutableAndFree();
         }
 
         internal override void LookupSymbolsInSingleBinder(

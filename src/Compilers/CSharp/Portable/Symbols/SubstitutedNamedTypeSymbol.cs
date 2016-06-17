@@ -149,7 +149,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             get { return _originalDefinition.Arity; }
         }
-        internal override int ExplicitArity => _originalDefinition.ExplicitArity; //@t-mawind (correct?)
 
         public sealed override Accessibility DeclaredAccessibility
         {

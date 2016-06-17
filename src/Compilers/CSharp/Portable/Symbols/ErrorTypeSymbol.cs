@@ -272,8 +272,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
-        internal override int ExplicitArity => Arity; //@t-mawind (correct?)
-
         /// <summary>
         /// Gets the name of this symbol. Symbols without a name return the empty string; null is
         /// never returned.
