@@ -30,9 +30,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         internal WithWitnessesBinder(Symbol parent, Binder next)
             : base(next)
         {
-            // This binder should only be used on methods or named types,
-            // since these are the only places with witnesses.
-            Debug.Assert(parent.Kind == SymbolKind.NamedType || parent.Kind == SymbolKind.Method);
+            Debug.Assert(parent.Kind == SymbolKind.NamedType || parent.Kind == SymbolKind.Method,
+                "Tried to bind to witnesses of a type that does not have any");
 
             _witnesses = ImmutableArray<TypeParameterSymbol>.Empty;
             if (parent.Kind == SymbolKind.NamedType)

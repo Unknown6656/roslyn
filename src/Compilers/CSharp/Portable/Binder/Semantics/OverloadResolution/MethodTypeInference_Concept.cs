@@ -31,16 +31,16 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns></returns>
         private bool InferTypeArgsConceptPhase(Binder binder, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         {
-            // We shouldn't try this phase if we succeeded during the last one.
-            Debug.Assert(!AllFixed());
+            Debug.Assert(!AllFixed(),
+                "Concept witness inference is pointless if there is nothing to infer");
 
             // First, make sure every unfixed type parameter is a concept, and
             // that we know where they all are so we can infer them later.
             ImmutableArray<int> conceptIndices;
             if (!GetMethodUnfixedConceptWitnesses(out conceptIndices)) return false;
 
-            // If we got this far, we should have at least something to infer.
-            Debug.Assert(!conceptIndices.IsEmpty);
+            Debug.Assert(!conceptIndices.IsEmpty,
+                "Tried to proceed with concept inference with no concept witnesses to infer");
 
             // We'll be checking to see if concepts defined on the missing
             // witness type parameters are implemented.  Since this means we
@@ -65,7 +65,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap, ImmutableHashSet<NamedTypeSymbol>.Empty);
                 if (maybeFixed == null) return false;
-                Debug.Assert(maybeFixed != null && maybeFixed.IsInstanceType());
+                Debug.Assert(maybeFixed.IsInstanceType(),
+                    "Concept witness inference returned something other than a concept instance");
                 _fixedResults[j] = maybeFixed;
             }
 
@@ -303,7 +304,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         internal TypeSymbol Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain)
         {
-            Debug.Assert(typeParam.IsConceptWitness);
+            Debug.Assert(typeParam.IsConceptWitness,
+                "Tried to do concept witness inference on a non-concept-witness type parameter");
 
             // From here, we can only decrease the number of considered
             // instances, so we can't assign an instance to a witness
@@ -344,6 +346,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (requiredConcepts.IsEmpty) return null;
 
             var firstPassInstances = AllInstancesSatisfyingGoal(requiredConcepts);
+            Debug.Assert(firstPassInstances.Length <= _allInstances.Length,
+                "First pass of concept witness inference should not grow the instance list");
             // We can't infer if none of the instances implement our concept!
             // However, if we have more than one candidate instance at this
             // point, we shouldn't bail until we've made sure only one of them
@@ -351,13 +355,19 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (firstPassInstances.IsEmpty) return null;
 
             var secondPassInstances = ToSatisfiableInstances(firstPassInstances, chain);
+            Debug.Assert(secondPassInstances.Length <= firstPassInstances.Length,
+                "Second pass of concept witness inference should not grow the instance list");
+
             // We only do tie breaking in the case of actual ties.
             var thirdPassInstances = secondPassInstances;
             if (1 < secondPassInstances.Length) thirdPassInstances = TieBreakInstances(secondPassInstances);
+            Debug.Assert(thirdPassInstances.Length <= secondPassInstances.Length,
+                "Third pass of concept witness inference should not grow the instance list");
 
             // Either ambiguity, or an outright lack of inference success.
             if (thirdPassInstances.Length != 1) return null;
-            Debug.Assert(thirdPassInstances[0] != null);
+            Debug.Assert(thirdPassInstances[0] != null,
+                "Inference claims to have succeeded, but has returned a null instance");
             return thirdPassInstances[0];
         }
 
@@ -455,6 +465,11 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private ImmutableArray<TypeSymbol> AllInstancesSatisfyingGoal(ImmutableArray<TypeSymbol> requiredConcepts)
         {
+            Debug.Assert(!requiredConcepts.IsEmpty,
+                "First pass of inference is pointless when there are no required concepts");
+            Debug.Assert(!_allInstances.IsEmpty,
+                "First pass of inference is pointless when there are no available instances");
+
             // First, collect all of the instances satisfying 1).
             var firstPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in _allInstances)
@@ -499,7 +514,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts, TypeSymbol instance, out MutableTypeMap unifyingSubstitutions)
         {
-            Debug.Assert(!requiredConcepts.IsEmpty);
+            Debug.Assert(!requiredConcepts.IsEmpty,
+                "Checking that all required concepts are provided is pointless when there are none");
 
             unifyingSubstitutions = new MutableTypeMap();
 
@@ -544,7 +560,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private bool IsRequiredConceptProvided(TypeSymbol requiredConcept, ImmutableArray<NamedTypeSymbol> providedConcepts, ref MutableTypeMap unifyingSubstitutions)
         {
-            Debug.Assert(!providedConcepts.IsEmpty);
+            Debug.Assert(!providedConcepts.IsEmpty,
+                "Checking for provision of concept is pointless when no concepts are provided");
 
             foreach (var providedConcept in providedConcepts)
             {
@@ -578,6 +595,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances, ImmutableHashSet<NamedTypeSymbol> chain)
         {
+            Debug.Assert(1 < candidateInstances.Length,
+                "Performing second pass of witness inference is pointless when we have zero or one candidate left");
+
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in candidateInstances)
             {
@@ -598,8 +618,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // with recursive inference--there's nothing to infer!
                 if (!unfixedWitnesses.IsEmpty)
                 {
-                    // Type parameters can't have unfixed witnesses.
-                    Debug.Assert(instance.Kind == SymbolKind.NamedType);
+                    Debug.Assert(instance.Kind == SymbolKind.NamedType,
+                        "Tried to do recursive inference on an instance type that cannot have unfixed witnesses");
                     var nt = (NamedTypeSymbol)instance;
 
                     // Do cycle detection: have we already set up a recursive
@@ -648,8 +668,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private bool InferRecursively(NamedTypeSymbol instance, ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses, ImmutableHashSet<NamedTypeSymbol> chain, out MutableTypeMap recurSubstMap)
         {
-            // This ensures cycle detection will work.
-            Debug.Assert(chain.Contains(instance));
+            Debug.Assert(chain.Contains(instance),
+                "Current instance has not been put in the cycle detection chain before recursively inferring");
 
             // In recursive inference, the set of known type argument
             // substitutions is those we made when fixing this instance.
@@ -695,7 +715,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableHashSet<TypeParameterSymbol> unfixed)
         {
-            Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter);
+            Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter,
+                "Tried to infer recursively on an incorrect instance type");
 
             var uBuilder = new ArrayBuilder<TypeParameterSymbol>();
 
@@ -711,7 +732,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var targs = nt.TypeArguments;
             var tpars = nt.TypeParameters;
-            Debug.Assert(targs.Length == tpars.Length);
+            Debug.Assert(targs.Length == tpars.Length,
+                "Type parameter and argument arrays are out of sync");
             for (int i = 0; i < tpars.Length; i++)
             {
                 // If a type parameter is its own argument, we assume this
@@ -757,18 +779,20 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static ImmutableArray<TypeSymbol> TieBreakInstances(ImmutableArray<TypeSymbol> candidateInstances)
         {
-            // This pass is useless if we have zero or one witnesses.
-            Debug.Assert(1 < candidateInstances.Length);
+            Debug.Assert(1 < candidateInstances.Length,
+                "Tie-breaking is pointless if we have zero or one instances");
 
             // We now perform an array of 'better concept witness' checks to
             // try to narrow the list of instances to zero or one.
 
             var mostSpecificConceptInstances = FilterToMostSpecificConceptInstances(candidateInstances);
-            Debug.Assert(mostSpecificConceptInstances.Length <= candidateInstances.Length);
+            Debug.Assert(mostSpecificConceptInstances.Length <= candidateInstances.Length,
+                "Filtering to most-specific-concept instances should not grow the instance list");
             if (mostSpecificConceptInstances.Length <= 1) return mostSpecificConceptInstances;
 
             var mostSpecificParamInstances = FilterToMostSpecificParamInstances(mostSpecificConceptInstances);
-            Debug.Assert(mostSpecificParamInstances.Length <= mostSpecificConceptInstances.Length);
+            Debug.Assert(mostSpecificParamInstances.Length <= mostSpecificConceptInstances.Length,
+                "Filtering to most-specific-param instances should not grow the instance list");
 
             return mostSpecificParamInstances;
         }
@@ -787,7 +811,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static ImmutableArray<TypeSymbol> FilterToMostSpecificConceptInstances(ImmutableArray<TypeSymbol> candidateInstances)
         {
-            Debug.Assert(1 < candidateInstances.Length);
+            Debug.Assert(1 < candidateInstances.Length,
+                "Filtering to most-specific-concept instances is pointless if we have zero or one instances");
 
             var arb = new ArrayBuilder<TypeSymbol>();
 
@@ -823,7 +848,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static bool ImplementsConceptsOfOtherInstances(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
         {
-            Debug.Assert(!otherInstances.IsEmpty);
+            Debug.Assert(!otherInstances.IsEmpty,
+                "Trying to check whether an instance implements concepts of zero other instances is pointless");
 
             var ignore = new HashSet<DiagnosticInfo>();
 
@@ -864,7 +890,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static ImmutableArray<TypeSymbol> FilterToMostSpecificParamInstances(ImmutableArray<TypeSymbol> candidateInstances)
         {
-            Debug.Assert(1 < candidateInstances.Length);
+            Debug.Assert(1 < candidateInstances.Length,
+                "Filtering to most-specific-param instances is pointless if we have zero or one instances");
 
             var arb = new ArrayBuilder<TypeSymbol>();
 
@@ -896,7 +923,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static bool ParamsLessSpecific(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
         {
-            Debug.Assert(!otherInstances.IsEmpty);
+            Debug.Assert(!otherInstances.IsEmpty,
+                "Trying to check whether an instance has less specific params than zero other instances is pointless");
 
             // Currently, we do a very basic check based on non-witness type
             // parameter counts.  This could be much more sophisticated.
