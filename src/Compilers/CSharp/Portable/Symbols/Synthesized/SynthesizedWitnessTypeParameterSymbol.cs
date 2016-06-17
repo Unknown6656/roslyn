@@ -130,11 +130,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         private void CheckConstraintTypeConstraints(DiagnosticBag diagnostics)
         {
-            var constraintTypes = ConstraintTypesNoUseSiteDiagnostics;
-
-            // Witnesses are always generated from at least one constraint.
-            // Thus, we should never get here and have zero constraints in play.
-            Debug.Assert(!constraintTypes.IsEmpty);
+            // @t-mawind
+            //   Witnesses are always generated from at least one constraint,
+            //   but it seems like sometimes this can be 0?  Have I missed
+            //   something?
+            var constraintTypes = this.ConstraintTypesNoUseSiteDiagnostics;
+            if (constraintTypes.Length == 0)
+            {
+                return;
+            }
 
             // Now, we behave just like a SourceTypeParameterSymbol.
 
