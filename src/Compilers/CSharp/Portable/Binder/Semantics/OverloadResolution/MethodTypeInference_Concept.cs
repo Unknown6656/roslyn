@@ -65,8 +65,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap, ImmutableHashSet<NamedTypeSymbol>.Empty);
                 if (maybeFixed == null) return false;
-                Debug.Assert(maybeFixed.IsInstanceType(),
-                    "Concept witness inference returned something other than a concept instance");
+                Debug.Assert(maybeFixed.IsInstanceType() || maybeFixed.IsConceptWitness,
+                    "Concept witness inference returned something other than a concept instance or witness");
                 _fixedResults[j] = maybeFixed;
             }
 
@@ -595,8 +595,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances, ImmutableHashSet<NamedTypeSymbol> chain)
         {
-            Debug.Assert(1 < candidateInstances.Length,
-                "Performing second pass of witness inference is pointless when we have zero or one candidate left");
+            // Remember: even if we have one instance left here, it could be
+            // unsatisfiable, so we have to run this pass on it.
+            Debug.Assert(!candidateInstances.IsEmpty,
+                "Performing second pass of witness inference is pointless when we have no candidates left");
 
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in candidateInstances)
