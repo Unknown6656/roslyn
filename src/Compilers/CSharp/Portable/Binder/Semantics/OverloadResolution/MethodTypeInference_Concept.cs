@@ -1,11 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Symbols;
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Microsoft.CodeAnalysis.CSharp
 {
@@ -123,10 +119,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             for (int i = 0; i < _methodTypeParameters.Length; i++)
             {
-                if (_fixedResults[i] != null)
-                {
-                    mt.Add(_methodTypeParameters[i], new TypeWithModifiers(_fixedResults[i]));
-                }
+                if (!IsUnfixed(i)) mt.Add(_methodTypeParameters[i], new TypeWithModifiers(_fixedResults[i]));
             }
 
             return mt;
@@ -149,9 +142,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// types) representing concept instances available in the scope
         /// of <paramref name="binder"/>.
         /// </param>
-        private static void SearchScopeForInstancesAndParams(Binder binder,
-            out ImmutableArray<TypeSymbol> allInstances,
-            out ImmutableHashSet<TypeParameterSymbol> fixedParams)
+        private static void SearchScopeForInstancesAndParams(Binder binder, out ImmutableArray<TypeSymbol> allInstances, out ImmutableHashSet<TypeParameterSymbol> fixedParams)
         {
             var iBuilder = new ArrayBuilder<TypeSymbol>();
             var fpBuilder = new HashSet<TypeParameterSymbol>();
@@ -262,7 +253,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// through constraints at the method or class level) or named
         /// types (instance declarations).
         /// </summary>
-        private ImmutableArray<TypeSymbol> _allInstances;
+        private readonly ImmutableArray<TypeSymbol> _allInstances;
 
         /// <summary>
         /// The set of all type parameters in scope that are bound:
@@ -270,7 +261,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// the set of type parameters introduced through type parameter
         /// lists on methods and classes in scope.
         /// </summary>
-        private ImmutableHashSet<TypeParameterSymbol> _boundParams;
+        private readonly ImmutableHashSet<TypeParameterSymbol> _boundParams;
 
         /// <summary>
         /// Constructs a new ConceptWitnessInferrer.
@@ -282,8 +273,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// The set of all type parameters in scope that are bound, and
         /// cannot be substituted out in unification.
         /// </param>
-        public ConceptWitnessInferrer(ImmutableArray<TypeSymbol> allInstances,
-            ImmutableHashSet<TypeParameterSymbol> boundParams)
+        public ConceptWitnessInferrer(ImmutableArray<TypeSymbol> allInstances, ImmutableHashSet<TypeParameterSymbol> boundParams)
         {
             _allInstances = allInstances;
             _boundParams = boundParams;
@@ -292,10 +282,12 @@ namespace Microsoft.CodeAnalysis.CSharp
         #region Main driver
 
         /// <summary>
-        /// Tries to infer the concept witness for the given type parameter.
+        /// Tries to infer a suitable instance for the given concept witness
+        /// type parameter.
         /// </summary>
         /// <param name="typeParam">
-        /// The type parameter that is the concept witness to infer.
+        /// The type parameter that is the concept witness to infer.  This
+        /// must actually be a concept witness.
         /// </param>
         /// <param name="fixedMap">
         /// The map from all of the fixed, non-witness type parameters in the
@@ -309,10 +301,15 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// Null if inference failed; else, the inferred concept instance.
         /// </returns>
-        internal TypeSymbol Infer(TypeParameterSymbol typeParam,
-            MutableTypeMap fixedMap,
-            ImmutableHashSet<NamedTypeSymbol> chain)
+        internal TypeSymbol Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain)
         {
+            Debug.Assert(typeParam.IsConceptWitness);
+
+            // From here, we can only decrease the number of considered
+            // instances, so we can't assign an instance to a witness
+            // parameter if there aren't any to begin with.
+            if (_allInstances.IsEmpty) return null;
+
             // @t-mawind
             // An instance satisfies inference if:
             //
@@ -340,8 +337,13 @@ namespace Microsoft.CodeAnalysis.CSharp
             // concept-witness type parameters we've failed.
 
             var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
-            var firstPassInstances = AllInstancesSatisfyingGoal(requiredConcepts);
+            // This might happen if, for example, someone explicitly annotates
+            // a parameter as [ConceptWitness] but doesn't put any constraints
+            // on it.  We don't infer in this case, because any and every
+            // possible instance will match.
+            if (requiredConcepts.IsEmpty) return null;
 
+            var firstPassInstances = AllInstancesSatisfyingGoal(requiredConcepts);
             // We can't infer if none of the instances implement our concept!
             // However, if we have more than one candidate instance at this
             // point, we shouldn't bail until we've made sure only one of them
@@ -349,13 +351,13 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (firstPassInstances.IsEmpty) return null;
 
             var secondPassInstances = ToSatisfiableInstances(firstPassInstances, chain);
-
-            // We only do the third pass if the second pass returned too many items.
+            // We only do tie breaking in the case of actual ties.
             var thirdPassInstances = secondPassInstances;
-            if (secondPassInstances.Length > 1) thirdPassInstances = TieBreakInstances(secondPassInstances);
+            if (1 < secondPassInstances.Length) thirdPassInstances = TieBreakInstances(secondPassInstances);
 
             // Either ambiguity, or an outright lack of inference success.
             if (thirdPassInstances.Length != 1) return null;
+            Debug.Assert(thirdPassInstances[0] != null);
             return thirdPassInstances[0];
         }
 
@@ -389,6 +391,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             // Now we can do some optimisation: if we're asking for a concept,
             // we don't need to ask for its base concepts.
+            // This is analogous to Haskell context reduction, but somewhat
+            // simpler: because of the way our concepts are architected, much
+            // of what Haskell does makes no sense.
             var rc2 = new ArrayBuilder<TypeSymbol>();
             foreach (var c1 in rc)
             {
@@ -403,7 +408,6 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
                 if (needed) rc2.Add(c1);
             }
-
             rc.Free();
             return rc2.ToImmutableAndFree();
         }
@@ -423,11 +427,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             switch (symbol.Kind)
             {
                 case SymbolKind.Method:
-                    return ((MethodSymbol)symbol).TypeParameters;
+                return ((MethodSymbol)symbol).TypeParameters;
                 case SymbolKind.NamedType:
-                    return ((NamedTypeSymbol)symbol).TypeParameters;
+                return ((NamedTypeSymbol)symbol).TypeParameters;
                 default:
-                    return ImmutableArray<TypeParameterSymbol>.Empty;
+                return ImmutableArray<TypeParameterSymbol>.Empty;
             }
         }
 
@@ -480,7 +484,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </para>
         /// </summary>
         /// <param name="requiredConcepts">
-        /// The list of required concepts to implement.
+        /// The list of required concepts to implement.  Must be non-empty.
         /// </param>
         /// <param name="instance">
         /// The candidate instance.
@@ -493,37 +497,61 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, the given instance implements the given list
         /// of concepts.
         /// </returns>
-        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts,
-                                                 TypeSymbol instance,
-                                                 out MutableTypeMap unifyingSubstitutions)
+        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts, TypeSymbol instance, out MutableTypeMap unifyingSubstitutions)
         {
+            Debug.Assert(!requiredConcepts.IsEmpty);
+
             unifyingSubstitutions = new MutableTypeMap();
 
             var providedConcepts =
                 ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
                  ?? ((instance as NamedTypeSymbol)?.AllInterfacesNoUseSiteDiagnostics)
                  ?? ImmutableArray<NamedTypeSymbol>.Empty);
+            if (providedConcepts.IsEmpty) return false;
 
             foreach (var requiredConcept in requiredConcepts)
             {
-                bool thisProvided = false;
-                foreach (var providedConcept in providedConcepts)
-                {
-                    if (TypeUnification.CanUnify(providedConcept,
-                            requiredConcept,
-                            ref unifyingSubstitutions,
-                            _boundParams))
-                    {
-                        thisProvided = true;
-                        break;
-                    }
-                }
-
-                if (!thisProvided) return false;
+                if (!IsRequiredConceptProvided(requiredConcept, providedConcepts, ref unifyingSubstitutions)) return false;
             }
 
             // If we got here, all required concepts must have been provided.
             return true;
+        }
+
+        /// <summary>
+        /// Checks whether a single required concept is implemented by a
+        /// set of provided concepts modulo unifying substitutions.
+        /// <para>
+        /// We don't check yet that the instance itself is satisfiable, just that
+        /// it will satisfy our concept list if it is.
+        /// </para>
+        /// </summary>
+        /// <param name="requiredConcept">
+        /// The required concept to implement.
+        /// </param>
+        /// <param name="providedConcepts">
+        /// The provided concepts to check against.  Must be non-empty.
+        /// </param>
+        /// <param name="unifyingSubstitutions">
+        /// A map of type substitutions, added to by this method, which are
+        /// required in order to make the instance implement the concepts.
+        /// Any existing substitutions in this map, for example those fixed
+        /// by previous required concepts, are applied during unification.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, the given set of provided concepts implement
+        /// the given list of concepts.
+        /// </returns>
+        private bool IsRequiredConceptProvided(TypeSymbol requiredConcept, ImmutableArray<NamedTypeSymbol> providedConcepts, ref MutableTypeMap unifyingSubstitutions)
+        {
+            Debug.Assert(!providedConcepts.IsEmpty);
+
+            foreach (var providedConcept in providedConcepts)
+            {
+                if (TypeUnification.CanUnify(providedConcept, requiredConcept, ref unifyingSubstitutions, _boundParams)) return true;
+            }
+
+            return false;
         }
 
         #endregion First pass
@@ -548,8 +576,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// An array of candidate instances after the first pass.
         /// </returns>
-        private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances,
-            ImmutableHashSet<NamedTypeSymbol> chain)
+        private ImmutableArray<TypeSymbol> ToSatisfiableInstances(ImmutableArray<TypeSymbol> candidateInstances, ImmutableHashSet<NamedTypeSymbol> chain)
         {
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in candidateInstances)
@@ -619,10 +646,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, we were able to infer every unfixed witness
         /// for this instance without generating cycles.
         /// </returns>
-        private bool InferRecursively(NamedTypeSymbol instance,
-            ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses,
-            ImmutableHashSet<NamedTypeSymbol> chain,
-            out MutableTypeMap recurSubstMap)
+        private bool InferRecursively(NamedTypeSymbol instance, ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses, ImmutableHashSet<NamedTypeSymbol> chain, out MutableTypeMap recurSubstMap)
         {
             // This ensures cycle detection will work.
             Debug.Assert(chain.Contains(instance));
@@ -683,21 +707,18 @@ namespace Microsoft.CodeAnalysis.CSharp
                 uBuilder.Free();
                 return true;
             }
-
             var nt = (NamedTypeSymbol)instance;
+
             var targs = nt.TypeArguments;
             var tpars = nt.TypeParameters;
+            Debug.Assert(targs.Length == tpars.Length);
             for (int i = 0; i < tpars.Length; i++)
             {
                 // If a type parameter is its own argument, we assume this
                 // means it hasn't yet been fixed.
                 if (tpars[i] == targs[i])
                 {
-                    if (tpars[i].IsConceptWitness)
-                    {
-                        uBuilder.Add(tpars[i]);
-                    }
-                    else
+                    if (!tpars[i].IsConceptWitness)
                     {
                         // This is an unfixed non-witness, which kills off our
                         // attempt to use this instance completely.
@@ -705,6 +726,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                         uBuilder.Free();
                         return false;
                     }
+
+                    // Otherwise, it must be recorded as an unfixed witness.
+                    uBuilder.Add(tpars[i]);
                 }
             }
 
@@ -872,6 +896,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static bool ParamsLessSpecific(TypeSymbol instance, ImmutableArray<TypeSymbol> otherInstances)
         {
+            Debug.Assert(!otherInstances.IsEmpty);
+
             // Currently, we do a very basic check based on non-witness type
             // parameter counts.  This could be much more sophisticated.
 
