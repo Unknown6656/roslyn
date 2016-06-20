@@ -3,21 +3,52 @@
 
 Claudio Russo, Matt Windsor
 
+---
+
 ##Abstract:
 
-Type classes are an immensely popular and productive feature of Haskell. I’ll sketch that they have a natural and efficient representation in .NET. This paves the way for the extension of C# and other .NET languages with Haskell style type classes. The representation is precise and promises easy and safe cross-language interoperation.
+Type classes are an immensely popular and productive feature of Haskell. Really.
 
-##Background
+It turns out that they have a natural and efficient representation in .NET that is:
+* type preserving (no yucky erasure)
+* performant (exploits Generic's USP: run-time code specialiation)
+* essentially free (zero CLR changes required)
 
-###Haskell Type Classes
-*	Type Classes capture common sets of operations. 
-*	A type may be an instance of a type class, and will have a method corresponding to each operation. 
-*	Type Classes may be arranged hierarchically forming notions of:
-	 super classes and sub classes, and
-	 permitting inheritance of operations/methods. 
-*	A default method may also be associated with an operation.
+It promises easy, safe and completely optional cross-language interoperation.
 
-###Executive Summary
+This paves the way for the extension of C# (VB, F# etc.) with Haskell style type classes. 
+
+For C#, we call them *concepts*, as a nod to C++ and its (abandoned) but related *concepts*.
+
+---
+
+### Background: Haskell Type Classes
+Haskell's *type classes* are a powerful abstraction mechanism for describing generic algorithms 
+applicable to types that have distinct representations but common interfaces.
+
+* A *type class* is a predicate on types that specifies a set of required operations by their type signatures.
+* A *class instance* declares membership of an existing type in a class by providing 
+  implementations for each of the class' operations.
+* Type classes may be arranged hierarchically, permitting *inheritance* and *subsumption*. 
+* Class instances may be generic, describing whole families of instances, predicated on type class membership.
+
+---
+
+###Why should .NET care?
+
+Unlike C# interfaces:
+
+* Instance declarations are decoupled from their associated types, allowing post-hoc interface ascription.
+  Adding a concept to a BCL type requires zero changes to the BCL.
+* Any operation in a type class can have a default implementation, allowing class instances to omit
+or override the default.
+* A (much) cheaper yet efficient alternative to CLR += "static interfaces methods".
+
+
+---
+
+## Executive Summary
+
 *	We can add type classes to C# (VB/F#). (Everyone else has them now...)
 *	NO CLR CHANGES REQUIRED.
 *	Only small (?) compiler changes.
@@ -25,20 +56,21 @@ Type classes are an immensely popular and productive feature of Haskell. I’ll 
 *	Good/Very good performance.
 *	Easy interop. Encoding is so light it makes sense to less classy languages too.
 
-##Type Classes for CLI
+---
 
-Why didn’t we do this before?
+## Why didn’t we do this before?
 
 Times have changed: not just Haskell anymore…
-*	Swift protocols
-*	Scala implicits
-*	Rust	traits	
-*	Go structural interfaces
+*	Swift *protocols*
+*	Scala *implicits* 
+*	Rust	*traits*	
+*	Go structural interfaces 
 *	Academic proposals: JavaGI, Static Interface Methods for the CLR
 *	Isabelle, Coq, LEAN (theorem provers)
-*	 C++ concepts
+*	~~~C++ concepts~~~
 *	...
 
+---
 
 ## Compare with: "Static Interface Methods for the CLR (Eidt & Detlefs)"
 
@@ -50,6 +82,8 @@ Why wasn’t this adopted?
 This approach requires *no* changes to CLR or BCL (compiler changes + conventions only).
 It's *sound by construction*.
 
+---
+
 ## Haskell Type Classes
  
 We represent Haskell type classes as Generic interfaces.
@@ -60,6 +94,7 @@ We represent Haskell type classes as Generic interfaces.
 
 ```
 
+C#:
 ```csharp
   interface Eq<A>
   {
@@ -75,7 +110,7 @@ Concept C#
   }
 ```
 
-
+---
 
 ##Haskell Overloads
 
@@ -86,12 +121,14 @@ operations induced by class `Eq a`’s members.
     (==)                    :: (Eq a) => a -> a -> Bool 
 ```
 
+C#
 ```csharp
   static class Overloads {
     public static bool Equals<EqA, A>(A a, A b) where EqA : struct, Eq<A> => 
       default(EqA).Equals(a, b);
   }
 ```
+An operation over some class is a static generic method, parameterized by an additional dictionary type parameter (EqA).
 
 Concept C#:
 ```csharp
@@ -100,15 +137,18 @@ Concept C#:
       Equals(a,b);
   }
 ```
+(drop the instance *parameter*, keep the constraint, loose the `struct`:
+ any undeclared - but concept constrained - type parameter is an inferrable instance;
+ infer default receiver in instance invokations).
+ Instance methods invoked like *static* methods.
 
-An operation over some class is a static generic method, parameterized by an additional dictionary type parameter (EqA).
 
 * Haskell dictionary value ~ C# dictionary type
 
 The dictionary type parameter is marked "struct” (so stack allocated):
 we can access its operations through a default value (no need to pass dictionary values).
 
-
+---
 
 ##Haskell Instances
 
@@ -125,18 +165,16 @@ A Haskell ground instance, eg.
 is translated to a non-generic *struct* implementing the appropriate interface (concept).
  
 ```csharp
-  struct EqInt : Eq<int>
-  {
+  struct EqInt : Eq<int>  {
     public bool Equals(int a, int b)  => a == b; 
   }
 
-  struct EqFloat : Eq<float>
-  {
+  struct EqFloat : Eq<float> {
     public bool Equals(float a, float b)  => a == b;
   }
 ```
 
-Concept C#
+Concept C#:
 ```csharp
   instance EqInt : Eq<int> {
     public bool Equals(int a, int b)  => a == b; 
@@ -147,7 +185,9 @@ Concept C#
   }
 ```
 
-###Derived Instances
+---
+
+### Derived Instances
 
 We can represent a Haskell *parameterized instance* as a *generic struct*, 
 implementing an interface but parameterized by suitably constrained type parameters. 
@@ -163,8 +203,7 @@ implementing an interface but parameterized by suitably constrained type paramet
   Substituting, for simplicity, arrays for lists in CS we can write: 
 
 ```csharp
-  struct EqArray<A, EqA> : Eq<A[]> where EqA : struct, Eq<A>
-  {
+  struct EqArray<A, EqA> : Eq<A[]> where EqA : struct, Eq<A> {
     public bool Equals(A[] a, A[] b) {
       if (a == null) return b == null;
       if (b == null) return false;
@@ -176,10 +215,9 @@ implementing an interface but parameterized by suitably constrained type paramet
   }
 ```
 
-Concept C#
+Concept C#:
 ```csharp
-  instance EqArray<A> : Eq<A[]> where EqA : Eq<A>
-  {
+  instance EqArray<A> : Eq<A[]> where EqA : Eq<A> {
      bool Equals(A[] a, A[] b) {
        if (a == null) return b == null;
        if (b == null) return false;
@@ -206,7 +244,6 @@ For example, equality based list membership in Haskell is defined as follows:
 ``` 
 
 In C#, we can define:
-
 ```csharp
   static bool Elem<EqA, A>(A x, A[] ys) where EqA : struct, Eq<A> {
       for (int i = 0; i < ys.Length; i++)  {
@@ -226,6 +263,8 @@ Concept C#:
   }
 ```
 
+---
+ 
 ### Example: Numeric types
 
 Haskell has a rich numeric hierarchy (think |IArithmetic|)
@@ -274,6 +313,7 @@ instance NumInt : Num<int> {
   }
 ```
 
+---
 
 ### Type Class Inheritance
 
@@ -320,6 +360,8 @@ Concept C#:
 
 * Haskell class inheritance ~ C# interface inheritance 
 
+---
+
 ### Subsumption
 
 
@@ -340,7 +382,7 @@ Subsumption allows one to derive (evidence for) a class from (evidence for) its 
                      '      
 ```
 
-C#
+C#:
 ```csharp
     static bool Equals<EqA, A>(A a, A b) where EqA : struct, Eq<A> 
         => default(EqA).Equals(a, b);
@@ -357,8 +399,7 @@ C#
     }
 ```
 
-Concept C#
-
+Concept C#:
 ```csharp
     static bool Equals<A>(A a, A b) where EqA : Eq<A> =>
       Equals(a, b);
@@ -375,9 +416,13 @@ Concept C#
     }
 ```
 
+---
+
 ##Performance
 
 TBC (need to import existing charts)
+
+---
 
 ###Classy QuickSort
 
@@ -388,21 +433,21 @@ C#:
 
     public static void qsort<IOrdT, T>(T[] arr, int a, int b)
       where IOrdT : IOrd<T>  {
-      IOrdT iordt = default(IOrdT);
+      IOrdT iordt = default(IOrdT); // <- explicit (stack) allocation :-{
       // sort arr[a..b]
       if (a < b) {
         int i = a, j = b;
         T x = arr[(i + j) / 2];
         do {
-          while (iordt.Compare(arr[i], x) < 0) i++;
-          while (iordt.Compare(x, arr[j]) < 0) j--;
+          while (iordt.Compare(arr[i], x) < 0) i++; // explicit receiver 'iord' :-{
+          while (iordt.Compare(x, arr[j]) < 0) j--; // explicit receiver 'iord' :-{
           if (i <= j) {
             swap<T>(arr, i, j);
             i++; j--;
           }
         } while (i <= j);
-        qsort<IOrdT, T>(arr, a, j);
-        qsort<IOrdT, T>(arr, i, b);
+        qsort<IOrdT, T>(arr, a, j);  // <-- non-inferrable type arguments coz of 'IOrdT' :-{
+        qsort<IOrdT, T>(arr, i, b);  // <-- non-inferrable type argument coz of 'IOrdT' :-{
       }
     }
 ```
@@ -410,26 +455,30 @@ C#:
 Concept C#:
 ```csharp
     public static void qsort<T>(T[] arr, int a, int b)
-      where IOrdT : IOrd<T> {
-      // sort arr[a..b]
+      where IOrdT : IOrd<T> { 
+      // sort arr[a..b]			   
       if (a < b) {
         int i = a, j = b;
         T x = arr[(i + j) / 2];
         do {
-          while (Compare(arr[i], x) < 0) i++;
-          while (Compare(x, arr[j]) < 0) j--;
+          while (Compare(arr[i], x) < 0) i++; // <-- inferred receiver :-)
+          while (Compare(x, arr[j]) < 0) j--; // <-- inferred receiver :-)
           if (i <= j) {
             swap<T>(arr, i, j);
             i++; j--;
           }
         } while (i <= j);
-        qsort(arr, a, j);
-        qsort(arr, i, b);
+        qsort(arr, a, j); // <-- inferred type arguments :-)
+        qsort(arr, i, b); // <-- inferred type arguments :-)
       }
     }
 ```
 
+---
+
 ###Performance  (Variations of QuickSort)
+
+---
 
 ###Disassembly
 
@@ -469,64 +518,61 @@ IL:
 
 ```
 
+---
+
 ###Summary
 
-| Haskell | C#|
-----------|--------
-|Type Class	| Generic Interface|
-|Type Class instance	| Struct|
-|Derived Class |	Generic Struct|
-|Overloaded Operation | Constrained Generic Method |
-|Implicit Dictionary Construction | Explicit Dictionary Construction |
-|Implicit Dictionary Passing	Explicit | Dictionary Passing |
-|Type  Class Inheritance	| Interface Inheritance |
+| Haskell | C#| Concept C# |
+----------|--------|--------
+|type class	| generic interface| generic concept 
+|instance	| struct           | instance
+|derived instance | generic struct | generic instance
+|type class inheritance	| interface inheritance | concept inheritance
+|overloaded operation | constrained generic method | generic method with implicit type parameters
+|implicit dictionary construction | explicit type construction | implicit instance construcion with explicit fallback
+|implicit dictionary passing | explicit type passing | implicit type passing with explicit fallback
+|constraint inference & propagation | NA | NA
 
-
-
+---
 
 ### Syntactic Support
 
 * Distinguish type class declarations (new keyword concept)
 * Anonymize instance declarations (new keyword instance)
-* Add implicit dictionary type abstraction (induced by type class constraints)
-* Add implicit dictionary type instantiation (similar to type argument inference)
+* Add semi-implicit dictionary type abstraction (induced by concept constraints)
+* Add implicit dictionary type instantiation (by extending type argument inference)
 
+### Anonymous classes, instances constraitns
 
-Before:
+In Haskell, instances and constraints (but not type classes) are *anonymous*:
+* the programmer never  provides evidence for constraints
+* evidence can always be inferred 
+* evidence is always unique (by construction and imposed rules). 
 
+Concept C#:
 ```csharp
-  interface Eq<A> { 
-    bool Equals(A a, A b);
+  instance EqInt : Eq<int> {
+    bool Equals(int a, int b) => a == b;
   }
 
-  struct EqInt : Eq<int> {
-    bool Equals(int a, int b) { return a == b; }
-  }
-
-  struct EqArray<EqA,A>: Eq<A[]> where EqA: struct, Eq<A> {
+  instance <A>Eq<A[]> where EqA: Eq<A> {
     bool Equals(A[] a, A[] b) {
-      var dict = default(EqA);
       if (a == null) return b == null;
       if (b == null) return false;
       if (a.Length != b.Length) return false;
       for (int i = 0; i < a.Length; i++)
-        if (dict.Equals(a[i], b[i])) return false;
+        if (Equals(a[i], b[i])) return false;
       return true;
     }
- }
 ```
 
-After:
+We *could* do something similar:
 
+Concept C# with implicit instances:
 ```csharp
-  concept Eq<A> {
-    bool Equals(A a, A b);
-  }
-
   instance Eq<int> {
-    bool Equals(int a, int b) { return a == b; }
+    bool Equals(int a, int b) => a == b;
   }
-
   instance <A>Eq<A[]> where Eq<A> {
     bool Equals(A[] a, A[] b) {
       if (a == null) return b == null;
@@ -539,17 +585,85 @@ After:
  }
 ```
 
+More concise, but less flexiblee, and probably a bad idea, given C#'s limited type inference.
 
+## Implementation Status
 
+* working compiler 
+* separate compilation via trivial attributes recognized on imports, emitted on export.
+* syntax for named concepts, named instance and named concept constraints.
+* concept parameters must be invariant.
+* extended type argument inference to resolve concepts to instances 
+  (simple backchaining, exploiting Roslyn's type unification algorithm to find instantiations).
 
-##Take Home
+Future:
+* Associated types (concepts with abstract type components; compiled to additional parameters).
+* Anonymous concepts, instance and constraints - not convinced this is a good idea for C#.
+  * sans names, it's impossible to be explicit when C# type inference fails.
+* C# operators (+/- etc.) in concepts with extended operator resolution (just sugar, but important sugar).
+* Currently, different type instantiations, though all type safe, can produce different semantics.
+  * adopt Haskell like restrictions to force coherence; or
+  * disambiguate with ad-hoc *betterness* rules.
+* Decidability of constrain solving.
+* Allow & exloit variance (no such thing in Haskell).
 
-*	Haskell 98’s type classes have a type preserving .NET representation.
-*	Dictionaries must be manually constructed and provided  (a modified C#/F# compiler could do this for the user.)
-*	Generated code is efficient:
+Concepts for F# (allowing constraint inference and propagation like Haskell).
+
+---
+
+## Case Studies (In Progress)
+
+* Micro-benchmarks for perf (sorting done, need more)
+* Automatic Differentiation, overloading arithmetic to compute function derivatives [1]
+* Concept C# rendition of Haskell Prelude, including numeric tower (think BCL)
+* Generic QuickHull (one convex hull algorithm for generic vector spaces)
+* Generic Graph Library - Haskell used to trump C#, does it still?
+* IArithmetic
+* Generic Interface to System.Numerics.Vector2D/Vector3D/Vector4D (see QuickHull)
+* THIS SPACE FOR RENT
+
+[1]["Conal Elliot, Beautiful Differentiation"]
+
+---
+
+## Take Home
+
+* Haskell 98’s type classes have a type preserving .NET representation.
+* Dictionaries must be manually constructed and provided  (a modified C#/F# compiler could do this for the user.)
+* Generated code is efficient:
     * Dictionaries are empty (stack-allocated) structs. 
     * Dictionary allocation has zero runtime cost.
-    *	CLR’s code specialization ensures all dictionary calls are direct calls at runtime. (In principle, these calls could be in-lined by the JIT compiler)
+    * CLR’s code specialization ensures all dictionary calls are direct calls at runtime. (In principle, these calls could be in-lined by the JIT compiler)
+
+---
+
+## Links & References
+
+
+This document https://github.com/CaptainHayashi/roslyn/blob/master/concepts/docs/concepts.md.
+
+Roslyn fork: https://github.com/CaptainHayashi/roslyn.
+
+Roslyn https://github.com/dotnet/roslyn.
+
+Rust  *traits* https://doc.rust-lang.org/book/traits.html.
+
+Swift *protocols* https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/Protocols.html.
+
+D. Gregor, J. Jarvi, J. Siek, B. Stroustrup, G. Dos Reis, and A. Lumsdaine. *Concepts: Linguistic support for generic programming in C++*, OOPSLA'06.
+
+A. Kennedy and D. Syme. Design and implementation of generics for the .net common language
+  runtime, PLDI 2001.
+
+B. C. Oliveira, A. Moors, and M. Odersky. *Type classes as objects and implicits*, OOPSLA '10.
+
+S. Peyton Jones. *Haskell 98 language and libraries : the revised report*. Cambridge University Press, May 2003.
+
+P. Wadler and S. Blott. *How to make ad-hoc polymorphism less ad hoc*. POPL '89
+
+D. Yu, A. Kennedy, and D. Syme. *Formalization of generics for the .net common language runtime.*, POPL 2004.
+
+
 
 
 
