@@ -436,7 +436,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // SPEC: A unary + - ! ~ operator must take a single parameter of type
             // SPEC: T or T? and can return any type.
 
-            if (this.ParameterTypes[0].StrippedType() != this.ContainingType)
+            // @t-mawind Suppress this on instances, because instances never
+            // have the same type as their operator types.
+            if (!ContainingType.IsInstance &&
+                this.ParameterTypes[0].StrippedType() != this.ContainingType)
             {
                 // The parameter of a unary operator must be the containing type
                 diagnostics.Add(ErrorCode.ERR_BadUnaryOperatorSignature, this.Locations[0]);

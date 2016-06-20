@@ -170,6 +170,7 @@
     <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolution.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolution_ArgsToParameters.cs" />
     <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolutionResult.cs" />
+    <Compile Include="Binder\Semantics\OverloadResolution\OverloadResolution_Concept.cs" />
     <Compile Include="Binder\Semantics\SemanticFacts.cs" />
     <Compile Include="Binder\SingleLookupResult.cs" />
     <Compile Include="Binder\SwitchBinder.cs" />

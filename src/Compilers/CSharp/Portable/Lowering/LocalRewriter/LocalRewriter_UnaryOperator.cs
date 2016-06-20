@@ -107,6 +107,16 @@ namespace Microsoft.CodeAnalysis.CSharp
                 Debug.Assert(type == method.ReturnType);
                 if (!_inExpressionLambda || kind == UnaryOperatorKind.UserDefinedTrue || kind == UnaryOperatorKind.UserDefinedFalse)
                 {
+                    // @t-mawind
+                    //   As usual, concept accesses need to be rewritten down to their
+                    //   default() form.
+                    // Is this correct?  It's mostly a copy over from the binary case,
+                    // but the unary case is different enough to make me nervous.
+                    if (method is SynthesizedWitnessMethodSymbol)
+                    {
+                        return BoundCall.Synthesized(syntax, new BoundDefaultOperator(syntax, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true }, method, loweredOperand);
+                    }
+
                     return BoundCall.Synthesized(syntax, null, method, loweredOperand);
                 }
             }

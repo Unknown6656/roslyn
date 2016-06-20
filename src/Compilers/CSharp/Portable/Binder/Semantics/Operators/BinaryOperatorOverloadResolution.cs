@@ -36,7 +36,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // @t-mawind
             //   Here, we add in the possibility of having access to a concept
             //   witness defining the binary operator.
-            bool hadConceptCandidate = GetConceptOperators(underlyingKind, left, right, result.Results, ref useSiteDiagnostics);
+            bool hadConceptCandidate = GetBinaryWitnessOperators(underlyingKind, left, right, result.Results, ref useSiteDiagnostics);
             
             // The following is a slight rewording of the specification to emphasize that not all
             // operands of a binary operation need to have a type.
@@ -45,7 +45,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // SPEC: The set of candidate user-defined operators provided by the types (if any) of x and y for the 
             // SPEC operation operator op(x, y) is determined. 
 
-            bool hadUserDefinedCandidate = hadConceptCandidate ? false : GetUserDefinedOperators(underlyingKind, left, right, result.Results, ref useSiteDiagnostics);
+            bool hadUserDefinedCandidate = hadConceptCandidate || GetUserDefinedOperators(underlyingKind, left, right, result.Results, ref useSiteDiagnostics);
 
             // SPEC: If the set of candidate user-defined operators is not empty, then this becomes the set of candidate 
             // SPEC: operators for the operation. Otherwise, the predefined binary operator op implementations, including 
@@ -66,7 +66,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             //
             // Roslyn matches the specification and takes the break from the native compiler.
 
-            if (!hadUserDefinedCandidate && !hadConceptCandidate)
+            if (!hadUserDefinedCandidate)
             {
                 result.Results.Clear();
                 GetAllBuiltInOperators(kind, left, right, result.Results, ref useSiteDiagnostics);
@@ -80,48 +80,46 @@ namespace Microsoft.CodeAnalysis.CSharp
             BinaryOperatorOverloadResolution(left, right, result, ref useSiteDiagnostics);
         }
 
-        private bool GetConceptOperators(BinaryOperatorKind underlyingKind, BoundExpression left, BoundExpression right, ArrayBuilder<BinaryOperatorAnalysisResult> results, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        /// <summary>
+        /// Populates a list of binary operator results with those from any
+        /// witness in scope at the operator site.
+        /// </summary>
+        /// <param name="kind">
+        /// The binary operator kind of the expression.
+        /// </param>
+        /// <param name="left">
+        /// The expression on the left-hand side of the expression.
+        /// </param>
+        /// <param name="right">
+        /// The expression on the right-hand side of the expression.
+        /// </param>
+        /// <param name="results">
+        /// The results list to populate.
+        /// </param>
+        /// <param name="useSiteDiagnostics">
+        /// The set of diagnostics to populate with any errors.
+        /// </param>
+        /// <returns>
+        /// True if we managed to find candidate operators from the concept
+        /// witnesses in scope; false otherwise.
+        /// </returns>
+        private bool GetBinaryWitnessOperators(BinaryOperatorKind kind, BoundExpression left, BoundExpression right, ArrayBuilder<BinaryOperatorAnalysisResult> results, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         {
             Debug.Assert(left != null);
             Debug.Assert(right != null);
 
-            string name = OperatorFacts.BinaryOperatorNameFromOperatorKind(underlyingKind);
-            var operators = ArrayBuilder<BinaryOperatorAnalysisResult>.GetInstance();
+            string name = OperatorFacts.BinaryOperatorNameFromOperatorKind(kind);
 
-            var result = LookupResult.GetInstance();
-
-            // @t-mawind
-            //   This is a fairly crude system--can it be improved?
-            for (var scope = _binder; scope != null; scope = scope.Next)
+            var operators = ArrayBuilder<BinaryOperatorSignature>.GetInstance();
+            foreach (var method in GetWitnessOperators(name, 2, ref useSiteDiagnostics))
             {
-                if (!(scope is WithWitnessesBinder)) continue;
-                scope.LookupSymbolsInSingleBinder(result, name, 0, null, LookupOptions.AllMethodsOnArityZero | LookupOptions.AllowSpecialMethods, _binder, true, ref useSiteDiagnostics);
-                if (result.IsMultiViable)
-                {
-                    var ops = ArrayBuilder<BinaryOperatorSignature>.GetInstance();
-
-                    foreach (var candidate in result.Symbols)
-                    {
-                        var meth = candidate as MethodSymbol;
-                        if (meth == null) continue;
-                        if (meth.MethodKind != MethodKind.UserDefinedOperator) continue;
-                        if (meth.ParameterCount != 2) continue;
-
-                        // TODO: nullability?
-                        ops.Add(new BinaryOperatorSignature(BinaryOperatorKind.UserDefined | underlyingKind, meth.ParameterTypes[0], meth.ParameterTypes[1], meth.ReturnType, meth));
-                    }
-
-                    if (CandidateOperators(ops, left, right, results, ref useSiteDiagnostics))
-                    {
-                        ops.Free();
-                        return true;
-                    }
-
-                    ops.Free();
-                }
+                // TODO: nullability
+                operators.Add(new BinaryOperatorSignature(BinaryOperatorKind.UserDefined | kind, method.ParameterTypes[0], method.ParameterTypes[1], method.ReturnType, method));
             }
 
-            return false;
+            bool hasCandidates = CandidateOperators(operators, left, right, results, ref useSiteDiagnostics);
+            operators.Free();
+            return hasCandidates;
         }
 
         private void AddDelegateOperation(BinaryOperatorKind kind, TypeSymbol delegateType,
