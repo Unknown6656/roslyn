@@ -198,18 +198,20 @@ Concept C#:
 
 ### Derived Instances
 
-We can represent a Haskell *parameterized instance* as a *generic struct*, 
-implementing an interface but parameterized by suitably constrained type parameters. 
+This Haskell code defines, given an equality on type a's (any a) an equality operation on type list of a, written [a].
 
 ```Haskell
   instance (Eq a) => Eq ([a]) where 
        nil == nil      = true
     (a:as) == (b:bs)   = (a == b) && (as == bs)
          _ == _        = false
-  This Haskell code defines, given an equality on type a's (any a) an equality operation on type list of a, written [a].
 ```
 
-  Substituting, for simplicity, arrays for lists in CS we can write: 
+
+We can represent a Haskell *parameterized instance* as a *generic struct*, 
+implementing an interface but parameterized by suitably constrained type parameters. 
+
+Substituting, for simplicity, arrays for lists in CS we can write: 
 
 ```csharp
   struct EqArray<A, EqA> : Eq<A[]> where EqA : struct, Eq<A> {
@@ -237,6 +239,51 @@ Concept C#:
       }
     }
 ```
+
+### Constructing Evidence
+
+Derived instances allow Haskell to automatically construct instances as evidence for constraints:
+
+```Haskell
+  --- Since Eq Integer and Eq a => Eq (List a), we have Eq (List Integer) hence Eq (List (List Integer))
+   
+   [[1],[2,2],[3,3,3]] == [[3,3,3],[2,2],[1]]  -- typechecks!
+```
+
+In C# `EqInt:Eq<int>` so `EqArray<EqInt,int> : Eq<int[]>` so `EqArray<EqArray<EqInt,int>,int[]> : Eq<int[][]>`.
+
+In C#, instance type arguments cannot be inferred from arguments' types. (Why? No occurrences in parameters types!)
+
+```csharp
+   bool Equals<EqA,A>(A a, A b) where EqA: struct, Eq<A>
+  
+   Equals( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // type error
+   
+   Equals< EqArray<EqArray<EqInt,int>,int[]> , int[][]>( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // typechecks!
+```
+
+No programmer should write this crap!
+
+In Concept C#, we extend type argument inference so:
+* all type and instance arguments can be implicit and inferred from parameter types;
+* type arguments can be explicit and instance type arguments inferred from type arguments ;
+* all type arguments and instance arguments can be explicit (C# fallback option).
+
+Concept C#:
+```csharp
+  bool Equals<A>(A a, A b) where EqA:Eq<A>
+
+  Equals({{1},{1,2},{1,2,3}},{{1,2,3},{1,2},{1}}) // type checks: instance inferrable from inferred type arguments
+
+  Equals< int[][] >({{1},{1,2},{1,2,3}},{{1,2,3},{1,2},{1}}) // also checks(used when C# type inference fails)
+
+  Equals< int[][], EqArray<int[],EqArray<int,EqInt>> >({{1},{1,2},{1,2,3}},{{1,2,3},{1,2},{1}}) // also checks (used when instance inference fails).
+
+  
+  (bool Equals<A>(A a, A b) where EqA:Eq<A>  ~~ bool Equals<A,[ConceptParameter] EqA>(A a, A b) where EqA:Eq<A>)
+```
+
+Instance type parameters are inferred using type driven backchaining, similar to Haskell.
 
 ---
 
