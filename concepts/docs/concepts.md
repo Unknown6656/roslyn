@@ -503,7 +503,7 @@ public static bool Equals<A>(A a, A b)
 ```
 
 IL:
-```csharp
+```
 .method public hidebysig static bool
     Equals<valuetype .ctor([mscorlib]System.ValueType, class Eq.Eq`1<!!A>) EqA, A> 
                        // dictionary EqA is a type (not value) parameter   ^^^
