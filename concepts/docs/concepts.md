@@ -503,7 +503,7 @@ public static bool Equals<A>(A a, A b)
 ```
 
 IL:
-```CIL
+```csharp
 .method public hidebysig static bool
     Equals<valuetype .ctor([mscorlib]System.ValueType, class Eq.Eq`1<!!A>) EqA, A> 
                        // dictionary EqA is a type (not value) parameter   ^^^
@@ -517,8 +517,9 @@ IL:
    IL_000a: ldloca.s loc2
    IL_000c: ldarg.0
    IL_000d: ldarg.1
-   IL_000e: constrained. !!EqA  // a direct call to an interface method on that struct
-   IL_0014: callvirt instance bool class Eq.Eq`1<!!A>::Equals(!0, !0)
+   IL_000e: constrained. !!EqA  
+   IL_0014: callvirt instance //a direct call to an interface method on that struct
+              bool class Eq.Eq`1<!!A>::Equals(!0, !0) 
    IL_0019: ret
 }
 
