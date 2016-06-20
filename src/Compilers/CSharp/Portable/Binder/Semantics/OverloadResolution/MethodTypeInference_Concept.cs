@@ -145,18 +145,20 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </param>
         private static void SearchScopeForInstancesAndParams(Binder binder, out ImmutableArray<TypeSymbol> allInstances, out ImmutableHashSet<TypeParameterSymbol> fixedParams)
         {
+            var seenContainers = new HashSet<Symbol>();
+
             var iBuilder = new ArrayBuilder<TypeSymbol>();
             var fpBuilder = new HashSet<TypeParameterSymbol>();
 
-            // This is used to make sure we don't traverse the same container twice.
-            Symbol oldContainer = null;
             for (var b = binder; b != null; b = b.Next)
             {
                 // ContainingMember crashes if we're in a BuckStopsHereBinder.
                 var container = b.ContainingMemberOrLambda;
                 if (container == null) break;
-                if (container == oldContainer) continue;
-                oldContainer = container;
+                // Make sure we don't traverse the same container twice.
+                // Otherwise, we get duplicates.
+                if (seenContainers.Contains(container)) continue;
+                seenContainers.Add(container);
 
                 // We can see two types of instance:
                 // 1) Any instances witnessed on a method or type between us and
@@ -171,6 +173,11 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // namespace, but we also need to pull in imports too.
                 foreach (var u in b.GetImports(null).Usings)
                 {
+                    // We might have 'using static'-imported our own container
+                    // class, in which case we shouldn't scan it twice.
+                    if (seenContainers.Contains(u.NamespaceOrType)) continue;
+                    seenContainers.Add(u.NamespaceOrType);
+
                     // TODO: Do we need to recurse into nested types/namespaces?
                     GetNamedInstances(binder, u.NamespaceOrType, ref iBuilder);
                 }
