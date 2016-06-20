@@ -532,7 +532,7 @@ IL:
 
 ## Machine Code
 
-![x86](images\x86.png)
+![x86](./images/x86.png)
 
 ---
 
