@@ -250,7 +250,7 @@ Derived instances allow Haskell to automatically construct instances as evidence
    [[1],[2,2],[3,3,3]] == [[3,3,3],[2,2],[1]]  -- typechecks!
 ```
 
-In C# `EqInt:Eq<int>` so `EqArray<EqInt,int> : Eq<int[]>` so `EqArray<EqArray<EqInt,int>,int[]> : Eq<int[][]>`.
+In C# `EqInt:Eq<int>` so `EqArray<int,EqInt> : Eq<int[]>` so `EqArray<int[],EqArray<int,EqInt>> : Eq<int[][]>`.
 
 In C#, instance type arguments cannot be inferred from arguments' types. (Why? No occurrences in parameters types!)
 
@@ -259,7 +259,7 @@ In C#, instance type arguments cannot be inferred from arguments' types. (Why? N
   
    Equals( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // type error
    
-   Equals< EqArray<EqArray<EqInt,int>,int[]> , int[][]>( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // typechecks!
+   Equals< EqArray<int[],EqArray<int,EqInt>>,int[]> , int[][]>( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // typechecks!
 ```
 
 No programmer should write this crap!
