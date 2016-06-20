@@ -83,13 +83,13 @@ Why wasn't this adopted?
 This approach requires *no* changes to CLR or BCL (compiler changes + conventions only).
 It's *sound by construction*.
 
-![static interface methods](images\staticinterfaces.png)
+![static interface methods](./images/staticinterfaces.png)
 
 ---
 
 ## Haskell comes top (for generic programming)
 
-![static interface methods](images/comparison.png)
+![static interface methods](./images/comparison.png)
 
 Doesn't have to be this way...
 
@@ -427,13 +427,7 @@ Concept C#:
 
 ---
 
-##Performance
-
-TBC (need to import existing charts)
-
----
-
-###Classy QuickSort
+### Classy QuickSort
 
 C#:
 ```csharp
@@ -488,7 +482,7 @@ Concept C#:
 ###Performance  (Variations of QuickSort)
 
 
-![Perf](images\perf.png)
+![Perf](./images/perf.png)
 
 ---
 
