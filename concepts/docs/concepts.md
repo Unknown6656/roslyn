@@ -59,9 +59,9 @@ or override the default.
 
 ---
 
-## Why didn’t we do this before?
+## Why didn't we do this before?
 
-Times have changed: not just Haskell anymore…
+Times have changed: not just Haskell anymore ...
 *	Swift *protocols*
 *	Scala *implicits* 
 *	Rust	*traits*	
@@ -75,7 +75,7 @@ Times have changed: not just Haskell anymore…
 
 ## Compare with: "Static Interface Methods for the CLR (Eidt & Detlefs)"
 
-Why wasn’t this adopted?
+Why wasn't this adopted?
 
 *	Required CLR & BCL changes
 *	(soundness issues)
@@ -124,7 +124,7 @@ Concept C#
 ##Haskell Overloads
 
 The Haskell declaration of class `Eq a` implicitly declares the overloaded 
-operations induced by class `Eq a`’s members.
+operations induced by class `Eq a` 's members.
 
 ```Haskell
     (==)                    :: (Eq a) => a -> a -> Bool 
@@ -154,7 +154,7 @@ Concept C#:
 
 * Haskell dictionary value ~ C# dictionary type
 
-The dictionary type parameter is marked "struct” (so stack allocated):
+The dictionary type parameter is marked "struct" (so stack allocated):
 we can access its operations through a default value (no need to pass dictionary values).
 
 ---
@@ -206,7 +206,7 @@ implementing an interface but parameterized by suitably constrained type paramet
        nil == nil      = true
     (a:as) == (b:bs)   = (a == b) && (as == bs)
          _ == _        = false
-  This Haskell code defines, given an equality on type a’s (any a) an equality operation on type list of a, written [a].
+  This Haskell code defines, given an equality on type a's (any a) an equality operation on type list of a, written [a].
 ```
 
   Substituting, for simplicity, arrays for lists in CS we can write: 
@@ -242,7 +242,7 @@ Concept C#:
 
 ### Derived Operations 
 
-We translate Haskell’s qualified types as extra type parameters, constrained to be both structs and bound by translations of their type class constraints.
+We translate Haskell's qualified types as extra type parameters, constrained to be both structs and bound by translations of their type class constraints.
 
 For example, equality based list membership in Haskell is defined as follows:
 
@@ -558,6 +558,9 @@ IL:
 * Add semi-implicit dictionary type abstraction (induced by concept constraints)
 * Add implicit dictionary type instantiation (by extending type argument inference)
 
+
+----
+
 ### Anonymous classes, instances constraitns
 
 In Haskell, instances and constraints (but not type classes) are *anonymous*:
@@ -644,12 +647,12 @@ Concepts for F# (allowing constraint inference and propagation like Haskell).
 
 ## Take Home
 
-* Haskell 98’s type classes have a type preserving .NET representation.
+* Haskell 98's type classes have a type preserving .NET representation.
 * Dictionaries must be manually constructed and provided  (a modified C#/F# compiler could do this for the user.)
 * Generated code is efficient:
     * Dictionaries are empty (stack-allocated) structs. 
     * Dictionary allocation has zero runtime cost.
-    * CLR’s code specialization ensures all dictionary calls are direct calls at runtime. (In principle, these calls could be in-lined by the JIT compiler)
+    * CLR's code specialization ensures all dictionary calls are direct calls at runtime. (In principle, these calls could be in-lined by the JIT compiler)
 
 ---
 
