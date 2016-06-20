@@ -6,12 +6,12 @@
 ///     implemented directly in terms of C#'s standard library where
 ///     possible.
 /// </remarks>
-namespace System.Concepts.Prelude
+namespace System.Concepts.OpPrelude
 {
     /// <summary>
     ///     Verbose forms of Prelude operators.
     /// </summary>
-    public static class Verbose
+    public struct Verbose
     {
         public static bool Eq<A>(A x, A y)  where W : Eq<A>         => x == y;
         public static bool Neq<A>(A x, A y) where W : Eq<A>         => x != y;
