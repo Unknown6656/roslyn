@@ -149,12 +149,11 @@ Times have changed: not just Haskell anymore ...
 ---
 
 
-#  Compare with: "Static Interface Methods for the CLR (Eidt & Detlefs)"
+#  Compare with: "Static Interface Methods for the CLR"
 
 Why wasn't this adopted?
-
-*	Required CLR & BCL changes
-*	(soundness issues)
+*  Cost: Required CLR & BCL changes
+* (soundness issues)
 
 This approach requires *no* changes to CLR or BCL (compiler changes + conventions only).
 It's *sound by construction*.
