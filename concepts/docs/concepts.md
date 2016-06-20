@@ -1,4 +1,6 @@
-# Concept C\#  (A natural representation for type classes in .NET)
+# Concept C\#  
+
+*(A natural representation for type classes in .NET)*
 
 
 Claudio Russo, Matt Windsor
