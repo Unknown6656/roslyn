@@ -4,18 +4,21 @@
 
 CSC=..\..\Binaries\Debug\csc.exe
 
-all: monoid_examples.exe \
-     quickhull.exe \
-     override.exe \
+all: \
+     101.exe \
+     beautiful_differentiation.exe \
+     eq_prelude.exe \
      eq_stage1.exe \
      eq_stage2.exe \
      eq_stage3.exe \
      eq_stage4.exe \
      eq_stage5.exe \
-     eq_prelude.exe \
      exp_sugared.exe \
-     beautiful_differentiation.exe \
-     101.exe
+     monoid_examples.exe \
+     op_beautiful_differentiation.exe \
+     op_quickhull.exe \
+     override.exe \
+     quickhull.exe
 
 # Each item depends on CSC to make sure compilation is re-triggered if
 # CSC is updated.
@@ -85,12 +88,26 @@ exp_sugared.exe: $(CSC) eq_stage5.cs ConceptAttributes.dll
 	       exp_sugared.cs
 	peverify $@
 
-
 beautiful_differentiation.exe: $(CSC) beautiful_differentiation.cs Prelude.dll ConceptAttributes.dll
 	$(CSC) /reference:Prelude.dll \
 	       /reference:ConceptAttributes.dll \
 	       /out:$@ \
 	       beautiful_differentiation.cs
+	peverify $@
+
+op_beautiful_differentiation.exe: $(CSC) op_beautiful_differentiation.cs OpPrelude.dll ConceptAttributes.dll
+	$(CSC) /reference:OpPrelude.dll \
+	       /reference:ConceptAttributes.dll \
+	       /out:$@ \
+	       op_beautiful_differentiation.cs
+	peverify $@
+
+op_quickhull.exe: $(CSC) op_quickhull.cs OpMonoid.dll OpPrelude.dll ConceptAttributes.dll
+	$(CSC) /reference:OpMonoid.dll \
+	       /reference:OpPrelude.dll \
+	       /reference:ConceptAttributes.dll \
+	       /out:$@ \
+	       op_quickhull.cs
 	peverify $@
 
 Monoid.dll: $(CSC) ../Monoid.cs Prelude.dll ConceptAttributes.dll
@@ -106,6 +123,21 @@ Prelude.dll: $(CSC) ../Prelude.cs ConceptAttributes.dll
 	       /reference:ConceptAttributes.dll \
 	       /out:$@ \
 	       ../Prelude.cs
+	peverify $@
+
+OpMonoid.dll: $(CSC) ../OpMonoid.cs OpPrelude.dll ConceptAttributes.dll
+	$(CSC) /target:library \
+	       /reference:OpPrelude.dll \
+	       /reference:ConceptAttributes.dll \
+	       /out:$@ \
+	       ../OpMonoid.cs
+	peverify $@
+
+OpPrelude.dll: $(CSC) ../OpPrelude.cs ConceptAttributes.dll
+	$(CSC) /target:library \
+	       /reference:ConceptAttributes.dll \
+	       /out:$@ \
+	       ../OpPrelude.cs
 	peverify $@
 
 ConceptAttributes.dll: $(CSC) ../ConceptAttributes.cs

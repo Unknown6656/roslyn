@@ -1223,6 +1223,24 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to One of the parameters of a binary operator must be a type parameter on the concept.
+        /// </summary>
+        internal static string ERR_BadConceptBinaryOperatorSignature {
+            get {
+                return ResourceManager.GetString("ERR_BadConceptBinaryOperatorSignature", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The parameter of a concept unary operator must be a type parameter on the concept.
+        /// </summary>
+        internal static string ERR_BadConceptUnaryOperatorSignature {
+            get {
+                return ResourceManager.GetString("ERR_BadConceptUnaryOperatorSignature", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Invalid constraint type. A type used as a constraint must be an interface, a non-sealed class or a type parameter..
         /// </summary>
         internal static string ERR_BadConstraintType {

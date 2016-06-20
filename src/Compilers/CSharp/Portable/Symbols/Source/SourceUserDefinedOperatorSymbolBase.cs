@@ -182,7 +182,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             // If we have an operator in an interface or static class then we already 
             // have reported that fact as  an error. No need to cascade the error further.
-            if (this.ContainingType.IsInterfaceType() || this.ContainingType.IsStatic)
+            if ((this.ContainingType.IsInterfaceType() && !this.ContainingType.IsConcept) || this.ContainingType.IsStatic)
             {
                 return;
             }
@@ -436,7 +436,29 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // SPEC: A unary + - ! ~ operator must take a single parameter of type
             // SPEC: T or T? and can return any type.
 
-            if (this.ParameterTypes[0].StrippedType() != this.ContainingType)
+            // @t-mawind
+            //   If we're on an concept, we insist that the type of
+            //   the parameter is one of the type parameters of the concept.
+            //   We presume that instance inheritance enforces this constraint
+            //   for instances, so don't check them.
+            if (ContainingType.IsInstance)
+            {
+                // Deliberately do nothing here
+            }
+            else if (ContainingType.IsConcept)
+            {
+                bool isOk = false;
+                foreach (var typeParameter in ContainingType.TypeParameters)
+                {
+                    if (ParameterTypes[0].StrippedType() == typeParameter)
+                    {
+                        isOk = true;
+                        break;
+                    }
+                }
+                if (!isOk) diagnostics.Add(ErrorCode.ERR_BadConceptUnaryOperatorSignature, this.Locations[0]);
+            }
+            else if (this.ParameterTypes[0].StrippedType() != this.ContainingType)
             {
                 // The parameter of a unary operator must be the containing type
                 diagnostics.Add(ErrorCode.ERR_BadUnaryOperatorSignature, this.Locations[0]);
@@ -555,10 +577,30 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // SPEC: A binary nonshift operator must take two parameters, at least
             // SPEC: one of which must have the type T or T?, and can return any type.
 
-            // @t-mawind Suppress this on instances, because instances never
-            // have the same type as their operator types.
-            if (!ContainingType.IsInstance &&
-                this.ParameterTypes[0].StrippedType() != this.ContainingType &&
+            // @t-mawind
+            //   If we're on an concept, we insist that the type of one of
+            //   the parameters is one of the type parameters of the concept.
+            //   We presume that instance inheritance enforces this constraint
+            //   for instances, so don't check them.
+            if (ContainingType.IsInstance)
+            {
+                // Deliberately do nothing here
+            }
+            else if (ContainingType.IsConcept)
+            {
+                bool isOk = false;
+                foreach (var typeParameter in ContainingType.TypeParameters)
+                {
+                    if (ParameterTypes[0].StrippedType() == typeParameter ||
+                        ParameterTypes[1].StrippedType() == typeParameter)
+                    {
+                        isOk = true;
+                        break;
+                    }
+                }
+                if (!isOk) diagnostics.Add(ErrorCode.ERR_BadConceptBinaryOperatorSignature, this.Locations[0]);
+            }
+            else if (this.ParameterTypes[0].StrippedType() != this.ContainingType &&
                 this.ParameterTypes[1].StrippedType() != this.ContainingType)
             {
                 // CS0563: One of the parameters of a binary operator must be the containing type

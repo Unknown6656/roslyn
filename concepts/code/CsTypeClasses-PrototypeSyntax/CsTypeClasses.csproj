@@ -48,13 +48,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Eq.cs" />
     <Compile Include="LowerBounds.cs" />
     <Compile Include="Num.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="NumEqWithDefaults.cs" />
+    <Compile Include="OpEq.cs" />
+    <Compile Include="OpNum.cs" />
     <Compile Include="Perf.cs" />
-    <Compile Include="Eq.cs" />
     <Compile Include="Exp.cs" />
     <Compile Include="Existentials.cs" />
     <Compile Include="ListsEq.cs" />

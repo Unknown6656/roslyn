@@ -13,6 +13,8 @@ class Program {
     Exp.Test.Run();
     ObserverPattern.Test.Run();
     Existentials.Test.Run();
+    OpEq.Test.Run();
+    OpNum.Test.Run();
     Perf.Gsort.Run(new string[] { "1000000" });
     Console.ReadLine();
   }

@@ -89,7 +89,7 @@ It's *sound by construction*.
 
 ## Haskell comes top (for generic programming)
 
-![static interface methods](images\comparison.png)
+![static interface methods](images/comparison.png)
 
 Doesn't have to be this way...
 
@@ -532,7 +532,7 @@ IL:
 
 ## Machine Code
 
-![x86](images\x86.png)
+![x86](./images/x86.png)
 
 ---
 
