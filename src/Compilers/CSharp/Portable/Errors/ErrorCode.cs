@@ -1130,6 +1130,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         ERR_ConceptConstraintOnNonOverride = 4037, //@t-mawind
         ERR_ConceptOperatorsMustBeNonStatic = 4038, //@t-mawind
+        ERR_BadConceptUnaryOperatorSignature = 4039, //@t-mawind
+        ERR_BadConceptBinaryOperatorSignature = 4040, //@t-mawind
 
         // available 4037-4999
 
