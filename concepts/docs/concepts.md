@@ -7,6 +7,7 @@ Claudio Russo, Matt Windsor
 
 ##Abstract:
 
+
 Type classes are an immensely popular and productive feature of Haskell. Really.
 
 It turns out that they have a natural and efficient representation in .NET that is:
@@ -82,7 +83,15 @@ Why wasn’t this adopted?
 This approach requires *no* changes to CLR or BCL (compiler changes + conventions only).
 It's *sound by construction*.
 
+![static interface methods](images\staticinterfaces.png)
+
 ---
+
+## Haskell comes top (for generic programming)
+
+![static interface methods](images\comparison.png)
+
+Doesn't have to be this way...
 
 ## Haskell Type Classes
  
@@ -478,6 +487,9 @@ Concept C#:
 
 ###Performance  (Variations of QuickSort)
 
+
+![Perf](images\perf.png)
+
 ---
 
 ###Disassembly
@@ -517,6 +529,10 @@ IL:
 }
 
 ```
+
+## Machine Code
+
+![x86](images\x86.png)
 
 ---
 
