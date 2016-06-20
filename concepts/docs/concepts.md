@@ -117,33 +117,6 @@ or override the default.
 ---
 
 
-#  Executive Summary
-
-*	We can add type classes to C# (VB/F#). (Everyone else has them now...)
-*	NO CLR CHANGES REQUIRED.
-*	Only small (?) compiler changes.
-*	No loss of information (a type preserving encoding).
-*	Good/Very good performance.
-*	Easy interop. Encoding is so light it makes sense to less classy languages too.
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-```
-
----
-
 
 #  Why didn't we do this before?
 
@@ -154,7 +127,7 @@ Times have changed: not just Haskell anymore ...
 *	Go structural interfaces 
 *	Academic proposals: JavaGI, Static Interface Methods for the CLR
 *	Isabelle, Coq, LEAN (theorem provers)
-*	~~~C++ concepts~~~
+*	~~C++ concepts~~
 *	...
 
 ```
