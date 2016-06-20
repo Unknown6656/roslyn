@@ -21,7 +21,7 @@ Claudio Russo, Matt Windsor
 
 ---
 
-##Abstract:
+# Abstract:
 
 
 Type classes are an immensely popular and productive feature of Haskell. Really.
@@ -56,7 +56,7 @@ For C#, we call them *concepts*, as a nod to C++ and its (abandoned) but related
 ---
 
 
-### Background: Haskell Type Classes
+#  Background: Haskell Type Classes
 Haskell's *type classes* are a powerful abstraction mechanism for describing generic algorithms 
 applicable to types that have distinct representations but common interfaces.
 
@@ -85,7 +85,7 @@ applicable to types that have distinct representations but common interfaces.
 ---
 
 
-###Why should .NET care?
+# Why should .NET care?
 
 Unlike C# interfaces:
 
@@ -115,7 +115,7 @@ or override the default.
 ---
 
 
-## Executive Summary
+#  Executive Summary
 
 *	We can add type classes to C# (VB/F#). (Everyone else has them now...)
 *	NO CLR CHANGES REQUIRED.
@@ -143,7 +143,7 @@ or override the default.
 ---
 
 
-## Why didn't we do this before?
+#  Why didn't we do this before?
 
 Times have changed: not just Haskell anymore ...
 *	Swift *protocols*
@@ -174,7 +174,7 @@ Times have changed: not just Haskell anymore ...
 ---
 
 
-## Compare with: "Static Interface Methods for the CLR (Eidt & Detlefs)"
+#  Compare with: "Static Interface Methods for the CLR (Eidt & Detlefs)"
 
 Why wasn't this adopted?
 
@@ -205,13 +205,13 @@ It's *sound by construction*.
 ---
 
 
-## Haskell comes top (for generic programming)
+#  Haskell comes top (for generic programming)
 
 ![static interface methods](./images/comparison.png)
 
 Doesn't have to be this way...
 
-## Haskell Type Classes
+#  Haskell Type Classes
  
 We represent Haskell type classes as Generic interfaces.
 
@@ -256,7 +256,7 @@ Concept C#
 ---
 
 
-##Haskell Overloads
+# Haskell Overloads
 
 The Haskell declaration of class `Eq a` implicitly declares the overloaded 
 operations induced by class `Eq a` 's members.
@@ -311,7 +311,7 @@ we can access its operations through a default value (no need to pass dictionary
 ---
 
 
-##Haskell Instances
+# Haskell Instances
 
 A Haskell ground instance, eg.
 
@@ -365,7 +365,7 @@ Concept C#:
 ---
 
 
-### Derived Instances
+#  Derived Instances
 
 This Haskell code defines, given an equality on type a's (any a) an equality operation on type list of a, written [a].
 
@@ -409,7 +409,7 @@ Concept C#:
     }
 ```
 
-### Constructing Evidence
+# Constructing Evidence
 
 Derived instances allow Haskell to automatically construct instances as evidence for constraints:
 
@@ -421,15 +421,21 @@ Derived instances allow Haskell to automatically construct instances as evidence
 
 In C# `EqInt:Eq<int>` so `EqArray<int,EqInt> : Eq<int[]>` so `EqArray<int[],EqArray<int,EqInt>> : Eq<int[][]>`.
 
-In C#, instance type arguments cannot be inferred from arguments' types. (Why? No occurrences in parameters types!)
+In C#, instance type arguments cannot be inferred from arguments' types. (Why? No occurrences in parameters' types!)
 
 ```csharp
+
    bool Equals<EqA,A>(A a, A b) where EqA: struct, Eq<A>
   
+
    Equals( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // type error
    
    Equals< EqArray<int[],EqArray<int,EqInt>>,int[]> , int[][]>( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) // typechecks!
 ```
+
+
+
+# Instance Inference
 
 No programmer should write this crap!
 
@@ -440,7 +446,10 @@ In Concept C#, we extend type argument inference so:
 
 Concept C#:
 ```csharp
+
   bool Equals<A>(A a, A b) where EqA:Eq<A>
+
+
 
   Equals({{1},{1,2},{1,2,3}},{{1,2,3},{1,2},{1}}) // type checks: instance inferrable from inferred type arguments
 
@@ -473,7 +482,7 @@ Instance type parameters are inferred using type driven backchaining, similar to
 ---
 
 
-### Derived Operations 
+#  Derived Operations 
 
 We translate Haskell's qualified types as extra type parameters, constrained to be both structs and bound by translations of their type class constraints.
 
@@ -524,7 +533,7 @@ Concept C#:
 ---
 
  
-### Example: Numeric types
+#  Example: Numeric types
 
 Haskell has a rich numeric hierarchy (think |IArithmetic|)
 ```Haskell
@@ -591,7 +600,7 @@ instance NumInt : Num<int> {
 ---
 
 
-### Type Class Inheritance
+#  Type Class Inheritance
 
 Haskell supports (multiple) inheritance of super classes.
 
@@ -655,7 +664,7 @@ Concept C#:
 ---
 
 
-### Subsumption
+#  Subsumption
 
 
 Subsumption allows one to derive (evidence for) a class from (evidence for) its subclasses.
@@ -728,7 +737,7 @@ Concept C#:
 ---
 
 
-### Classy QuickSort
+#  Classy QuickSort
 
 C#:
 ```csharp
@@ -797,7 +806,7 @@ Concept C#:
 ---
 
 
-###Performance  (Variations of QuickSort)
+# Performance  (Variations of QuickSort)
 
 
 ![Perf](./images/perf.png)
@@ -821,7 +830,7 @@ Concept C#:
 ---
 
 
-###Disassembly
+# Disassembly
 
 C#:
 ```csharp
@@ -860,7 +869,7 @@ IL:
 
 ```
 
-## Machine Code
+#  Machine Code
 
 ![x86](./images/x86.png)
 
@@ -883,7 +892,7 @@ IL:
 ---
 
 
-###Summary
+# Summary
 
 | Haskell | C#| Concept C# |
 ----------|--------|--------
@@ -915,7 +924,7 @@ IL:
 ---
 
 
-### Syntactic Support
+#  Syntactic Support
 
 * Distinguish type class declarations (new keyword concept)
 * Anonymize instance declarations (new keyword instance)
@@ -942,7 +951,7 @@ IL:
 ---
 -
 
-### Anonymous classes, instances constraitns
+#  Anonymous classes, instances constraitns
 
 In Haskell, instances and constraints (but not type classes) are *anonymous*:
 * the programmer never  provides evidence for constraints
@@ -987,7 +996,7 @@ Concept C# with implicit instances:
 
 More concise, but less flexiblee, and probably a bad idea, given C#'s limited type inference.
 
-## Implementation Status
+#  Implementation Status
 
 * working compiler 
 * separate compilation via trivial attributes recognized on imports, emitted on export.
@@ -1028,7 +1037,7 @@ Concepts for F# (allowing constraint inference and propagation like Haskell).
 ---
 
 
-## Case Studies (In Progress)
+#  Case Studies (In Progress)
 
 * Micro-benchmarks for perf (sorting done, need more)
 * Automatic Differentiation, overloading arithmetic to compute function derivatives [1]
@@ -1060,7 +1069,7 @@ Concepts for F# (allowing constraint inference and propagation like Haskell).
 ---
 
 
-## Take Home
+#  Take Home
 
 * Haskell 98's type classes have a type preserving .NET representation.
 * Dictionaries must be manually constructed and provided  (a modified C#/F# compiler could do this for the user.)
@@ -1088,7 +1097,7 @@ Concepts for F# (allowing constraint inference and propagation like Haskell).
 ---
 
 
-## Links & References
+#  Links & References
 
 
 This document https://github.com/CaptainHayashi/roslyn/blob/master/concepts/docs/concepts.md.
