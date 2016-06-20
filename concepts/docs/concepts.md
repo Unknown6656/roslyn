@@ -3,6 +3,22 @@
 
 Claudio Russo, Matt Windsor
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
 
 ##Abstract:
@@ -21,7 +37,24 @@ This paves the way for the extension of C# (VB, F# etc.) with Haskell style type
 
 For C#, we call them *concepts*, as a nod to C++ and its (abandoned) but related *concepts*.
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Background: Haskell Type Classes
 Haskell's *type classes* are a powerful abstraction mechanism for describing generic algorithms 
@@ -33,7 +66,24 @@ applicable to types that have distinct representations but common interfaces.
 * Type classes may be arranged hierarchically, permitting *inheritance* and *subsumption*. 
 * Class instances may be generic, describing whole families of instances, predicated on type class membership.
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ###Why should .NET care?
 
@@ -46,7 +96,24 @@ or override the default.
 * A (much) cheaper yet efficient alternative to CLR += "static interfaces methods".
 
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Executive Summary
 
@@ -57,7 +124,24 @@ or override the default.
 *	Good/Very good performance.
 *	Easy interop. Encoding is so light it makes sense to less classy languages too.
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Why didn't we do this before?
 
@@ -71,7 +155,24 @@ Times have changed: not just Haskell anymore ...
 *	~~~C++ concepts~~~
 *	...
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Compare with: "Static Interface Methods for the CLR (Eidt & Detlefs)"
 
@@ -85,7 +186,24 @@ It's *sound by construction*.
 
 ![static interface methods](./images/staticinterfaces.png)
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Haskell comes top (for generic programming)
 
@@ -119,7 +237,24 @@ Concept C#
   }
 ```
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ##Haskell Overloads
 
@@ -157,7 +292,24 @@ Concept C#:
 The dictionary type parameter is marked "struct" (so stack allocated):
 we can access its operations through a default value (no need to pass dictionary values).
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ##Haskell Instances
 
@@ -194,7 +346,24 @@ Concept C#:
   }
 ```
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Derived Instances
 
@@ -285,7 +454,24 @@ Concept C#:
 
 Instance type parameters are inferred using type driven backchaining, similar to Haskell.
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Derived Operations 
 
@@ -319,7 +505,24 @@ Concept C#:
   }
 ```
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
  
 ### Example: Numeric types
 
@@ -369,7 +572,24 @@ instance NumInt : Num<int> {
   }
 ```
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Type Class Inheritance
 
@@ -416,7 +636,24 @@ Concept C#:
 
 * Haskell class inheritance ~ C# interface inheritance 
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Subsumption
 
@@ -472,7 +709,24 @@ Concept C#:
     }
 ```
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Classy QuickSort
 
@@ -524,14 +778,48 @@ Concept C#:
     }
 ```
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ###Performance  (Variations of QuickSort)
 
 
 ![Perf](./images/perf.png)
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ###Disassembly
 
@@ -576,7 +864,24 @@ IL:
 
 ![x86](./images/x86.png)
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ###Summary
 
@@ -591,7 +896,24 @@ IL:
 |implicit dictionary passing | explicit type passing | implicit type passing with explicit fallback
 |constraint inference & propagation | NA | NA
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ### Syntactic Support
 
@@ -601,7 +923,24 @@ IL:
 * Add implicit dictionary type instantiation (by extending type argument inference)
 
 
-----
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+---
+-
 
 ### Anonymous classes, instances constraitns
 
@@ -670,7 +1009,24 @@ Future:
 
 Concepts for F# (allowing constraint inference and propagation like Haskell).
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Case Studies (In Progress)
 
@@ -685,7 +1041,24 @@ Concepts for F# (allowing constraint inference and propagation like Haskell).
 
 [1]["Conal Elliot, Beautiful Differentiation"]
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Take Home
 
@@ -696,7 +1069,24 @@ Concepts for F# (allowing constraint inference and propagation like Haskell).
     * Dictionary allocation has zero runtime cost.
     * CLR's code specialization ensures all dictionary calls are direct calls at runtime. (In principle, these calls could be in-lined by the JIT compiler)
 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
 ---
+
 
 ## Links & References
 
