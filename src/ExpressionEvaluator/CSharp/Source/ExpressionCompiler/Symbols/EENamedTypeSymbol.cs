@@ -119,7 +119,6 @@ namespace Microsoft.CodeAnalysis.CSharp.ExpressionEvaluator
         {
             get { return _typeParameters.Length; }
         }
-        internal override int ExplicitArity => Arity; //@t-mawind (correct?)
 
         public override ImmutableArray<TypeParameterSymbol> TypeParameters
         {

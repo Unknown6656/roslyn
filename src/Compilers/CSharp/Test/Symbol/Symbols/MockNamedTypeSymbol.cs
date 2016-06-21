@@ -28,7 +28,6 @@ namespace Microsoft.CodeAnalysis.CSharp.UnitTests
                 return 0;
             }
         }
-        internal override int ExplicitArity => 0; //@t-mawind correct?
 
         internal override bool MangleName
         {
