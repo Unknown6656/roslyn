@@ -23,6 +23,12 @@ all: \
 # Each item depends on CSC to make sure compilation is re-triggered if
 # CSC is updated.
 
+101.exe: $(CSC) ConceptAttributes.dll
+	$(CSC) /reference:ConceptAttributes.dll \
+	       /out:$@ \
+	       101.cs
+	peverify $@
+
 monoid_examples.exe: $(CSC) monoid_examples.cs Monoid.dll Prelude.dll ConceptAttributes.dll
 	$(CSC) /reference:Monoid.dll \
 	       /reference:Prelude.dll \
