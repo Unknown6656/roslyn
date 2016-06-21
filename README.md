@@ -18,7 +18,11 @@ found in the `concepts\tests` and `concepts\code` directories.
 
 ## Design overview
 
-We outline our design in `concepts\docs\concepts.md`.
+We outline our general design (based on implementation ideas by Claudio Russo)
+in `concepts\docs\concepts.md`.
+
+Current design decision questions are available at
+[this wiki page](https://github.com/CaptainHayashi/roslyn/wiki/Concept-C%23-Roslyn).
 
 ## How to compile the compiler
 
