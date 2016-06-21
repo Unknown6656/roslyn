@@ -1,77 +1,49 @@
-## Welcome to the .NET Compiler Platform ("Roslyn")
+# Roslyn fork for _Concept C#_
 
-[//]: # (Begin current test results)
+This repository contain a fork of the [Roslyn](https://github.com/dotnet/roslyn)
+compiler to add support for _concepts_ (think somewhere between Haskell
+[typeclasses](https://www.haskell.org/tutorial/classes.html) and Scala
+[implicits](http://www.scala-lang.org/old/node/114) to C#).  This work is
+being carried out by Claudio Russo ([@crusso](https://github.com/crusso)
+and Matt Windsor ([@CaptainHayashi](https://github.com/captainhayashi)).
 
-### Windows - Unit Tests
-||Debug x86|Debug x64|Release x86|Release x64|Determinism|
-|:--:|:--:|:--:|:--:|:--:|:--:|
-|**master (1.3)**|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_debug_unit32/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_debug_unit32/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_debug_unit64/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_debug_unit64/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_release_unit32/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_release_unit64/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_release_unit64/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_release_unit64/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_determinism/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/windows_determinism/)|
-|**future (2.0 Preview 2)**|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_debug_unit32/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_debug_unit32/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_debug_unit64/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_debug_unit64/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_release_unit32/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_release_unit64/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_release_unit64/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_release_unit64/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_determinism/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/windows_determinism/)|
+_This is an experimental prototype_, and is _not_ suitable for production or
+even for drop-in addition to the mainstream C# compiler.  Expect it to eat your
+laundry, set fire to your cats, and otherwise ruin your day.
 
-### Linux/Mac - Unit Tests
-||Linux|Mac OSX|
-|:--:|:--:|:--:|
-|**master (1.3)**|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/linux_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/master/job/mac_debug/)|
-|**future (2.0 Preview 2)**|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/linux_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/linux_debug/)|[![Build Status](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/mac_debug/badge/icon)](http://dotnet-ci.cloudapp.net/job/dotnet_roslyn/job/future/job/mac_debug/)|
+## Examples
 
-[//]: # (End current test results)
+Examples of the syntax, which may be compiled with this fork's `csc`, can be
+found in the `concepts\tests` and `concepts\code` directories.
 
-[![Join the chat at https://gitter.im/dotnet/roslyn](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/dotnet/roslyn?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+## Design overview
 
+We outline our design in `concepts\docs\concepts.md`.
 
-Roslyn provides open-source C# and Visual Basic compilers with rich code analysis APIs.  It enables building code analysis tools with the same APIs that are used by Visual Studio.
+## How to compile the compiler
 
-### Download C# and Visual Basic
+See Roslyn's [existing documentation](https://github.com/dotnet/roslyn/wiki/Building%20Testing%20and%20Debugging)
+on building, testing, and debugging: we haven't changed the build process for
+the compiler.
 
-Want to start developing in C# and Visual Basic? Download [Visual Studio 2015](https://www.visualstudio.com/en-us/downloads/visual-studio-2015-downloads-vs.aspx), 
-which has the latest features built-in. There are also [prebuilt Azure VM images](https://azure.microsoft.com/en-us/marketplace/virtual-machines/all/?term=Visual+Studio+2015) available with VS 2015 already installed.
+## How to compile the examples
 
-To install the latest release without Visual Studio, run one of the following [nuget](https://dist.nuget.org/index.html) command lines:
+First cd to `concepts` and compile `ConceptAttributes.dll`:
 
 ```
-nuget install Microsoft.Net.Compilers   # Install C# and VB compilers
-nuget install Microsoft.CodeAnalysis    # Install Language APIs and Services
+csc /target:library ConceptAttributes.cs
 ```
 
-To get the latest "preview" drop, published about once per month, add the `-pre` switch to the nuget commands.
+This file _must_ be referenced by anything using concepts.
 
-### Source code
+Then, you can compile the examples:
 
-* Clone the sources: `git clone https://github.com/dotnet/roslyn.git`
-* [Enhanced source view](http://source.roslyn.io/), powered by Roslyn 
-* [Building, testing and debugging the sources](https://github.com/dotnet/roslyn/wiki/Building%20Testing%20and%20Debugging)
-
-### Get started
-
-* Tutorial articles by Alex Turner in MSDN Magazine
-  - [Use Roslyn to Write a Live Code Analyzer for Your API](https://msdn.microsoft.com/en-us/magazine/dn879356)
-  - [Adding a Code Fix to your Roslyn Analyzer](https://msdn.microsoft.com/en-us/magazine/dn904670.aspx)
-* [Roslyn Overview](https://github.com/dotnet/roslyn/wiki/Roslyn%20Overview) 
-* [API Changes between CTP 6 and RC](https://github.com/dotnet/roslyn/wiki/VS-2015-RC-API-Changes)
-* [Samples and Walkthroughs](https://github.com/dotnet/roslyn/wiki/Samples-and-Walkthroughs)
-* [Documentation](https://github.com/dotnet/roslyn/tree/master/docs)
-* [Analyzer documentation](https://github.com/dotnet/roslyn/tree/master/docs/analyzers)
-* [Syntax Visualizer Tool](https://github.com/dotnet/roslyn/wiki/Syntax%20Visualizer)
-* [Syntax Quoter Tool](http://roslynquoter.azurewebsites.net)
-* [Roadmap](https://github.com/dotnet/roslyn/wiki/Roadmap) 
-* [Language Feature Status](https://github.com/dotnet/roslyn/wiki/Languages-features-in-C%23-6-and-VB-14)
-* [Language Design Notes](https://github.com/dotnet/roslyn/issues?q=label%3A%22Design+Notes%22+)
-* [FAQ](https://github.com/dotnet/roslyn/wiki/FAQ)
-* Also take a look at our [Wiki](https://github.com/dotnet/roslyn/wiki) for more information on how to contribute, what the labels on issue mean, etc.
-
-### Contribute!
-
-Some of the best ways to contribute are to try things out, file bugs, and join in design conversations. 
-
-* [How to Contribute](https://github.com/dotnet/roslyn/wiki/Contributing-Code)
-* [Pull requests](https://github.com/dotnet/roslyn/pulls): [Open](https://github.com/dotnet/roslyn/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/roslyn/pulls?q=is%3Apr+is%3Aclosed)
-
-Looking for something to work on? The list of [up for grabs issues](https://github.com/dotnet/roslyn/issues?q=is%3Aopen+is%3Aissue+label%3A%22Up+for+Grabs%22) is a great place to start.
-
-This project has adopted a code of conduct adapted from the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. This code of conduct has been [adopted by many other projects](http://contributor-covenant.org/adopters/). For more information see the [Code of conduct](http://www.dotnetfoundation.org/code-of-conduct).
-
-
-### .NET Foundation
-
-This project is part of the [.NET Foundation](http://www.dotnetfoundation.org/projects) along with other
-projects like [the class libraries for .NET Core](https://github.com/dotnet/corefx/). 
+* The examples in the `concepts\tests` directory have a `Makefile` that can
+  be used with `nmake`.  These reference the compiler built above, so remember
+  to build `csc`!
+* Other examples have `MSBuild` solutions: you will need to open these with a
+  version of Visual Studio with our `csc` added (ie, run from the
+  `CompilerExtensions` project of Roslyn).  See above.
+* To build individual files using concepts, just use our `csc`.
+  _Remember to reference (`/reference`) `ConceptAttributes.dll`_: things break
+  without it.
