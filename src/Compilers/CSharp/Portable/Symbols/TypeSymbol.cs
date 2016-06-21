@@ -687,53 +687,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             get
             {
                 return this.IsValueType;
-        /// Is this type a managed type (false for everything but enum, pointer, and
-        /// some struct types).
-        /// </summary>
-        /// <remarks>
-        /// See Type::computeManagedType.
-        /// </remarks>
-        internal abstract bool IsManagedType { get; }
-
-        #region ITypeSymbol Members
-
-        INamedTypeSymbol ITypeSymbol.BaseType
-        {
-            get
-            {
-                return this.BaseTypeNoUseSiteDiagnostics;
-            }
-        }
-
-        ImmutableArray<INamedTypeSymbol> ITypeSymbol.Interfaces
-        {
-            get
-            {
-                return StaticCast<INamedTypeSymbol>.From(this.InterfacesNoUseSiteDiagnostics());
-            }
-        }
-
-        ImmutableArray<INamedTypeSymbol> ITypeSymbol.AllInterfaces
-        {
-            get
-            {
-                return StaticCast<INamedTypeSymbol>.From(this.AllInterfacesNoUseSiteDiagnostics);
-            }
-        }
-
-        bool ITypeSymbol.IsReferenceType
-        {
-            get
-            {
-                return this.IsReferenceType;
-            }
-        }
-
-        bool ITypeSymbol.IsValueType
-        {
-            get
-            {
-                return this.IsValueType;
             }
         }
 

@@ -138,5 +138,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         internal override abstract NamedTypeSymbol GetEffectiveBaseClass(ConsList<TypeParameterSymbol> inProgress);
 
         internal override abstract TypeSymbol GetDeducedBaseType(ConsList<TypeParameterSymbol> inProgress);
+
+
+        //@t-mawind
+        internal override bool IsConceptWitness => _underlyingTypeParameter.IsConceptWitness;
     }
 }

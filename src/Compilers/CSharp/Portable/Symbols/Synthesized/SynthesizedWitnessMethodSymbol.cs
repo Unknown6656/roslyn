@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
+
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Cci;
 
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
@@ -14,22 +9,22 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
     /// Symbol representing a member belonging to a concept, which has been
     /// accessed through a concept witness.
     /// <para>
-    /// The main goal of this class is to mark the method so it invocations
+    /// The main goal of this class is to mark the method so invocations
     /// of it can be dispatched properly during binding.  This is a rather
     /// hacky way of doing this, to say the least.
     /// </para>
     /// </summary>
-    internal sealed class SynthesizedWitnessMethodSymbol : MethodSymbol
+    internal sealed class SynthesizedWitnessMethodSymbol : WrappedMethodSymbol
     {
-        /// <summary>
-        /// The concept method to wrap.
-        /// </summary>
-        private MethodSymbol _method;
-
         /// <summary>
         /// The witness 'owning' the concept method.
         /// </summary>
         private TypeParameterSymbol _parent;
+
+        /// <summary>
+        /// The concept method to wrap.
+        /// </summary>
+        private MethodSymbol _method;
 
         /// <summary>
         /// Constructs a new <see cref="SynthesizedWitnessMethodSymbol"/>.
@@ -41,6 +36,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// The witness 'owning' the concept method.
         /// </param>
         internal SynthesizedWitnessMethodSymbol(MethodSymbol method, TypeParameterSymbol parent)
+            : base()
         {
             Debug.Assert(parent.IsConceptWitness);
 
@@ -54,89 +50,46 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         internal TypeParameterSymbol Parent => _parent;
 
-        public override string Name => _method.Name;
+        public override MethodSymbol UnderlyingMethod => _method;
 
-        public override MethodSymbol OriginalDefinition => _method.OriginalDefinition;
+        // @t-mawind
+        //   The following are things WrappedMethodSymbol doesn't give us for
+        //   free, and are probably incorrect.
 
-        public override Symbol ContainingSymbol => _method;
+        public override MethodSymbol OriginalDefinition => UnderlyingMethod.OriginalDefinition;
 
-        public override Accessibility DeclaredAccessibility => _method.DeclaredAccessibility;
+        public override Symbol ContainingSymbol => UnderlyingMethod.ContainingSymbol;
 
         public override ImmutableArray<SyntaxReference> DeclaringSyntaxReferences
             => ImmutableArray<SyntaxReference>.Empty;
 
         public sealed override bool IsImplicitlyDeclared => true;
 
-        public override bool IsAbstract => _method.IsAbstract;
-
-        public override bool IsExtern => _method.IsExtern;
-
-        public override bool IsOverride => _method.IsOverride;
-
-        public override bool IsSealed => _method.IsSealed;
-
-        public override bool IsStatic => _method.IsStatic;
-
-        public override bool IsVirtual => _method.IsVirtual;
-
         public override ImmutableArray<Location> Locations
             => ImmutableArray<Location>.Empty;
 
-        internal override ObsoleteAttributeData ObsoleteAttributeData
-            => _method.ObsoleteAttributeData;
+        public override bool ReturnsVoid => UnderlyingMethod.ReturnsVoid;
 
-        public override MethodKind MethodKind => _method.MethodKind;
+        public override TypeSymbol ReturnType => UnderlyingMethod.ReturnType;
 
-        public override int Arity => _method.Arity;
+        public override ImmutableArray<TypeSymbol> TypeArguments => UnderlyingMethod.TypeArguments;
 
-        public override bool IsExtensionMethod => _method.IsExtensionMethod;
+        public override ImmutableArray<TypeParameterSymbol> TypeParameters => UnderlyingMethod.TypeParameters;
 
-        internal override bool HasSpecialName => _method.HasSpecialName;
+        public override ImmutableArray<ParameterSymbol> Parameters => UnderlyingMethod.Parameters;
 
-        internal override MethodImplAttributes ImplementationAttributes => _method.ImplementationAttributes;
+        public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations => UnderlyingMethod.ExplicitInterfaceImplementations;
 
-        internal override bool HasDeclarativeSecurity => _method.HasDeclarativeSecurity;
+        public override ImmutableArray<CustomModifier> ReturnTypeCustomModifiers => UnderlyingMethod.ReturnTypeCustomModifiers;
 
-        internal override MarshalPseudoCustomAttributeData ReturnValueMarshallingInformation => _method.ReturnValueMarshallingInformation;
+        public override Symbol AssociatedSymbol => UnderlyingMethod.AssociatedSymbol;
+        internal override bool IsExplicitInterfaceImplementation => UnderlyingMethod.IsExplicitInterfaceImplementation;
 
-        internal override bool RequiresSecurityObject => _method.RequiresSecurityObject;
+        // TODO: this is probably wrong, as we have no syntax.
+        internal override int CalculateLocalSyntaxOffset(int localPosition, SyntaxTree localTree) => UnderlyingMethod.CalculateLocalSyntaxOffset(localPosition, localTree);
 
-        public override bool HidesBaseMethodsByName => _method.HidesBaseMethodsByName;
+        public override ImmutableArray<CSharpAttributeData> GetAttributes() => UnderlyingMethod.GetAttributes();
 
-        public override bool IsVararg => _method.IsVararg;
-
-        public override bool ReturnsVoid => _method.ReturnsVoid;
-
-        public override bool IsAsync => _method.IsAsync;
-
-        public override TypeSymbol ReturnType => _method.ReturnType;
-
-        public override ImmutableArray<TypeSymbol> TypeArguments => _method.TypeArguments;
-
-        public override ImmutableArray<TypeParameterSymbol> TypeParameters => _method.TypeParameters;
-
-        public override ImmutableArray<ParameterSymbol> Parameters => _method.Parameters;
-
-        public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations => _method.ExplicitInterfaceImplementations;
-
-        public override ImmutableArray<CustomModifier> ReturnTypeCustomModifiers => _method.ReturnTypeCustomModifiers;
-
-        public override Symbol AssociatedSymbol => _method.AssociatedSymbol;
-
-        internal override CallingConvention CallingConvention => _method.CallingConvention;
-
-        internal override bool GenerateDebugInfo => _method.GenerateDebugInfo;
-
-        public override DllImportData GetDllImportData() => _method.GetDllImportData();
-
-        internal override IEnumerable<SecurityAttribute> GetSecurityInformation() => _method.GetSecurityInformation();
-
-        internal override ImmutableArray<string> GetAppliedConditionalSymbols() => _method.GetAppliedConditionalSymbols();
-
-        internal override int CalculateLocalSyntaxOffset(int localPosition, SyntaxTree localTree) => _method.CalculateLocalSyntaxOffset(localPosition, localTree);
-
-        internal override bool IsMetadataNewSlot(bool ignoreInterfaceImplementationChanges = false) => _method.IsMetadataNewSlot(ignoreInterfaceImplementationChanges);
-
-        internal override bool IsMetadataVirtual(bool ignoreInterfaceImplementationChanges = false) => _method.IsMetadataVirtual(ignoreInterfaceImplementationChanges);
+        public override ImmutableArray<CSharpAttributeData> GetReturnTypeAttributes() => UnderlyingMethod.GetReturnTypeAttributes();
     }
 }
