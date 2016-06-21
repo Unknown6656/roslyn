@@ -9,7 +9,7 @@ namespace OpNum
         A operator +(A a, A b);
         A operator *(A a, A b);
         A operator -(A a);
-        explicit operator A(int i);
+        A FromInteger(int i);
     }
 
     instance NumInt : Num<int>
@@ -17,7 +17,7 @@ namespace OpNum
         int operator +(int a, int b) => a + b;
         int operator *(int a, int b) => a * b;
         int operator -(int a) => -a;
-        explicit operator int(int i) => i;
+        int FromInteger(int i) => i;
     }
 
     class Test
