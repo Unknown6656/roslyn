@@ -139,7 +139,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         protected override void MethodChecks(DiagnosticBag diagnostics)
         {
             var binder = this.DeclaringCompilation.
-                GetBinderFactory(syntaxReferenceOpt.SyntaxTree).GetBinder(ReturnTypeSyntax);
+                GetBinderFactory(syntaxReferenceOpt.SyntaxTree).GetBinder(ReturnTypeSyntax, GetSyntax(), this);
 
             SyntaxToken arglistToken;
 
@@ -151,7 +151,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 ParameterListSyntax,
                 true,
                 out arglistToken,
-                diagnostics);
+                diagnostics,
+                false);
 
             if (arglistToken.Kind() == SyntaxKind.ArgListKeyword)
             {
@@ -307,7 +308,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             if (source0 != this.ContainingType && target0 != this.ContainingType &&
                 // allow conversion between T and Nullable<T> in declaration of Nullable<T>
-                source != this.ContainingType && target != this.ContainingType)
+                source.TupleUnderlyingTypeOrSelf() != this.ContainingType &&
+                target.TupleUnderlyingTypeOrSelf() != this.ContainingType)
             {
                 // CS0556: User-defined conversion must convert to or from the enclosing type
                 diagnostics.Add(ErrorCode.ERR_ConversionNotInvolvingContainedType, this.Locations[0]);
@@ -443,14 +445,14 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             //   for instances, so don't check them.
             if (ContainingType.IsInstance)
             {
-                // Deliberately do nothing here
+                // TODO: We should be checking that this is part of the underlying concept
             }
             else if (ContainingType.IsConcept)
             {
                 bool isOk = false;
                 foreach (var typeParameter in ContainingType.TypeParameters)
                 {
-                    if (ParameterTypes[0].StrippedType() == typeParameter)
+                    if (ParameterTypes[0].StrippedType().TupleUnderlyingTypeOrSelf() == typeParameter)
                     {
                         isOk = true;
                         break;
@@ -458,7 +460,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 }
                 if (!isOk) diagnostics.Add(ErrorCode.ERR_BadConceptUnaryOperatorSignature, this.Locations[0]);
             }
-            else if (this.ParameterTypes[0].StrippedType() != this.ContainingType)
+            else if (this.ParameterTypes[0].StrippedType().TupleUnderlyingTypeOrSelf() != this.ContainingType)
             {
                 // The parameter of a unary operator must be the containing type
                 diagnostics.Add(ErrorCode.ERR_BadUnaryOperatorSignature, this.Locations[0]);
@@ -483,7 +485,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 diagnostics.Add(ErrorCode.ERR_OpTFRetType, this.Locations[0]);
             }
 
-            if (this.ParameterTypes[0].StrippedType() != this.ContainingType)
+            if (this.ParameterTypes[0].StrippedType().TupleUnderlyingTypeOrSelf() != this.ContainingType)
             {
                 // The parameter of a unary operator must be the containing type
                 diagnostics.Add(ErrorCode.ERR_BadUnaryOperatorSignature, this.Locations[0]);
@@ -533,7 +535,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             var parameterType = this.ParameterTypes[0];
             HashSet<DiagnosticInfo> useSiteDiagnostics = null;
 
-            if (parameterType.StrippedType() != this.ContainingType)
+            if (parameterType.StrippedType().TupleUnderlyingTypeOrSelf() != this.ContainingType)
             {
                 // CS0559: The parameter type for ++ or -- operator must be the containing type
                 diagnostics.Add(ErrorCode.ERR_BadIncDecSignature, this.Locations[0]);
@@ -555,7 +557,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // SPEC: have type int or int?, and can return any type.
 
             // @t-mawind TODO: work out how to do this for concepts.
-            if (this.ParameterTypes[0].StrippedType() != this.ContainingType ||
+            if (this.ParameterTypes[0].StrippedType().TupleUnderlyingTypeOrSelf() != this.ContainingType ||
                 this.ParameterTypes[1].StrippedType().SpecialType != SpecialType.System_Int32)
             {
                 // CS0546: The first operand of an overloaded shift operator must have the 
@@ -591,8 +593,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 bool isOk = false;
                 foreach (var typeParameter in ContainingType.TypeParameters)
                 {
-                    if (ParameterTypes[0].StrippedType() == typeParameter ||
-                        ParameterTypes[1].StrippedType() == typeParameter)
+                    if (ParameterTypes[0].StrippedType().TupleUnderlyingTypeOrSelf() == typeParameter ||
+                        ParameterTypes[1].StrippedType().TupleUnderlyingTypeOrSelf() == typeParameter)
                     {
                         isOk = true;
                         break;
@@ -600,8 +602,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 }
                 if (!isOk) diagnostics.Add(ErrorCode.ERR_BadConceptBinaryOperatorSignature, this.Locations[0]);
             }
-            else if (this.ParameterTypes[0].StrippedType() != this.ContainingType &&
-                this.ParameterTypes[1].StrippedType() != this.ContainingType)
+            else if (this.ParameterTypes[0].StrippedType().TupleUnderlyingTypeOrSelf() != this.ContainingType &&
+                this.ParameterTypes[1].StrippedType().TupleUnderlyingTypeOrSelf() != this.ContainingType)
             {
                 // CS0563: One of the parameters of a binary operator must be the containing type
                 diagnostics.Add(ErrorCode.ERR_BadBinaryOperatorSignature, this.Locations[0]);
@@ -676,6 +678,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         public sealed override ImmutableArray<TypeParameterSymbol> TypeParameters
         {
             get { return ImmutableArray<TypeParameterSymbol>.Empty; }
+        }
+
+        internal override RefKind RefKind
+        {
+            get { return RefKind.None; }
         }
 
         public sealed override TypeSymbol ReturnType

@@ -413,7 +413,7 @@ Namespace Microsoft.CodeAnalysis.Editor.Implementation.Diagnostics.UnitTests
         <WpfFact, WorkItem(937956, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/937956"), Trait(Traits.Feature, Traits.Features.Diagnostics)>
         Public Sub TestDiagnosticAnalyzerExceptionHandledGracefully()
             Dim test = <Workspace>
-                           <Project Language="C#" CommonReferences="true" Features="IOperation">
+                           <Project Language="C#" CommonReferences="true">
                                <Document FilePath="Test.cs">
                                    class Foo { }
                                </Document>
@@ -514,7 +514,7 @@ Namespace Microsoft.CodeAnalysis.Editor.Implementation.Diagnostics.UnitTests
         <WpfFact, WorkItem(937939, "http://vstfdevdiv:8080/DevDiv2/DevDiv/_workitems/edit/937939"), Trait(Traits.Feature, Traits.Features.Diagnostics)>
         Public Sub TestOperationAnalyzers()
             Dim test = <Workspace>
-                           <Project Language="C#" CommonReferences="true" Features="IOperation">
+                           <Project Language="C#" CommonReferences="true">
                                <Document FilePath="Test.cs">
                                    class Foo { void M() { int x = 0; } }
                                </Document>
@@ -702,8 +702,7 @@ class AnonymousFunctions
                 Dim project = workspace.CurrentSolution.Projects.Single()
 
                 ' turn off heuristic
-                Dim options = workspace.Services.GetService(Of IOptionService)()
-                options.SetOptions(options.GetOptions.WithChangedOption(InternalDiagnosticsOptions.UseCompilationEndCodeFixHeuristic, False))
+                workspace.Options = workspace.Options.WithChangedOption(InternalDiagnosticsOptions.UseCompilationEndCodeFixHeuristic, False)
 
                 Dim analyzer = New CompilationEndedAnalyzer
                 Dim analyzerReference = New AnalyzerImageReference(ImmutableArray.Create(Of DiagnosticAnalyzer)(analyzer))
@@ -730,9 +729,6 @@ class AnonymousFunctions
                 diagnostics = diagnosticService.GetDiagnosticsForSpanAsync(document, fullSpan).WaitAndGetResult(CancellationToken.None)
                 Assert.Equal(1, diagnostics.Count())
                 Assert.Equal(document.Id, diagnostics.First().DocumentId)
-
-                ' REVIEW: GetProjectDiagnosticsForIdsAsync is for project diagnostics with no location. not sure why in v1, this API returns
-                '         diagnostic with location?
 
                 ' Verify compilation diagnostics are reported with correct location info when asked for project diagnostics.
                 Dim projectDiagnostics = diagnosticService.GetDiagnosticsForIdsAsync(project.Solution, project.Id).WaitAndGetResult(CancellationToken.None)

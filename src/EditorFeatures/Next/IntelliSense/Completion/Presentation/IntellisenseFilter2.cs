@@ -1,16 +1,15 @@
 ﻿using Microsoft.CodeAnalysis.Completion;
-using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
 using Microsoft.VisualStudio.Language.Intellisense;
 
 namespace Microsoft.CodeAnalysis.Editor.Implementation.IntelliSense.Completion.Presentation
 {
     internal class IntellisenseFilter2 : IntellisenseFilter
     {
-        private readonly FilteredRoslynCompletionSet _completionSet;
+        private readonly Roslyn15CompletionSet _completionSet;
         public readonly CompletionItemFilter CompletionItemFilter;
 
         public IntellisenseFilter2(
-            FilteredRoslynCompletionSet completionSet, CompletionItemFilter filter, string language)
+            Roslyn15CompletionSet completionSet, CompletionItemFilter filter, string language)
             : base(ImageMonikers.GetImageMoniker(filter.Tags, language), GetToolTip(filter),
                    filter.AccessKey.ToString(), automationText: filter.Tags[0])
         {

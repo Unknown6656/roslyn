@@ -1550,7 +1550,7 @@ class C
             Assert.Equal(SymbolKind.Local, info2.Symbol.Kind);
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/dotnet/roslyn/issues/8778")]
         public void TestGetSpeculativeSemanticModelForStatement_DeclaredLocal()
         {
             var compilation = CreateCompilationWithMscorlib(@"
@@ -1754,7 +1754,7 @@ foreach(short ele in a)
     int X { get; } = 1;
 }";
 
-            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.ExperimentalParseOptions);
+            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.Regular);
             var tree = comp.SyntaxTrees.Single();
 
             var model = comp.GetSemanticModel(tree);
@@ -1980,7 +1980,7 @@ class C
             Assert.Throws<InvalidOperationException>(() => speculativeModel.TryGetSpeculativeSemanticModel(speculatedStatement.SpanStart, newSpeculatedStatement, out newModel));
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/dotnet/roslyn/issues/8778")]
         public void TestGetSpeculativeSemanticModelInsideUnsafeCode()
         {
             var compilation = CreateCompilationWithMscorlib(@"

@@ -246,6 +246,20 @@ namespace Microsoft.CodeAnalysis
         System_Runtime_GCLatencyMode,
         System_IFormatProvider,
 
+        CSharp7Sentinel = System_IFormatProvider, // all types that were known before CSharp7 should remain above this sentinel
+
+        System_ValueTuple_T1,
+        System_ValueTuple_T2,
+        System_ValueTuple_T3,
+        System_ValueTuple_T4,
+        System_ValueTuple_T5,
+        System_ValueTuple_T6,
+
+        ExtSentinel, // Not a real type, just a marker for types above 255 and strictly below 512
+
+        System_ValueTuple_T7,
+        System_ValueTuple_TRest,
+
         System_Concepts_ConceptAttribute, //@t-mawind
         System_Concepts_ConceptInstanceAttribute, //@t-mawind
         System_Concepts_ConceptWitnessAttribute, //@t-mawind
@@ -491,6 +505,18 @@ namespace Microsoft.CodeAnalysis
             "System.Runtime.GCLatencyMode",
             "System.IFormatProvider",
 
+            "System.ValueTuple`1",
+            "System.ValueTuple`2",
+            "System.ValueTuple`3",
+            "System.ValueTuple`4",
+            "System.ValueTuple`5",
+            "System.ValueTuple`6",
+
+            "", // extension marker
+
+            "System.ValueTuple`7",
+            "System.ValueTuple`8",
+
             //@t-mawind
             "System.Concepts.ConceptAttribute",
             "System.Concepts.ConceptInstanceAttribute",
@@ -528,6 +554,11 @@ namespace Microsoft.CodeAnalysis
                 {
                     typeIdName = "System.Concepts.ConceptWitnessAttribute"; //@t-mawind
                 }
+                else if (typeId == WellKnownType.ExtSentinel)
+                {
+                    Debug.Assert(name == "");
+                    continue;
+                }
                 else
                 {
                     typeIdName = typeId.ToString().Replace("__", "+").Replace('_', '.');
@@ -537,6 +568,9 @@ namespace Microsoft.CodeAnalysis
                           || name.IndexOf('`') > 0 // a generic type
                           || name == typeIdName);
             }
+
+            Debug.Assert((int)WellKnownType.ExtSentinel == 255);
+            Debug.Assert((int)WellKnownType.Last < 512);
         }
 
         public static string GetMetadataName(this WellKnownType id)

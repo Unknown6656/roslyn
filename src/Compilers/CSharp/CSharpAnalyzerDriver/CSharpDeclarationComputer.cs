@@ -104,7 +104,6 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 case SyntaxKind.DelegateDeclaration:
                     {
-                        var t = (DelegateDeclarationSyntax)node;
                         builder.Add(GetDeclarationInfo(model, node, getSymbol, cancellationToken));
                         return;
                     }

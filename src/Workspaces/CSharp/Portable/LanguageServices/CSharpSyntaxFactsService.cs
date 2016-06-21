@@ -462,9 +462,14 @@ namespace Microsoft.CodeAnalysis.CSharp
             return false;
         }
 
-        public bool IsStringLiteral(SyntaxToken token)
+        public bool IsStringLiteralOrInterpolatedStringLiteral(SyntaxToken token)
         {
             return token.IsKind(SyntaxKind.StringLiteralToken, SyntaxKind.InterpolatedStringTextToken);
+        }
+
+        public bool IsNumericLiteralExpression(SyntaxNode node)
+        {
+            return node?.IsKind(SyntaxKind.NumericLiteralExpression) == true;
         }
 
         public bool IsTypeNamedVarInVariableOrFieldDeclaration(SyntaxToken token, SyntaxNode parent)
@@ -566,6 +571,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             return (node as ConditionalAccessExpressionSyntax)?.Expression;
         }
 
+        public SyntaxNode GetExpressionOfInterpolation(SyntaxNode node)
+        {
+            return (node as InterpolationSyntax)?.Expression;
+        }
+
         public bool IsInStaticContext(SyntaxNode node)
         {
             return node.IsInStaticContext();
@@ -614,10 +624,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         public bool IsAttributeNamedArgumentIdentifier(SyntaxNode node)
         {
             var identifier = node as IdentifierNameSyntax;
-            return
-                identifier != null &&
-                identifier.IsParentKind(SyntaxKind.NameEquals) &&
-                identifier.Parent.IsParentKind(SyntaxKind.AttributeArgument);
+            return identifier.IsAttributeNamedArgumentIdentifier();
         }
 
         public SyntaxNode GetContainingTypeDeclaration(SyntaxNode root, int position)
@@ -674,9 +681,9 @@ namespace Microsoft.CodeAnalysis.CSharp
             return node.Kind() == SyntaxKind.ElementAccessExpression;
         }
 
-        public SyntaxNode ConvertToSingleLine(SyntaxNode node)
+        public SyntaxNode ConvertToSingleLine(SyntaxNode node, bool useElasticTrivia = false)
         {
-            return node.ConvertToSingleLine();
+            return node.ConvertToSingleLine(useElasticTrivia);
         }
 
         public SyntaxToken ToIdentifierToken(string name)
@@ -1204,26 +1211,33 @@ namespace Microsoft.CodeAnalysis.CSharp
             var memberDeclaration = node as MemberDeclarationSyntax;
             if (memberDeclaration != null)
             {
-                var nameToken = memberDeclaration.GetNameToken();
-                if (nameToken == default(SyntaxToken))
+                if (memberDeclaration.Kind() == SyntaxKind.ConversionOperatorDeclaration)
                 {
-                    Debug.Assert(memberDeclaration.Kind() == SyntaxKind.ConversionOperatorDeclaration);
                     name = (memberDeclaration as ConversionOperatorDeclarationSyntax)?.Type.ToString();
                 }
                 else
                 {
-                    name = nameToken.IsMissing ? missingTokenPlaceholder : nameToken.Text;
-                    if (memberDeclaration.Kind() == SyntaxKind.DestructorDeclaration)
+                    var nameToken = memberDeclaration.GetNameToken();
+                    if (nameToken != default(SyntaxToken))
                     {
-                        name = "~" + name;
+                        name = nameToken.IsMissing ? missingTokenPlaceholder : nameToken.Text;
+                        if (memberDeclaration.Kind() == SyntaxKind.DestructorDeclaration)
+                        {
+                            name = "~" + name;
+                        }
+                        if ((options & DisplayNameOptions.IncludeTypeParameters) != 0)
+                        {
+                            var pooled = PooledStringBuilder.GetInstance();
+                            var builder = pooled.Builder;
+                            builder.Append(name);
+                            AppendTypeParameterList(builder, memberDeclaration.GetTypeParameterList());
+                            name = pooled.ToStringAndFree();
+                        }
                     }
-                    if ((options & DisplayNameOptions.IncludeTypeParameters) != 0)
+                    else
                     {
-                        var pooled = PooledStringBuilder.GetInstance();
-                        var builder = pooled.Builder;
-                        builder.Append(name);
-                        AppendTypeParameterList(builder, memberDeclaration.GetTypeParameterList());
-                        name = pooled.ToStringAndFree();
+                        Debug.Assert(memberDeclaration.Kind() == SyntaxKind.IncompleteMember);
+                        name = "?";
                     }
                 }
             }
@@ -1609,6 +1623,59 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             return (node as QualifiedNameSyntax)?.Right ??
                 (node as MemberAccessExpressionSyntax)?.Name;
+        }
+
+        public bool IsLeftSideOfAssignment(SyntaxNode node)
+        {
+            return (node as ExpressionSyntax).IsLeftSideOfAssignExpression();
+        }
+
+        public bool IsLeftSideOfAnyAssignment(SyntaxNode node)
+        {
+            return (node as ExpressionSyntax).IsLeftSideOfAnyAssignExpression();
+        }
+
+        public SyntaxNode GetRightHandSideOfAssignment(SyntaxNode node)
+        {
+            return (node as AssignmentExpressionSyntax)?.Right;
+        }
+
+        public bool IsInferredAnonymousObjectMemberDeclarator(SyntaxNode node)
+        {
+            return node.IsKind(SyntaxKind.AnonymousObjectMemberDeclarator) &&
+                ((AnonymousObjectMemberDeclaratorSyntax)node).NameEquals == null;
+        }
+
+        public bool IsOperandOfIncrementExpression(SyntaxNode node)
+        {
+            return node.IsParentKind(SyntaxKind.PostIncrementExpression) ||
+                node.IsParentKind(SyntaxKind.PreIncrementExpression);
+        }
+
+        public bool IsOperandOfDecrementExpression(SyntaxNode node)
+        {
+            return node.IsParentKind(SyntaxKind.PostDecrementExpression) ||
+                node.IsParentKind(SyntaxKind.PreDecrementExpression);
+        }
+
+        public bool IsOperandOfIncrementOrDecrementExpression(SyntaxNode node)
+        {
+            return IsOperandOfIncrementExpression(node) || IsOperandOfDecrementExpression(node);
+        }
+
+        public SyntaxList<SyntaxNode> GetContentsOfInterpolatedString(SyntaxNode interpolatedString)
+        {
+            return ((interpolatedString as InterpolatedStringExpressionSyntax)?.Contents).Value;
+        }
+
+        public bool IsStringLiteral(SyntaxToken token)
+        {
+            return token.IsKind(SyntaxKind.StringLiteralToken);
+        }
+
+        public SeparatedSyntaxList<SyntaxNode> GetArgumentsForInvocationExpression(SyntaxNode invocationExpression)
+        {
+            return ((invocationExpression as InvocationExpressionSyntax)?.ArgumentList.Arguments).Value;
         }
     }
 }

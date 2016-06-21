@@ -208,7 +208,6 @@
     <Compile Include="Diagnostics\DiagnosticDataTests.cs" />
     <Compile Include="Diagnostics\DiagnosticProviderTestUtilities.cs" />
     <Compile Include="Diagnostics\DiagnosticServiceTests.cs" />
-    <Compile Include="Diagnostics\DiagnosticStateTests.cs" />
     <Compile Include="Diagnostics\DiagnosticsSquiggleTaggerProviderTests.cs" />
     <Compile Include="Diagnostics\GenerateType\GenerateTypeTestState.cs" />
     <Compile Include="Diagnostics\GenerateType\TestGenerateTypeOptionsService.cs" />
@@ -217,6 +216,7 @@
     <Compile Include="CodeFixes\ExtensionOrderingTests.cs" />
     <Compile Include="Diagnostics\TestHostDiagnosticUpdateSource.cs" />
     <Compile Include="Extensions\SourceTextContainerExtensionsTests.cs" />
+    <Compile Include="Extensions\WorkspaceExtensions.cs" />
     <Compile Include="GoToAdjacentMember\AbstractGoToAdjacentMemberTests.cs" />
     <Compile Include="Outlining\AbstractSyntaxNodeOutlinerTests.cs" />
     <Compile Include="Outlining\AbstractSyntaxOutlinerTests.cs" />
