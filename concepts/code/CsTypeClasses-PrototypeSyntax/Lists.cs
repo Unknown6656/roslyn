@@ -102,7 +102,7 @@ namespace Lists
         {
             List<int> l1 = FromArray(1, 2, 3, 4);
             List<int> l2 = FromArray(5, 6, 7, 8);
-            Console.WriteLine("Lists: Eq(null,null)={0}", Overloads.Eq<List<int>, EqList<int, EqInt>>(null, null));
+            Console.WriteLine("Lists: Eq(null,null)={0}", Overloads.Eq<List<int>>(null, null));
             Console.WriteLine("Lists: Eq(null,l1)={0}", Overloads.Eq(null, l1));
             Console.WriteLine("Lists: Eq(l1,null)={0}", Overloads.Eq(l1, null));
             Console.WriteLine("Lists: Eq(l1,l1)={0}", Overloads.Eq(l1, l1));
@@ -110,7 +110,7 @@ namespace Lists
             List<List<int>> ll1 = FromArray(l1, l2);
             List<List<int>> ll2 = FromArray(l2, l1);
 
-            Console.WriteLine("Lists: Eq(null,null)={0}", Overloads.Eq<List<List<int>>, EqList<List<int>, EqList<int, EqInt>>>(null, null));
+            Console.WriteLine("Lists: Eq(null,null)={0}", Overloads.Eq<List<List<int>>>(null, null));
             Console.WriteLine("Lists: Eq(null,ll1)={0}", Overloads.Eq(null, ll1));
             Console.WriteLine("Lists: Eq(ll1,null)={0}", Overloads.Eq(ll1, null));
             Console.WriteLine("Lists: Eq(ll1,ll1)={0}", Overloads.Eq(ll1, ll1));
