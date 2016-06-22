@@ -40,7 +40,12 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="beautiful_differentiation.cs" />
+    <Compile Include="D.cs" />
+    <Compile Include="FuncInstances.cs" />
+    <Compile Include="Mark1.cs" />
+    <Compile Include="Mark2.cs" />
+    <Compile Include="NumUtils.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
