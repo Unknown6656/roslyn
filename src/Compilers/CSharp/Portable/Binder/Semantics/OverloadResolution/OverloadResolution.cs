@@ -488,7 +488,15 @@ namespace Microsoft.CodeAnalysis.CSharp
             // This is specifying an impossible condition; the member lookup algorithm has already filtered
             // out methods from the method group that have the wrong generic arity.
 
-            Debug.Assert(typeArguments.Count == 0 || typeArguments.Count == member.GetMemberArity());
+            // @t-mawind
+            //   It may be that we get here with a mismatch between the type
+            //   argument count and type parameter count, even if none have
+            //   been supplied.  This can only happen if there are as many gaps
+            //   in the arguments as there are concept witnesses, and we assume
+            //   each does correspond to a witness.
+            Debug.Assert(typeArguments.Count == 0 ||
+                typeArguments.Count == member.GetMemberArity() ||
+                (member is MethodSymbol && (typeArguments.Count == member.GetMemberArity() - ((member as MethodSymbol).ConceptWitnesses.Count()))));
 
             // Second, we need to determine if the method is applicable in its normal form or its expanded form.
 
@@ -2667,8 +2675,20 @@ namespace Microsoft.CodeAnalysis.CSharp
                     ImmutableArray<TypeSymbol> typeArguments;
                     if (typeArgumentsBuilder.Count > 0)
                     {
+                        // @t-mawind
+                        //   Handle 'part-inferred' calls, where the argument
+                        //   list is omitting concept witnesses that may be
+                        //   inferred from the existing parameters.
+                        if (typeArgumentsBuilder.Count == method.Arity - method.ConceptWitnesses.Count())
+                        {
+                            var success = PartInferConceptWitnesses(typeArgumentsBuilder, method);
+                            if (!success) return new MemberResolutionResult<TMember>(member, leastOverriddenMember, MemberAnalysisResult.TypeInferenceFailed());
+                            // Fall through to below.
+                        }
+
                         // generic type arguments explicitly specified at call-site:
                         typeArguments = typeArgumentsBuilder.ToImmutable();
+
                     }
                     else
                     {
@@ -2743,6 +2763,73 @@ namespace Microsoft.CodeAnalysis.CSharp
                 member,
                 leastOverriddenMember,
                 IsApplicable(member, effectiveParameters, arguments, argsToParamsMap, member.GetIsVararg(), hasAnyRefOmittedArgument, ignoreOpenTypes, ref useSiteDiagnostics));
+        }
+
+        /// <summary>
+        /// Given a method whose type arguments appear to be missing concept
+        /// witnesses, try to infer them.
+        /// </summary>
+        /// <param name="typeArgumentsBuilder">
+        /// The builder containing the current set of type arguments.
+        /// This will be erased and re-filled with the inferred set.
+        /// </param>
+        /// <param name="method">
+        /// The method for which we are inferring concept witnesses.
+        /// </param>
+        /// <returns>
+        /// True if inference succeeded; false otherwise.
+        /// If false, do not use <paramref name="typeArgumentsBuilder"/>.
+        /// </returns>
+        private bool PartInferConceptWitnesses(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
+        {
+            Debug.Assert(typeArgumentsBuilder.Count + method.ConceptWitnesses.Count() == method.Arity,
+                $"Started {nameof(PartInferConceptWitnesses)} with incorrect number of missing arguments");
+
+            var givenTypeArguments = typeArgumentsBuilder.ToImmutable();
+            typeArgumentsBuilder.Clear();
+
+            // Assume that the missing type arguments are concept
+            // witnesses, and extend the given type arguments
+            // with them.
+            //
+            // To infer the missing arguments, we need a full
+            // map from non-concept type parameters to the type
+            // arguments we _do_ have.  We can do this at the
+            // same time as extending the arguments by
+            // initially supplying placeholders and inferring
+            // them later.
+            var missingIndices = ArrayBuilder<int>.GetInstance();
+            var fixedMap = new MutableTypeMap();
+            int j = 0;
+            for (int i = 0; i < method.Arity; i++)
+            {
+                if (method.TypeParameters[i].IsConceptWitness)
+                {
+                    typeArgumentsBuilder.Add(method.TypeParameters[i]);
+                    missingIndices.Add(i); // Come back to this later.
+                }
+                else
+                {
+                    typeArgumentsBuilder.Add(givenTypeArguments[j]);
+                    fixedMap.Add(method.TypeParameters[i], new TypeWithModifiers(givenTypeArguments[i]));
+                    j++;
+                }
+            }
+
+            // Now we can do the inference step.
+            // We assume the given arguments are correct, so
+            // don't bother doing any inference other than that
+            // for witnesses.
+            var inferrer = ConceptWitnessInferrer.ForBinder(_binder);
+            foreach (int k in missingIndices)
+            {
+                var inferred = inferrer.Infer(method.TypeParameters[k], fixedMap);
+                // TODO: more specific error?
+                if (inferred == null) return false;
+                typeArgumentsBuilder[k] = inferred;
+            }
+
+            return true;
         }
 
         private ImmutableArray<TypeSymbol> InferMethodTypeArguments(

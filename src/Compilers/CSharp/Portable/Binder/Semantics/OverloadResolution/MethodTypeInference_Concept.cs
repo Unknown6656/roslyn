@@ -49,21 +49,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             // from parameters to arguments.
             var fixedMap = this.MakeMethodFixedMap();
 
-            // We need two things from the outer scope:
-            // 1) All instances visible to this method call;
-            // 2) All type parameters bound in the method and class.
-            // For efficiency, we do these in one go.
-            // TODO: Ideally this should be cached at some point, perhaps on the
-            // compilation or binder.
-            ImmutableArray<TypeSymbol> allInstances;
-            ImmutableHashSet<TypeParameterSymbol> boundParams;
-            SearchScopeForInstancesAndParams(binder, out allInstances, out boundParams);
-
-            var inferrer = new ConceptWitnessInferrer(allInstances, boundParams);
+            var inferrer = ConceptWitnessInferrer.ForBinder(binder);
             bool success = true;
             foreach (int j in conceptIndices)
             {
-                var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap, ImmutableHashSet<NamedTypeSymbol>.Empty);
+                var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap);
                 if (maybeFixed == null) return false;
                 Debug.Assert(maybeFixed.IsInstanceType() || maybeFixed.IsConceptWitness,
                     "Concept witness inference returned something other than a concept instance or witness");
@@ -72,8 +62,6 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             return success;
         }
-
-        #region Setup
 
         /// <summary>
         /// Checks that every unfixed type parameter is a concept witness, and
@@ -124,6 +112,73 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             return mt;
+        }
+    }
+
+    /// <summary>
+    /// An object that, given a series of viable instances and bound type
+    /// parameters, can perform concept witness inference.
+    /// </summary>
+    internal class ConceptWitnessInferrer
+    {
+        /// <summary>
+        /// The list of all instances in scope for this inferrer.
+        /// These can be either type parameters (eg. witnesses passed in
+        /// through constraints at the method or class level) or named
+        /// types (instance declarations).
+        /// </summary>
+        private readonly ImmutableArray<TypeSymbol> _allInstances;
+
+        /// <summary>
+        /// The set of all type parameters in scope that are bound:
+        /// we cannot substitute for them in unification.  Usually this is
+        /// the set of type parameters introduced through type parameter
+        /// lists on methods and classes in scope.
+        /// </summary>
+        private readonly ImmutableHashSet<TypeParameterSymbol> _boundParams;
+
+        /// <summary>
+        /// Constructs a new ConceptWitnessInferrer.
+        /// </summary>
+        /// <param name="allInstances">
+        /// The list of all instances in scope for this inferrer.
+        /// </param>
+        /// <param name="boundParams">
+        /// The set of all type parameters in scope that are bound, and
+        /// cannot be substituted out in unification.
+        /// </param>
+        public ConceptWitnessInferrer(ImmutableArray<TypeSymbol> allInstances, ImmutableHashSet<TypeParameterSymbol> boundParams)
+        {
+            _allInstances = allInstances;
+            _boundParams = boundParams;
+        }
+
+        #region Setup from binder
+
+        /// <summary>
+        /// Constructs a new ConceptWitnessInferrer taking its instance pool
+        /// and bound parameter set from a given binder.
+        /// </summary>
+        /// <param name="binder">
+        /// The binder providing scope for the new inferrer.
+        /// </param>
+        /// <returns>
+        /// An inferrer that will consider all instances in scope at the given
+        /// binder, and refuse to unify on any type parameters bound in methods
+        /// or classes in the binder's vicinity.
+        /// </returns>
+        public static ConceptWitnessInferrer ForBinder(Binder binder)
+        {
+            // We need two things from the outer scope:
+            // 1) All instances visible to this method call;
+            // 2) All type parameters bound in the method and class.
+            // For efficiency, we do these in one go.
+            // TODO: Ideally this should be cached at some point, perhaps on the
+            // compilation or binder.
+            ImmutableArray<TypeSymbol> allInstances;
+            ImmutableHashSet<TypeParameterSymbol> boundParams;
+            SearchScopeForInstancesAndParams(binder, out allInstances, out boundParams);
+            return new ConceptWitnessInferrer(allInstances, boundParams);
         }
 
         /// <summary>
@@ -206,7 +261,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // Only methods and named types have constrained witnesses.
             if (container.Kind != SymbolKind.Method && container.Kind != SymbolKind.NamedType) return;
 
-            ImmutableArray<TypeParameterSymbol> tps = ConceptWitnessInferrer.GetTypeParametersOf(container);
+            ImmutableArray<TypeParameterSymbol> tps = GetTypeParametersOf(container);
 
             foreach (var tp in tps)
             {
@@ -246,47 +301,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
         }
 
-        #endregion Setup
-    }
-
-    /// <summary>
-    /// An object that, given a series of viable instances and bound type
-    /// parameters, can perform concept witness inference.
-    /// </summary>
-    internal class ConceptWitnessInferrer
-    {
-        /// <summary>
-        /// The list of all instances in scope for this inferrer.
-        /// These can be either type parameters (eg. witnesses passed in
-        /// through constraints at the method or class level) or named
-        /// types (instance declarations).
-        /// </summary>
-        private readonly ImmutableArray<TypeSymbol> _allInstances;
-
-        /// <summary>
-        /// The set of all type parameters in scope that are bound:
-        /// we cannot substitute for them in unification.  Usually this is
-        /// the set of type parameters introduced through type parameter
-        /// lists on methods and classes in scope.
-        /// </summary>
-        private readonly ImmutableHashSet<TypeParameterSymbol> _boundParams;
-
-        /// <summary>
-        /// Constructs a new ConceptWitnessInferrer.
-        /// </summary>
-        /// <param name="allInstances">
-        /// The list of all instances in scope for this inferrer.
-        /// </param>
-        /// <param name="boundParams">
-        /// The set of all type parameters in scope that are bound, and
-        /// cannot be substituted out in unification.
-        /// </param>
-        public ConceptWitnessInferrer(ImmutableArray<TypeSymbol> allInstances, ImmutableHashSet<TypeParameterSymbol> boundParams)
-        {
-            _allInstances = allInstances;
-            _boundParams = boundParams;
-        }
-
+        #endregion Setup from binder
         #region Main driver
 
         /// <summary>
@@ -309,8 +324,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// Null if inference failed; else, the inferred concept instance.
         /// </returns>
-        internal TypeSymbol Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain)
+        internal TypeSymbol Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
         {
+            if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
+
             Debug.Assert(typeParam.IsConceptWitness,
                 "Tried to do concept witness inference on a non-concept-witness type parameter");
 

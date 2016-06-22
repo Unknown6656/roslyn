@@ -1445,6 +1445,15 @@ namespace Microsoft.CodeAnalysis.CSharp
                         MethodSymbol method = (MethodSymbol)symbol;
                         if (method.Arity != arity)
                         {
+                            // @t-mawind
+                            //   Allow a match, for now, if it looks like the
+                            //   programmer has omitted concept witnesses only.
+                            if (method.Arity - method.ConceptWitnesses.Length == arity)
+                            {
+                                diagInfo = null;
+                                return false;
+                            }
+
                             if (method.Arity == 0)
                             {
                                 // The non-generic {1} '{0}' cannot be used with type arguments
