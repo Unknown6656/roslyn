@@ -2681,14 +2681,17 @@ namespace Microsoft.CodeAnalysis.CSharp
                         //   inferred from the existing parameters.
                         if (typeArgumentsBuilder.Count == method.Arity - method.ConceptWitnesses.Count())
                         {
-                            var success = PartInferConceptWitnesses(typeArgumentsBuilder, method);
-                            if (!success) return new MemberResolutionResult<TMember>(member, leastOverriddenMember, MemberAnalysisResult.TypeInferenceFailed());
+                            Debug.Assert(0 < method.Arity, "A 0-arity method should not have concept witnesses.");
+
+                            typeArguments = PartInferConceptWitnesses(typeArgumentsBuilder, method);
+                            if (typeArguments.IsEmpty) return new MemberResolutionResult<TMember>(member, leastOverriddenMember, MemberAnalysisResult.TypeInferenceFailed());
                             // Fall through to below.
                         }
-
-                        // generic type arguments explicitly specified at call-site:
-                        typeArguments = typeArgumentsBuilder.ToImmutable();
-
+                        else
+                        {
+                            // generic type arguments explicitly specified at call-site:
+                            typeArguments = typeArgumentsBuilder.ToImmutable();
+                        }
                     }
                     else
                     {
@@ -2771,22 +2774,23 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </summary>
         /// <param name="typeArgumentsBuilder">
         /// The builder containing the current set of type arguments.
-        /// This will be erased and re-filled with the inferred set.
         /// </param>
         /// <param name="method">
         /// The method for which we are inferring concept witnesses.
         /// </param>
         /// <returns>
-        /// True if inference succeeded; false otherwise.
-        /// If false, do not use <paramref name="typeArgumentsBuilder"/>.
+        /// The set of all type arguments post-inference on success;
+        /// an empty array otherwise.  (We assume that there is at least
+        /// one resulting type argument, and thus the two cases are
+        /// distinguishable.)
         /// </returns>
-        private bool PartInferConceptWitnesses(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
+        private ImmutableArray<TypeSymbol> PartInferConceptWitnesses(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
         {
             Debug.Assert(typeArgumentsBuilder.Count + method.ConceptWitnesses.Count() == method.Arity,
                 $"Started {nameof(PartInferConceptWitnesses)} with incorrect number of missing arguments");
 
             var givenTypeArguments = typeArgumentsBuilder.ToImmutable();
-            typeArgumentsBuilder.Clear();
+            var allArgumentsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
 
             // Assume that the missing type arguments are concept
             // witnesses, and extend the given type arguments
@@ -2805,12 +2809,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 if (method.TypeParameters[i].IsConceptWitness)
                 {
-                    typeArgumentsBuilder.Add(method.TypeParameters[i]);
+                    allArgumentsBuilder.Add(method.TypeParameters[i]);
                     missingIndices.Add(i); // Come back to this later.
                 }
                 else
                 {
-                    typeArgumentsBuilder.Add(givenTypeArguments[j]);
+                    allArgumentsBuilder.Add(givenTypeArguments[j]);
                     fixedMap.Add(method.TypeParameters[i], new TypeWithModifiers(givenTypeArguments[i]));
                     j++;
                 }
@@ -2825,11 +2829,17 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 var inferred = inferrer.Infer(method.TypeParameters[k], fixedMap);
                 // TODO: more specific error?
-                if (inferred == null) return false;
-                typeArgumentsBuilder[k] = inferred;
+                if (inferred == null)
+                {
+                    allArgumentsBuilder.Free();
+                    return ImmutableArray<TypeSymbol>.Empty;
+                }
+                allArgumentsBuilder[k] = inferred;
             }
 
-            return true;
+            Debug.Assert(allArgumentsBuilder.Count == typeArgumentsBuilder.Count + method.ConceptWitnesses.Count(),
+                "Part-inference did not add in the expected number of new arguments");
+            return allArgumentsBuilder.ToImmutableAndFree();
         }
 
         private ImmutableArray<TypeSymbol> InferMethodTypeArguments(
