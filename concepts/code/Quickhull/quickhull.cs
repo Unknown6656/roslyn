@@ -291,7 +291,7 @@ static class Utils
     ///     The type of the ordered elements.
     /// </typeparam>
     public static A Maximum<A>(IEnumerable<A> xs) where OrdA : Ord<A>
-        => ConcatNonEmpty<A, Max<A, OrdA>>(xs);
+        => ConcatNonEmpty<A, Max<A>>(xs);
 
     /// <summary>
     ///     Computes the maximum of a non-empty list of ordered items
@@ -316,7 +316,7 @@ static class Utils
     /// </typeparam>
     public static B MaximumBy<A, B>(IEnumerable<B> xs, Func<B, A> f)
         where OrdA : Ord<A>
-        => ConcatMapNonEmpty<Tuple<A, B>, B, Max<Tuple<A, B>, Ord21<A, B, OrdA>>>(
+        => ConcatMapNonEmpty<Tuple<A, B>, B, Max<Tuple<A, B>, Ord21<A, B>>>(
                xs, (x) => Tuple.Create(f(x), x)
            ).Item2;
 
@@ -333,7 +333,7 @@ static class Utils
     ///     The type of the ordered elements.
     /// </typeparam>
     public static A Minimum<A>(IEnumerable<A> xs) where OrdA : Ord<A>
-        => ConcatNonEmpty<A, Min<A, OrdA>>(xs);
+        => ConcatNonEmpty<A, Min<A>>(xs);
 
     /// <summary>
     ///     Computes the minimum of a non-empty list of ordered items
@@ -358,7 +358,7 @@ static class Utils
     /// </typeparam>
     public static B MinimumBy<A, B>(IEnumerable<B> xs, Func<B, A> f)
         where OrdA : Ord<A>
-        => ConcatMapNonEmpty<Tuple<A, B>, B, Min<Tuple<A, B>, Ord21<A, B, OrdA>>>(
+        => ConcatMapNonEmpty<Tuple<A, B>, B, Min<Tuple<A, B>, Ord21<A, B>>>(
                xs, (x) => Tuple.Create(f(x), x)
            ).Item2;
 }
@@ -421,8 +421,8 @@ public class Quickhull<A>
         _lines  = new List<Line<A>>();
         _hull   = new HashSet<Point<A>>();
 
-        var minX = Minimum<Point<A>, OrdPointX<A, OrdA>>(_points);
-        var maxX = Maximum<Point<A>, OrdPointX<A, OrdA>>(_points);
+        var minX = Minimum<Point<A>, OrdPointX<A>>(_points);
+        var maxX = Maximum<Point<A>, OrdPointX<A>>(_points);
 
         _hull.Add(minX);
         _hull.Add(maxX);

@@ -106,8 +106,8 @@ namespace Existentials
         static string ComputeString()
         {
             List<ExistsShowable> l = new List<ExistsShowable>();
-            l.Add(new ExistsShowable<string, ShowableString>("abc"));
-            l.Add(new ExistsShowable<int, ShowableInt>(1));
+            l.Add(new ExistsShowable<string>("abc"));
+            l.Add(new ExistsShowable<int>(1));
             return Concat(l);
         }
 
@@ -136,8 +136,8 @@ namespace Existentials
         static string UnboxedComputeString()
         {
             List<ExistsShowable> l = new List<ExistsShowable>();
-            l.Add(new ExistsShowable<string, ShowableString>("abc"));
-            l.Add(new ExistsShowable<int, ShowableInt>(1));
+            l.Add(new ExistsShowable<string>("abc"));
+            l.Add(new ExistsShowable<int>(1));
             return UnboxedConcat(l);
         }
 

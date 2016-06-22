@@ -398,7 +398,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             ConsList<Symbol> basesBeingResolved,
             DiagnosticBag diagnostics)
         {
-            Debug.Assert(typeArgumentsSyntax.Count == 0 /*omitted*/ || typeArgumentsSyntax.Count == type.Arity);
+            Debug.Assert(typeArgumentsSyntax.Count == 0 /*omitted*/ ||
+                typeArgumentsSyntax.Count == type.Arity - type.ConceptWitnesses.Length /* @t-mawind part-inferred */ ||
+                typeArgumentsSyntax.Count == type.Arity);
             if (!RequiresChecking(type))
             {
                 return true;

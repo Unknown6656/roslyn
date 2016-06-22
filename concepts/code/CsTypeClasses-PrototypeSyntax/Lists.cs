@@ -80,7 +80,7 @@ namespace Lists
             if (ac != null)
             {
                 Cons<A> bc = b as Cons<A>;
-                return (bc != null && Overloads.Eq(ac.h, bc.h) && Overloads.Eq<List<A>, EqList<A, EqA>>(ac.t, bc.t));
+                return (bc != null && Overloads.Eq(ac.h, bc.h) && Overloads.Eq<List<A>, EqList<A>>(ac.t, bc.t));
             }
             return b == null;
         }

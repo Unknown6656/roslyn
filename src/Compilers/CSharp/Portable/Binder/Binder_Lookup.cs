@@ -1424,7 +1424,16 @@ namespace Microsoft.CodeAnalysis.CSharp
                         Debug.Assert(object.ReferenceEquals(namedType.ConstructedFrom, namedType));
                         if (namedType.Arity != arity || options.IsAttributeTypeLookup() && arity != 0)
                         {
-                            if (namedType.Arity == 0)
+                            // @t-mawind
+                            //   Allow a match, for now, if it looks like the
+                            //   programmer has omitted concept witnesses only.
+                            if (namedType.Arity - namedType.ConceptWitnesses.Length == arity)
+                            {
+                                diagInfo = null;
+                                return false;
+                            }
+
+                        if (namedType.Arity == 0)
                             {
                                 // The non-generic {1} '{0}' cannot be used with type arguments
                                 diagInfo = diagnose ? new CSDiagnosticInfo(ErrorCode.ERR_HasNoTypeVars, namedType, MessageID.IDS_SK_TYPE.Localize()) : null;

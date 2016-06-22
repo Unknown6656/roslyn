@@ -833,12 +833,15 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 // It's not an unbound type expression, so we must have type arguments, and we have a 
                 // generic type of the correct arity in hand (possibly an error type). Bind the type 
-                // arguments and construct the final result. 
+                // arguments and construct the final result.
+
+                var boundArguments = BindTypeArguments(typeArguments, diagnostics, basesBeingResolved);
+
                 resultType = ConstructNamedType(
                     unconstructedType,
                     node,
                     typeArguments,
-                    BindTypeArguments(typeArguments, diagnostics, basesBeingResolved),
+                    boundArguments,
                     basesBeingResolved,
                     diagnostics);
             }
@@ -854,6 +857,79 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             return resultType;
+        }
+
+        /// <summary>
+        /// Given an invocation of a named type whose type arguments appear to
+        /// be missing concept witnesses, try to infer them.
+        /// </summary>
+        /// <param name="typeArguments">
+        /// The given set of type arguments.
+        /// </param>
+        /// <param name="namedType">
+        /// The named type for which we are inferring concept witnesses.
+        /// </param>
+        /// <returns>
+        /// The set of all type arguments post-inference on success;
+        /// an empty array otherwise.  (We assume that there is at least
+        /// one resulting type argument, and thus the two cases are
+        /// distinguishable.)
+        /// </returns>
+        private ImmutableArray<TypeSymbol> PartInferTypeConceptWitnesses(ImmutableArray<TypeSymbol> typeArguments, NamedTypeSymbol namedType)
+        {
+            Debug.Assert(typeArguments.Length + namedType.ConceptWitnesses.Count() == namedType.Arity,
+                $"Started {nameof(PartInferTypeConceptWitnesses)} with incorrect number of missing arguments");
+
+            var allArgumentsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+
+            // Assume that the missing type arguments are concept
+            // witnesses, and extend the given type arguments
+            // with them.
+            //
+            // To infer the missing arguments, we need a full
+            // map from non-concept type parameters to the type
+            // arguments we _do_ have.  We can do this at the
+            // same time as extending the arguments by
+            // initially supplying placeholders and inferring
+            // them later.
+            var missingIndices = ArrayBuilder<int>.GetInstance();
+            var fixedMap = new MutableTypeMap();
+            int j = 0;
+            for (int i = 0; i < namedType.Arity; i++)
+            {
+                if (namedType.TypeParameters[i].IsConceptWitness)
+                {
+                    allArgumentsBuilder.Add(namedType.TypeParameters[i]);
+                    missingIndices.Add(i); // Come back to this later.
+                }
+                else
+                {
+                    allArgumentsBuilder.Add(typeArguments[j]);
+                    fixedMap.Add(namedType.TypeParameters[i], new TypeWithModifiers(typeArguments[i]));
+                    j++;
+                }
+            }
+
+            // Now we can do the inference step.
+            // We assume the given arguments are correct, so
+            // don't bother doing any inference other than that
+            // for witnesses.
+            var inferrer = ConceptWitnessInferrer.ForBinder(this);
+            foreach (int k in missingIndices)
+            {
+                var inferred = inferrer.Infer(namedType.TypeParameters[k], fixedMap);
+                // TODO: more specific error?
+                if (inferred == null)
+                {
+                    allArgumentsBuilder.Free();
+                    return ImmutableArray<TypeSymbol>.Empty;
+                }
+                allArgumentsBuilder[k] = inferred;
+            }
+
+            Debug.Assert(allArgumentsBuilder.Count == typeArguments.Count() + namedType.ConceptWitnesses.Count(),
+                "Part-inference did not add in the expected number of new arguments");
+            return allArgumentsBuilder.ToImmutableAndFree();
         }
 
         private NamedTypeSymbol LookupGenericTypeName(
@@ -1068,6 +1144,25 @@ namespace Microsoft.CodeAnalysis.CSharp
             DiagnosticBag diagnostics)
         {
             Debug.Assert(!typeArguments.IsEmpty);
+
+            // @t-mawind
+            //   If we don't have the right number of type arguments, this
+            //   hopefully means we're expecting to type-infer some witnesses.
+            //   We do so here.
+            //
+            // TODO: does this belong here?
+            if (typeArguments.Length < type.Arity)
+            {
+                typeArguments = PartInferTypeConceptWitnesses(typeArguments, type);
+            }
+            if (typeArguments.IsEmpty)
+            {
+                // TODO: this is probably wrong.
+                return new ExtendedErrorTypeSymbol(type,
+                    LookupResultKind.WrongArity,
+                    new CSDiagnosticInfo(ErrorCode.ERR_BadArity, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity));
+            }
+
             type = type.Construct(typeArguments);
 
             if (ShouldCheckConstraints)
