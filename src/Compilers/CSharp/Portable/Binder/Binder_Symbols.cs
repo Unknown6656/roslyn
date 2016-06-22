@@ -877,59 +877,18 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private ImmutableArray<TypeSymbol> PartInferTypeConceptWitnesses(ImmutableArray<TypeSymbol> typeArguments, NamedTypeSymbol namedType)
         {
-            Debug.Assert(typeArguments.Length + namedType.ConceptWitnesses.Count() == namedType.Arity,
+            Debug.Assert(typeArguments.Length + namedType.ConceptWitnesses.Length == namedType.Arity,
                 $"Started {nameof(PartInferTypeConceptWitnesses)} with incorrect number of missing arguments");
 
-            var allArgumentsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+            // Pointless to part-infer without concept witnesses.
+            if (namedType.ConceptWitnesses.IsEmpty) return ImmutableArray<TypeSymbol>.Empty;
 
-            // Assume that the missing type arguments are concept
-            // witnesses, and extend the given type arguments
-            // with them.
-            //
-            // To infer the missing arguments, we need a full
-            // map from non-concept type parameters to the type
-            // arguments we _do_ have.  We can do this at the
-            // same time as extending the arguments by
-            // initially supplying placeholders and inferring
-            // them later.
-            var missingIndices = ArrayBuilder<int>.GetInstance();
-            var fixedMap = new MutableTypeMap();
-            int j = 0;
-            for (int i = 0; i < namedType.Arity; i++)
-            {
-                if (namedType.TypeParameters[i].IsConceptWitness)
-                {
-                    allArgumentsBuilder.Add(namedType.TypeParameters[i]);
-                    missingIndices.Add(i); // Come back to this later.
-                }
-                else
-                {
-                    allArgumentsBuilder.Add(typeArguments[j]);
-                    fixedMap.Add(namedType.TypeParameters[i], new TypeWithModifiers(typeArguments[i]));
-                    j++;
-                }
-            }
+            var allArguments = ConceptWitnessInferrer.ForBinder(this).PartInfer(typeArguments, namedType.TypeParameters);
 
-            // Now we can do the inference step.
-            // We assume the given arguments are correct, so
-            // don't bother doing any inference other than that
-            // for witnesses.
-            var inferrer = ConceptWitnessInferrer.ForBinder(this);
-            foreach (int k in missingIndices)
-            {
-                var inferred = inferrer.Infer(namedType.TypeParameters[k], fixedMap);
-                // TODO: more specific error?
-                if (inferred == null)
-                {
-                    allArgumentsBuilder.Free();
-                    return ImmutableArray<TypeSymbol>.Empty;
-                }
-                allArgumentsBuilder[k] = inferred;
-            }
-
-            Debug.Assert(allArgumentsBuilder.Count == typeArguments.Count() + namedType.ConceptWitnesses.Count(),
+            Debug.Assert(allArguments.Length == typeArguments.Length + namedType.ConceptWitnesses.Length,
                 "Part-inference did not add in the expected number of new arguments");
-            return allArgumentsBuilder.ToImmutableAndFree();
+
+            return allArguments;
         }
 
         private NamedTypeSymbol LookupGenericTypeName(
@@ -1154,15 +1113,15 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (typeArguments.Length < type.Arity)
             {
                 typeArguments = PartInferTypeConceptWitnesses(typeArguments, type);
-            }
-            if (typeArguments.IsEmpty)
-            {
-                diagnostics.Add(ErrorCode.ERR_BadArity, typeSyntax.Location, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity);
+                if (typeArguments.IsEmpty)
+                {
+                    diagnostics.Add(ErrorCode.ERR_BadArity, typeSyntax.Location, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity);
 
-                // TODO: this is probably wrong.
-                return new ExtendedErrorTypeSymbol(type,
-                    LookupResultKind.WrongArity,
-                    null);
+                    // TODO: this is probably wrong.
+                    return new ExtendedErrorTypeSymbol(type,
+                        LookupResultKind.WrongArity,
+                        null);
+                }
             }
 
             type = type.Construct(typeArguments);

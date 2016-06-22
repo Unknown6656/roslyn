@@ -2679,7 +2679,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                         //   Handle 'part-inferred' calls, where the argument
                         //   list is omitting concept witnesses that may be
                         //   inferred from the existing parameters.
-                        if (typeArgumentsBuilder.Count == method.Arity - method.ConceptWitnesses.Count())
+                        if (typeArgumentsBuilder.Count < method.Arity)
                         {
                             Debug.Assert(0 < method.Arity, "A 0-arity method should not have concept witnesses.");
 
@@ -2786,60 +2786,17 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private ImmutableArray<TypeSymbol> PartInferConceptWitnesses(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
         {
-            Debug.Assert(typeArgumentsBuilder.Count + method.ConceptWitnesses.Count() == method.Arity,
+            Debug.Assert(typeArgumentsBuilder.Count + method.ConceptWitnesses.Length == method.Arity,
                 $"Started {nameof(PartInferConceptWitnesses)} with incorrect number of missing arguments");
 
-            var givenTypeArguments = typeArgumentsBuilder.ToImmutable();
-            var allArgumentsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+            // Pointless to part-infer without concept witnesses.
+            if (method.ConceptWitnesses.IsEmpty) return ImmutableArray<TypeSymbol>.Empty;
+            
+            var allArguments = ConceptWitnessInferrer.ForBinder(_binder).PartInfer(typeArgumentsBuilder.ToImmutable(), method.TypeParameters);
 
-            // Assume that the missing type arguments are concept
-            // witnesses, and extend the given type arguments
-            // with them.
-            //
-            // To infer the missing arguments, we need a full
-            // map from non-concept type parameters to the type
-            // arguments we _do_ have.  We can do this at the
-            // same time as extending the arguments by
-            // initially supplying placeholders and inferring
-            // them later.
-            var missingIndices = ArrayBuilder<int>.GetInstance();
-            var fixedMap = new MutableTypeMap();
-            int j = 0;
-            for (int i = 0; i < method.Arity; i++)
-            {
-                if (method.TypeParameters[i].IsConceptWitness)
-                {
-                    allArgumentsBuilder.Add(method.TypeParameters[i]);
-                    missingIndices.Add(i); // Come back to this later.
-                }
-                else
-                {
-                    allArgumentsBuilder.Add(givenTypeArguments[j]);
-                    fixedMap.Add(method.TypeParameters[i], new TypeWithModifiers(givenTypeArguments[i]));
-                    j++;
-                }
-            }
-
-            // Now we can do the inference step.
-            // We assume the given arguments are correct, so
-            // don't bother doing any inference other than that
-            // for witnesses.
-            var inferrer = ConceptWitnessInferrer.ForBinder(_binder);
-            foreach (int k in missingIndices)
-            {
-                var inferred = inferrer.Infer(method.TypeParameters[k], fixedMap);
-                // TODO: more specific error?
-                if (inferred == null)
-                {
-                    allArgumentsBuilder.Free();
-                    return ImmutableArray<TypeSymbol>.Empty;
-                }
-                allArgumentsBuilder[k] = inferred;
-            }
-
-            Debug.Assert(allArgumentsBuilder.Count == typeArgumentsBuilder.Count + method.ConceptWitnesses.Count(),
+            Debug.Assert(allArguments.Length == typeArgumentsBuilder.Count + method.ConceptWitnesses.Count(),
                 "Part-inference did not add in the expected number of new arguments");
-            return allArgumentsBuilder.ToImmutableAndFree();
+            return allArguments;
         }
 
         private ImmutableArray<TypeSymbol> InferMethodTypeArguments(

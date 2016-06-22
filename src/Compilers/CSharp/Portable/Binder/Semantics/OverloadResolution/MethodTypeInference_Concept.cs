@@ -996,5 +996,68 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         #endregion Third pass
+        #region Part-inference
+
+        // Part-inference is when we are given a set of type arguments for a
+        // generic named type or method with more than one concept witness,
+        // but the type argument list is seemingly missing those witnesses.
+        // In this case, we use the concept type inferrer to fill in the
+        // omitted witnesses.
+
+        public ImmutableArray<TypeSymbol> PartInfer(ImmutableArray<TypeSymbol> typeArguments, ImmutableArray<TypeParameterSymbol> typeParameters)
+        {
+            Debug.Assert(typeArguments.Length < typeParameters.Length,
+                "Part-inference is pointless if we already have all the type parameters");
+
+            var allArgumentsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+
+            // Assume that the missing type arguments are concept
+            // witnesses, and extend the given type arguments
+            // with them.
+            //
+            // To infer the missing arguments, we need a full
+            // map from non-concept type parameters to the type
+            // arguments we _do_ have.  We can do this at the
+            // same time as extending the arguments by
+            // initially supplying placeholders and inferring
+            // them later.
+            var missingIndices = ArrayBuilder<int>.GetInstance();
+            var fixedMap = new MutableTypeMap();
+            int j = 0;
+            for (int i = 0; i < typeParameters.Length; i++)
+            {
+                if (typeParameters[i].IsConceptWitness)
+                {
+                    allArgumentsBuilder.Add(typeParameters[i]);
+                    missingIndices.Add(i); // Come back to this later.
+                }
+                else
+                {
+                    allArgumentsBuilder.Add(typeArguments[j]);
+                    fixedMap.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
+                    j++;
+                }
+            }
+
+            // Now we can do the inference step.
+            // We assume the given arguments are correct, so
+            // don't bother doing any inference other than that
+            // for witnesses.
+            foreach (int k in missingIndices)
+            {
+                var inferred = Infer(typeParameters[k], fixedMap);
+                // TODO: more specific error?
+                if (inferred == null)
+                {
+                    allArgumentsBuilder.Free();
+                    return ImmutableArray<TypeSymbol>.Empty;
+                }
+                allArgumentsBuilder[k] = inferred;
+            }
+
+            return allArgumentsBuilder.ToImmutableAndFree();
+        }
+
+        #endregion Part-inference
     }
 }
