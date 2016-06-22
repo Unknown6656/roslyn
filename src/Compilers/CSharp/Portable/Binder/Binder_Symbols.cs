@@ -820,7 +820,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     resultType = unconstructedType.Construct(
                         UnboundArgumentErrorTypeSymbol.CreateTypeArguments(
                             unconstructedType.TypeParameters,
-                            node.Arity,
+                            unconstructedType.Arity /* @t-mawind correct? */,
                             errorInfo: null),
                         unbound: false);
                 }
@@ -1157,10 +1157,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
             if (typeArguments.IsEmpty)
             {
+                diagnostics.Add(ErrorCode.ERR_BadArity, typeSyntax.Location, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity);
+
                 // TODO: this is probably wrong.
                 return new ExtendedErrorTypeSymbol(type,
                     LookupResultKind.WrongArity,
-                    new CSDiagnosticInfo(ErrorCode.ERR_BadArity, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity));
+                    null);
             }
 
             type = type.Construct(typeArguments);
