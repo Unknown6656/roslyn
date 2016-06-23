@@ -158,6 +158,18 @@ namespace Microsoft.CodeAnalysis.CSharp
                         NamedTypeSymbol nt1 = (NamedTypeSymbol)t1.Type;
                         NamedTypeSymbol nt2 = (NamedTypeSymbol)t2.Type;
 
+                        // @t-mawind
+                        //   Add very basic support for tuple types by
+                        //   eliminating the tuple wrapper: perhaps
+                        //   incomplete?
+                        nt1 = nt1.IsTupleType ? nt1.TupleUnderlyingType : nt1;
+                        nt2 = nt2.IsTupleType ? nt2.TupleUnderlyingType : nt2;
+
+                        Debug.Assert(nt1 != null && !(nt1.IsTupleType),
+                            $"Tuple lowering went wrong for {nameof(nt1)}");
+                        Debug.Assert(nt2 != null && !(nt2.IsTupleType),
+                            $"Tuple lowering went wrong for {nameof(nt2)}");
+
                         if (!nt1.IsGenericType)
                         {
                             return !nt2.IsGenericType && nt1 == nt2;
