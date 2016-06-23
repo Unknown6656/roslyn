@@ -885,7 +885,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var allArguments = ConceptWitnessInferrer.ForBinder(this).PartInfer(typeArguments, namedType.TypeParameters);
 
-            Debug.Assert(allArguments.Length == typeArguments.Length + namedType.ConceptWitnesses.Length,
+            Debug.Assert(allArguments.IsEmpty || allArguments.Length == typeArguments.Length + namedType.ConceptWitnesses.Length,
                 "Part-inference did not add in the expected number of new arguments");
 
             return allArguments;
