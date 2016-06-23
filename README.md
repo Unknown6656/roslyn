@@ -4,7 +4,7 @@ This repository contain a fork of the [Roslyn](https://github.com/dotnet/roslyn)
 compiler to add support for _concepts_ (think somewhere between Haskell
 [typeclasses](https://www.haskell.org/tutorial/classes.html) and Scala
 [implicits](http://www.scala-lang.org/old/node/114) to C#).  This work is
-being carried out by Claudio Russo ([@crusso](https://github.com/crusso)
+being carried out by Claudio Russo ([@crusso](https://github.com/crusso))
 and Matt Windsor ([@CaptainHayashi](https://github.com/captainhayashi)).
 
 _This is an experimental prototype_, and is _not_ suitable for production or
