@@ -200,46 +200,21 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </param>
         private static void SearchScopeForInstancesAndParams(Binder binder, out ImmutableArray<TypeSymbol> allInstances, out ImmutableHashSet<TypeParameterSymbol> fixedParams)
         {
-            var seenContainers = new HashSet<Symbol>();
-
             var iBuilder = new ArrayBuilder<TypeSymbol>();
-            var fpBuilder = new HashSet<TypeParameterSymbol>();
+            var fpBuilder = new ArrayBuilder<TypeParameterSymbol>();
+
+            var ignore = new HashSet<DiagnosticInfo>();
 
             for (var b = binder; b != null; b = b.Next)
             {
-                // ContainingMember crashes if we're in a BuckStopsHereBinder.
-                var container = b.ContainingMemberOrLambda;
-                if (container == null) break;
-                // Make sure we don't traverse the same container twice.
-                // Otherwise, we get duplicates.
-                if (seenContainers.Contains(container)) continue;
-                seenContainers.Add(container);
-
-                // We can see two types of instance:
-                // 1) Any instances witnessed on a method or type between us and
-                //    the global namespace (this is also where we can find
-                //    fixed type parameters);
-                SearchContainerForInstancesAndParams(container, ref iBuilder, ref fpBuilder);
-                // 2) Any visible named instance.  (See below, too).
-                GetNamedInstances(binder, container, ref iBuilder);
-
-                // The above is ok if we just want to get all instances in
-                // a straight line up the scope from here to the global
-                // namespace, but we also need to pull in imports too.
-                foreach (var u in b.GetImports(null).Usings)
-                {
-                    // We might have 'using static'-imported our own container
-                    // class, in which case we shouldn't scan it twice.
-                    if (seenContainers.Contains(u.NamespaceOrType)) continue;
-                    seenContainers.Add(u.NamespaceOrType);
-
-                    // TODO: Do we need to recurse into nested types/namespaces?
-                    GetNamedInstances(binder, u.NamespaceOrType, ref iBuilder);
-                }
+                b.GetConceptInstances(false, iBuilder, binder, ref ignore);
+                b.GetFixedTypeParameters(fpBuilder);
             }
 
+            iBuilder.RemoveDuplicates();
             allInstances = iBuilder.ToImmutableAndFree();
             fixedParams = fpBuilder.ToImmutableHashSet();
+            fpBuilder.Free();
         }
 
         /// <summary>

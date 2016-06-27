@@ -238,5 +238,51 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             return null;
         }
+
+        internal override void GetConceptInstances(bool onlyExplicitWitnesses, ArrayBuilder<TypeSymbol> instances, Binder originalBinder, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        {
+            // Container binders cannot provide explicit witnesses--only type
+            // parameter binders can do that.
+            if (onlyExplicitWitnesses) return;
+
+            GetConceptInstancesInContainer(_container, instances, originalBinder, ref useSiteDiagnostics);
+
+            // The above is ok if we just want to get all instances in
+            // a straight line up the scope from here to the global
+            // namespace, but we also need to pull in imports too.
+            foreach (var u in GetImports(null).Usings)
+            {
+                // This may cause duplicate instances, since we could
+                // 'using static'-import a container already traversed in this
+                // binder chain.
+                GetConceptInstancesInContainer(u.NamespaceOrType, instances, originalBinder, ref useSiteDiagnostics);
+            }
+        }
+
+        /// <summary>
+        /// Gets all concept instances directly declared in a container.
+        /// </summary>
+        /// <param name="container">
+        /// The container to visit.
+        /// </param>
+        /// <param name="instances">
+        /// The instance array to populate.
+        /// </param>
+        /// <param name="originalBinder">
+        /// The call-site binder.
+        /// </param>
+        /// <param name="useSiteDiagnostics">
+        /// The set of use-site diagnostics to populate with any errors.
+        /// </param>
+        private void GetConceptInstancesInContainer(NamespaceOrTypeSymbol container, ArrayBuilder<TypeSymbol> instances, Binder originalBinder, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        {
+            foreach (var member in container.GetTypeMembers())
+            {
+                if (!originalBinder.IsAccessible(member, ref useSiteDiagnostics, originalBinder.ContainingType)) continue;
+
+                // Assuming that instances don't contain sub-instances.
+                if (member.IsInstance) instances.Add(member);
+            }
+        }
     }
 }

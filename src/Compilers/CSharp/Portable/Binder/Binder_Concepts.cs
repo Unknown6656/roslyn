@@ -25,6 +25,42 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         /// <summary>
+        /// Retrieves the list of witnesses available in this particular
+        /// binder's scope.
+        /// </summary>
+        /// <param name="onlyExplicitWitnesses">
+        /// If true, only return witnesses that have been explicitly put
+        /// into scope by a concept constraint.
+        /// </param>
+        /// <param name="instances">
+        /// The array builder to populate with instances.
+        /// </param>
+        /// <param name="originalBinder">
+        /// The call-site binder.
+        /// </param>
+        /// <param name="useSiteDiagnostics">
+        /// Diagnostics set at the use-site.
+        /// </param>
+        internal virtual void GetConceptInstances(bool onlyExplicitWitnesses, ArrayBuilder<TypeSymbol> instances, Binder originalBinder, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        {
+            // By default, binders have no instances.
+            return;
+        }
+
+        /// <summary>
+        /// Retrieves the type parameters fixed by parameter lists in
+        /// this particular binder's scope.
+        /// </summary>
+        /// <param name="fixedTypeParams">
+        /// The array builder to populate with type parameters.
+        /// </param>
+        internal virtual void GetFixedTypeParameters(ArrayBuilder<TypeParameterSymbol> fixedTypeParams)
+        {
+            // By default, binders have no fixed type parameters.
+            return;
+        }
+
+        /// <summary>
         /// Tries to look up symbols inside a witness type parameter.
         /// <para>
         /// This lookup checks all of the concepts this witness implements
