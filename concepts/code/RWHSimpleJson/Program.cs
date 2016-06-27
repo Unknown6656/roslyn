@@ -257,7 +257,7 @@ namespace RWHSimpleJson
     {
         IJValue ToJValue(((string, T1), (string, T2)) tup)
         {
-            return new JObject { Object = {
+            return new JObject { Object = new Dictionary<string, IJValue> {
                     { tup.Item1.Item1, ToJValue(tup.Item1.Item2) },
                     { tup.Item2.Item1, ToJValue(tup.Item2.Item2) }
                 }
@@ -266,7 +266,56 @@ namespace RWHSimpleJson
 
         ((string, T1), (string, T2)) FromJValue(IJValue val, out string error)
         {
+            error = null;
 
+            var obj = (val as JObject?)?.Object;
+            if (obj == null)
+            {
+                error = "not a JSON object";
+                return default(((string, T1), (string, T2)));
+            }
+
+            if (obj.Count != 2)
+            {
+                error = $"JSON object incorrect size: expected 2, got {obj.Count}";
+                return default(((string, T1), (string, T2)));
+            }
+
+            bool got1 = false;
+            string key1 = null;
+            T1 val1 = default(T1);
+            bool got2 = false;
+            string key2 = null;
+            T2 val2 = default(T2);
+            string tmpError = null;
+
+            foreach (var kvp in obj)
+            {
+                if (!got1)
+                {
+                    val1 = CT1.FromJValue(kvp.Value, out tmpError);
+                    if (tmpError == null)
+                    {
+                        got1 = true;
+                        key1 = kvp.Key;
+                        continue;
+                    }
+                }
+                if (!got2)
+                {
+                    val2 = CT2.FromJValue(kvp.Value, out tmpError);
+                    if (tmpError == null)
+                    {
+                        got2 = true;
+                        key2 = kvp.Key;
+                        continue;
+                    }
+                }
+                error = tmpError ?? "Invalid item in object";
+                return default(((string, T1), (string, T2)));
+            }
+
+            return ((key1, val1), (key2, val2));
         }
     }
 
@@ -286,6 +335,11 @@ namespace RWHSimpleJson
             var json = Jsonify((IDictionary<string, string>)obj);
 
             Console.Out.WriteLine(json.Render());
+
+            var obj2 = (("name", "Nineteen Eighty-Four"), ("year", 1948));
+            var json2 = Jsonify(obj2);
+
+            Console.Out.WriteLine(json2.Render());
         }
     }
 }
