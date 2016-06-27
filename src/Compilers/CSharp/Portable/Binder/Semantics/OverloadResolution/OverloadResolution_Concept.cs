@@ -36,11 +36,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   of finding overloads--can it be improved?
             for (var scope = _binder; scope != null; scope = scope.Next)
             {
-                // Only consider binders referring to witnesses: anything else
-                // falls under the usual overload resolution system.
-                if (!(scope is WithWitnessesBinder)) continue;
-
-                scope.LookupSymbolsInSingleBinder(result, name, 0, null, LookupOptions.AllMethodsOnArityZero | LookupOptions.AllowSpecialMethods, _binder, true, ref useSiteDiagnostics);
+                scope.LookupConceptMethodsInSingleBinder(result, name, 0, null, LookupOptions.AllMethodsOnArityZero | LookupOptions.AllowSpecialMethods, _binder, true, ref useSiteDiagnostics);
                 if (result.IsMultiViable)
                 {
                     var haveCandidates = false;

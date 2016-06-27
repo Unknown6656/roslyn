@@ -60,6 +60,21 @@ namespace Microsoft.CodeAnalysis.CSharp
             return;
         }
 
+        internal virtual void LookupConceptMethodsInSingleBinder(LookupResult result, string name, int arity, ConsList<Symbol> basesBeingResolved, LookupOptions options, Binder originalBinder, bool diagnose, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        {
+            var instanceBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+            GetConceptInstances(true, instanceBuilder, originalBinder, ref useSiteDiagnostics);
+            var instances = instanceBuilder.ToImmutableAndFree();
+            foreach (var instance in instances)
+            {
+                // Currently only explicit witnesses, ie type parameters, may
+                // be probed for concept methods.
+                var tpInstance = instance as TypeParameterSymbol;
+                if (tpInstance == null) continue;
+                LookupSymbolsInWitness(tpInstance, result, name, arity, basesBeingResolved, options, originalBinder, diagnose, ref useSiteDiagnostics);
+            }
+        }
+
         /// <summary>
         /// Tries to look up symbols inside a witness type parameter.
         /// <para>
