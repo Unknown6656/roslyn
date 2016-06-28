@@ -188,7 +188,6 @@
     <Compile Include="Binder\WithParametersBinder.cs" />
     <Compile Include="Binder\WithTypeParametersBinder.cs" />
     <Compile Include="Binder\Binder_Concepts.cs" />
-    <Compile Include="Binder\WithWitnessesBinder.cs" />
     <Compile Include="BoundTree\BoundExpression.cs" />
     <Compile Include="BoundTree\BoundExpressionExtensions.cs" />
     <Compile Include="BoundTree\BoundMethodGroup.cs" />
