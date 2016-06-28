@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConceptAttributes", "ConceptAttributes\ConceptAttributes.csproj", "{C9C414C3-EF73-4170-82CD-2F4F8FF27A5E}"
 EndProject
@@ -30,6 +30,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monoids", "Monoids\Monoids.csproj", "{36DB6261-949D-4009-98EA-4340D1449BE4}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TCOIExamples", "TCOIExamples\TCOIExamples.csproj", "{A18FFD98-7B48-4476-ABDF-FC498FE1F74F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C9C414C3-EF73-4170-82CD-2F4F8FF27A5E} = {C9C414C3-EF73-4170-82CD-2F4F8FF27A5E}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TupleConcepts", "TupleConcepts\TupleConcepts.csproj", "{70FC3BC5-F0A9-46D0-A97A-83A9AD8E47FD}"
 EndProject
