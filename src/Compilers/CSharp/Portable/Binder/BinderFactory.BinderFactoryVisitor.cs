@@ -156,10 +156,10 @@ namespace Microsoft.CodeAnalysis.CSharp
                         method = method ?? GetMethodSymbol(methodDecl, resultBinder);
                         resultBinder = new InMethodBinder(method, resultBinder);
 
-                        if (!method.TypeParameters.IsEmpty)
-                        {
-                            resultBinder = new WithWitnessesBinder(method, resultBinder);
-                        }
+                        //if (!method.TypeParameters.IsEmpty)
+                        //{
+                        //    resultBinder = new WithWitnessesBinder(method, resultBinder);
+                        //}
                     }
 
                     resultBinder = resultBinder.WithUnsafeRegionIfNecessary(methodDecl.Modifiers);
@@ -719,7 +719,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                             //   here, because there may be witnesses.
                             if (!typeSymbol.TypeParameters.IsEmpty)
                             {
-                                resultBinder = new WithWitnessesBinder(typeSymbol, resultBinder);
+                                //resultBinder = new WithWitnessesBinder(typeSymbol, resultBinder);
                                 resultBinder = new WithClassTypeParametersBinder(typeSymbol, resultBinder);
                             }
                         }

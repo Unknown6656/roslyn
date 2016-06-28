@@ -1085,6 +1085,22 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
             else
             {
+                // @t-mawind
+                //   Is this a possible concept witness invocation?  If so, let
+                //   it pass, so that we can check later during resolution.
+                var ignore = new HashSet<DiagnosticInfo>();
+                for (var scope = this; scope != null; scope = scope.Next)
+                {
+                    var lr = LookupResult.GetInstance();
+                    scope.LookupConceptMethodsInSingleBinder(lr, name, node.Arity, null, LookupOptions.AllMethodsOnArityZero, this, false, ref ignore);
+                    if (lr.IsMultiViable)
+                    {
+                        lr.Free();
+                        return new BoundMethodGroup(node, typeArguments, null, name, ImmutableArray<MethodSymbol>.Empty, LookupResult.GetInstance(), 0);
+                    }
+                    lr.Free();
+                }
+
                 // Otherwise, the simple-name is undefined and a compile-time error occurs.
                 expression = BadExpression(node);
                 if (lookupResult.Error != null)
@@ -6659,6 +6675,20 @@ namespace Microsoft.CodeAnalysis.CSharp
             var methodResolution = ResolveDefaultMethodGroup(
                 methodGroup, analyzedArguments, isMethodGroupConversion, ref useSiteDiagnostics,
                 inferWithDynamic: inferWithDynamic, allowUnexpandedForm: allowUnexpandedForm);
+
+            // @t-mawind
+            //   This should be joined in more seamlessly.
+            var conceptMethodResolution = ResolvePossibleConceptMethod(methodGroup, expression, methodName, analyzedArguments, isMethodGroupConversion);
+            if (DecideIfToUseConcepts(methodResolution, conceptMethodResolution))
+            {
+                methodResolution.Free();
+                methodResolution = conceptMethodResolution;
+
+            }
+            else
+            {
+                conceptMethodResolution.Free();
+            }
 
             // If the method group's receiver is dynamic then there is no point in looking for extension methods; 
             // it's going to be a dynamic invocation.

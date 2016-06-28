@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Symbols;
 using System.Diagnostics;
 using Roslyn.Utilities;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Microsoft.CodeAnalysis.CSharp
 {
@@ -148,6 +149,130 @@ namespace Microsoft.CodeAnalysis.CSharp
                     result.MergeEqual(resultOfThisMember);
                 }
             }
+        }
+
+        private MethodGroupResolution ResolvePossibleConceptMethod(
+            BoundMethodGroup methodGroup,
+            CSharpSyntaxNode expression,
+            string methodName,
+            AnalyzedArguments analyzedArguments,
+            bool isMethodGroupConversion)
+        {
+            var firstResult = new MethodGroupResolution();
+            int arity;
+            LookupOptions options;
+
+            var typeArguments = methodGroup.TypeArgumentsOpt;
+            if (typeArguments.IsDefault)
+            {
+                arity = 0;
+                options = LookupOptions.AllMethodsOnArityZero;
+            }
+            else
+            {
+                arity = typeArguments.Length;
+                options = LookupOptions.Default;
+            }
+
+            HashSet<DiagnosticInfo> useSiteDiagnostics = null;
+
+            // TODO: replace this with ExtensionMethodScopes-style enumerator
+            for (var scope = this; scope != null; scope = scope.Next)
+            {
+                var newMethodGroup = MethodGroup.GetInstance();
+                var diagnostics = DiagnosticBag.GetInstance();
+                var lookupResult = LookupResult.GetInstance();
+
+                scope.LookupConceptMethodsInSingleBinder(lookupResult, methodName, arity, null, options, this, false, ref useSiteDiagnostics);
+
+                if (!lookupResult.IsClear)
+                {
+                    Debug.Assert(lookupResult.Symbols.Any());
+                    var members = ArrayBuilder<Symbol>.GetInstance();
+                    bool wasError;
+                    Symbol symbol = GetSymbolOrMethodOrPropertyGroup(lookupResult, expression, methodName, arity, members, diagnostics, out wasError);
+                    Debug.Assert((object)symbol == null);
+                    Debug.Assert(members.Count > 0);
+                    newMethodGroup.PopulateWithExtensionMethods(null, members, typeArguments, lookupResult.Kind);
+                    members.Free();
+                }
+
+                lookupResult.Free();
+
+                if (newMethodGroup.Methods.IsEmpty()) continue;
+                if (analyzedArguments == null) return new MethodGroupResolution(newMethodGroup, diagnostics.ToReadOnlyAndFree());
+
+                // @t-mawind
+                //   Using extension method stuff here is a stopgap.
+                //
+                // We have to copy analyzed arguments, because they are freed
+                // as part of freeing an extension result set.
+                var args = AnalyzedArguments.GetInstance();
+                args.Arguments.AddRange(analyzedArguments.Arguments);
+                args.Names.AddRange(analyzedArguments.Names);
+                args.RefKinds.AddRange(analyzedArguments.RefKinds);
+
+                var overloadResolutionResult = OverloadResolutionResult<MethodSymbol>.GetInstance();
+                bool allowRefOmittedArguments = newMethodGroup.Receiver.IsExpressionOfComImportType(); ;
+                OverloadResolution.MethodInvocationOverloadResolution(newMethodGroup.Methods, newMethodGroup.TypeArguments, analyzedArguments, overloadResolutionResult, ref useSiteDiagnostics, isMethodGroupConversion, allowRefOmittedArguments);
+                diagnostics.Add(expression, useSiteDiagnostics);
+                var sealedDiagnostics = diagnostics.ToReadOnlyAndFree();
+                var result = new MethodGroupResolution(newMethodGroup, null, overloadResolutionResult, args, methodGroup.ResultKind, sealedDiagnostics);
+
+                // If the search in the current scope resulted in any applicable method (regardless of whether a best 
+                // applicable method could be determined) then our search is complete. Otherwise, store aside the
+                // first non-applicable result and continue searching for an applicable result.
+                if (result.HasAnyApplicableMethod)
+                {
+                    if (!firstResult.IsEmpty)
+                    {
+                        // Free parts of the previous result but do not free AnalyzedArguments
+                        // since we're using the same arguments for the returned result.
+                        firstResult.MethodGroup.Free();
+                        firstResult.OverloadResolutionResult.Free();
+                    }
+                    return result;
+                }
+                else if (firstResult.IsEmpty)
+                {
+                    firstResult = result;
+                }
+                else
+                {
+                    // Neither the first result, nor applicable. No need to save result.
+                    overloadResolutionResult.Free();
+                    newMethodGroup.Free();
+                }
+            }
+
+            return firstResult;
+        }
+
+        bool DecideIfToUseConcepts(MethodGroupResolution methodResolution, MethodGroupResolution conceptMethodResolution)
+        {
+            // @t-mawind
+            // This is mainly copied directly from the method/extension method
+            // tie break.
+
+            if (methodResolution.HasAnyApplicableMethod) return false;
+            if (conceptMethodResolution.HasAnyApplicableMethod) return true;
+            if (conceptMethodResolution.IsEmpty) return false;
+            if (methodResolution.IsEmpty) return true;
+
+            Debug.Assert(!methodResolution.HasAnyApplicableMethod);
+            Debug.Assert(!conceptMethodResolution.HasAnyApplicableMethod);
+            Debug.Assert(!methodResolution.IsEmpty);
+            Debug.Assert(!conceptMethodResolution.IsEmpty);
+
+            LookupResultKind methodResultKind = methodResolution.ResultKind;
+            LookupResultKind extensionMethodResultKind = conceptMethodResolution.ResultKind;
+            if (methodResultKind != extensionMethodResultKind &&
+                methodResultKind == extensionMethodResultKind.WorseResultKind(methodResultKind))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }
