@@ -29,20 +29,23 @@
 
 C#:
 ```csharp
+  // type class
   interface Eq<A>  {
     bool Equals(A a, A b);
   }
+  // instance
   struct EqInt : Eq<int>  {
     public bool Equals(int a, int b)  => a == b; 
   }
+  // derived instance
   struct EqArray<A, EqA> : Eq<A[]> where EqA : struct, Eq<A> {
     public bool Equals(A[] a, A[] b) {
       if (a.Length != b.Length) return false;
       for (int i = 0; i < a.Length; i++)
         if default(EqA).Equals(a[i], b[i])) return false;
-      return true;
-    }
+      return true;}
   }
+  // derived operation
   static bool Elem<EqA, A>(A x, A[] ys) where EqA : struct, Eq<A> {
       for (int i = 0; i < ys.Length; i++) 
         if default(EqA).Equals(x, ys[i])) return true;
@@ -52,20 +55,23 @@ C#:
 
 Concept C#
 ```csharp
+  // type class
   concept Eq<A> {
     bool Equals(A a, A b);
   }
+  // instance
   instance EqInt : Eq<int> {
     public bool Equals(int a, int b)  => a == b; 
   }
+  // derived instance
   instance EqArray<A> : Eq<A[]> where EqA : Eq<A> {
      bool Equals(A[] a, A[] b) {
        if (a.Length != b.Length) return false;
        for (int i = 0; i < a.Length; i++)
           if Equals(a[i], b[i])) return false;
-       return true;
-      }
+       return true;}
   }
+  // derived operation
   static bool Elem<A>(A x, A[] ys) where EqA : Eq<A> {
       for (int i = 0; i < ys.Length; i++)
         if (Equals(x, ys[i])) return true;
