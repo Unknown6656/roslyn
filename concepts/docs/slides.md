@@ -1,7 +1,8 @@
-# Concept C#
-- transfer type classes (from Haskell) to C#
-- implement in Roslyn compiler
-- case studies & perf benchmarks
+# Concept CSharp
+
+* transfer type classes (from Haskell) to C#
+* implement in Roslyn compiler
+* case studies & perf benchmarks
 
 #  Haskell Type Classes (in a Nutshell)
 
