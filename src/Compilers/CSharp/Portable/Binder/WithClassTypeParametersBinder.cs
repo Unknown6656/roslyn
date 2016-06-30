@@ -58,5 +58,18 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
         }
+
+        internal override void GetConceptInstances(bool onlyExplicitWitnesses, ArrayBuilder<TypeSymbol> instances, Binder originalBinder, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        {
+            foreach (var parameter in _namedType.TypeParameters)
+            {
+                if (parameter.IsConceptWitness) instances.Add(parameter);
+            }
+        }
+
+        internal override void GetFixedTypeParameters(ArrayBuilder<TypeParameterSymbol> fixedTypeParams)
+        {
+            foreach (var parameter in _namedType.TypeParameters) fixedTypeParams.Add(parameter);
+        }
     }
 }

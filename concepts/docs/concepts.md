@@ -875,7 +875,7 @@ IL:
 |derived instance | generic struct | generic instance
 |type class inheritance	| interface inheritance | concept inheritance
 |overloaded operation | constrained generic method | generic method with implicit type parameters
-|implicit dictionary construction | explicit type construction | implicit instance construcion with explicit fallback
+|implicit dictionary construction | explicit type construction | implicit instance construction with explicit fallback
 |implicit dictionary passing | explicit type passing | implicit type passing with explicit fallback
 |constraint inference & propagation | NA | NA
 
