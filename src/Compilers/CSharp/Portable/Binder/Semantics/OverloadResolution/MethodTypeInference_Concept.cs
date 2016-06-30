@@ -51,6 +51,9 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var inferrer = ConceptWitnessInferrer.ForBinder(binder);
             bool success = true;
+
+            // z
+
             foreach (int j in conceptIndices)
             {
                 var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap);
@@ -278,6 +281,44 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         #endregion Setup from binder
         #region Main driver
+
+        /// <summary>
+        /// Tries to infer a batch of concept witnesses.
+        /// </summary>
+        /// <param name="witnesses">
+        /// The array of concept witnesses to fix.
+        /// </param>
+        /// <param name="fixedMap">
+        /// The map from all of the fixed, non-witness type parameters in the
+        /// same type parameter list as <paramref name="witnesses"/>
+        /// to their arguments.
+        /// </param>
+        /// <param name="chain">
+        /// The set of instances we've passed through recursively to get here,
+        /// used to abort recursive calls if they will create cycles.
+        /// </param>
+        /// <returns>
+        /// An array of fixed concept witnesses.  If any is null, then
+        /// inference has failed.
+        /// </returns>
+        internal ImmutableArray<TypeSymbol> InferMany(
+            ImmutableArray<TypeParameterSymbol> witnesses,
+            // TODO: associated parameters
+            MutableTypeMap fixedMap,
+            ImmutableHashSet<NamedTypeSymbol> chain = null
+        )
+        {
+            var resultsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+
+            foreach (var witness in witnesses)
+            {
+                // TODO: create type map
+                // TODO: backpropagate to associated parameters
+                resultsBuilder.Add(witness);
+            }
+
+            return resultsBuilder.ToImmutableAndFree();
+        }
 
         /// <summary>
         /// Tries to infer a suitable instance for the given concept witness
