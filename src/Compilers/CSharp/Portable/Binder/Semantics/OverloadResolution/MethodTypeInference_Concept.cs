@@ -37,52 +37,20 @@ namespace Microsoft.CodeAnalysis.CSharp
             // First, make sure every unfixed type parameter is a concept, and
             // that we know where they all are so we can infer them later.
             ImmutableArray<int> conceptIndices;
-            if (!GetMethodUnfixedConceptWitnesses(out conceptIndices)) return false;
+            ImmutableArray<int> associatedIndices;
+            MutableTypeMap fixedMap;
+            if (!ConceptWitnessInferrer.PartitionTypeParameters(
+                _methodTypeParameters,
+                _fixedResults.AsImmutable(),
+                out conceptIndices,
+                out associatedIndices,
+                out fixedMap)) return false;
 
             Debug.Assert(!conceptIndices.IsEmpty,
                 "Tried to proceed with concept inference with no concept witnesses to infer");
 
-            // We'll be checking to see if concepts defined on the missing
-            // witness type parameters are implemented.  Since this means we
-            // are checking something on the method definition, but need it
-            // in terms of our fixed type arguments, we must make a mapping
-            // from parameters to arguments.
-            var fixedMap = MakeMethodFixedMap();
-
             var inferrer = ConceptWitnessInferrer.ForBinder(binder);
             return inferrer.InferManyInPlace(conceptIndices, _methodTypeParameters, _fixedResults, fixedMap);
-        }
-
-        /// <summary>
-        /// Checks that every unfixed type parameter is a concept witness, and
-        /// stores their indices into an array.
-        /// </summary>
-        /// <param name="indices">
-        /// The outgoing array of unfixed concept witnesses.
-        /// </param>
-        /// <returns>
-        /// True if, and only if, every unfixed type parameter is a concept
-        /// witness.
-        /// </returns>
-        private bool GetMethodUnfixedConceptWitnesses(out ImmutableArray<int> indices)
-        {
-            var iBuilder = new ArrayBuilder<int>();
-
-            for (int i = 0; i < _methodTypeParameters.Length; i++)
-            {
-                if (IsUnfixed(i))
-                {
-                    if (!_methodTypeParameters[i].IsConceptWitness)
-                    {
-                        iBuilder.Free();
-                        return false;
-                    }
-                    iBuilder.Add(i);
-                }
-            }
-
-            indices = iBuilder.ToImmutableAndFree();
-            return true;
         }
 
         /// <summary>
@@ -265,6 +233,80 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
         }
+
+
+        /// <summary>
+        /// Filters a set of type parameters into a fixed map, unfixed concept
+        /// witnesses and unfixed associated types, and checks that there are
+        /// no other unfixed parameters.
+        /// </summary>
+        /// <param name="typeParameters">
+        /// The set of type parameters being inferred.
+        /// </param>
+        /// <param name="typeArguments">
+        /// The set of already-inferred type arguments; unfixed parameters must
+        /// either be represented by a null, or a copy of the corresponding
+        /// type parameter.
+        /// </param>
+        /// <param name="witnessIndices">
+        /// The outgoing array of unfixed concept witnesses.
+        /// </param>
+        /// <param name="associatedTypeIndices">
+        /// The outgoing array of unfixed associated type parameters.
+        /// </param>
+        /// <param name="fixedMap">
+        /// The outgoing map of fixed type parameters to type arguments.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, every unfixed type parameter is a concept
+        /// witness or associated type.
+        /// </returns>
+        internal static bool PartitionTypeParameters(
+            ImmutableArray<TypeParameterSymbol> typeParameters,
+            ImmutableArray<TypeSymbol> typeArguments,
+            out ImmutableArray<int> witnessIndices,
+            out ImmutableArray<int> associatedTypeIndices,
+            out MutableTypeMap fixedMap
+        )
+        {
+            Debug.Assert(typeParameters.Length == typeArguments.Length,
+                "There should be as many type parameters as arguments.");
+
+            var wBuilder = ArrayBuilder<int>.GetInstance();
+            var aBuilder = ArrayBuilder<int>.GetInstance();
+            fixedMap = new MutableTypeMap();
+
+            for (int i = 0; i < typeParameters.Length; i++)
+            {
+                // TODO: Is this sufficient for unfixed checking?
+                if (typeArguments[i] == null || typeArguments[i] == typeParameters[i])
+                {
+                    if (typeParameters[i].IsConceptWitness)
+                    {
+                        wBuilder.Add(i);
+                        continue;
+                    }
+                    else if (typeParameters[i].IsAssociatedType)
+                    {
+                        aBuilder.Add(i);
+                        continue;
+                    }
+
+                    wBuilder.Free();
+                    aBuilder.Free();
+                    witnessIndices = ImmutableArray<int>.Empty;
+                    associatedTypeIndices = ImmutableArray<int>.Empty;
+                    return false;
+                }
+                // If we got here, the parameter is fixed.
+                fixedMap.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
+            }
+
+            witnessIndices = wBuilder.ToImmutableAndFree();
+            associatedTypeIndices = aBuilder.ToImmutableAndFree();
+            return true;
+        }
+
 
         #endregion Setup from binder
         #region Main driver
@@ -679,47 +721,54 @@ namespace Microsoft.CodeAnalysis.CSharp
             var secondPassInstanceBuilder = new ArrayBuilder<TypeSymbol>();
             foreach (var instance in candidateInstances)
             {
+                // Type parameters have no prerequisites to be satisfiable
+                // instances.
+                if (instance.Kind == SymbolKind.TypeParameter)
+                {
+                    secondPassInstanceBuilder.Add(instance);
+                    continue;
+                }
+
+                Debug.Assert(instance.Kind == SymbolKind.NamedType,
+                    "If an instance is not a parameter, it should be a named type.");
+                var nt = (NamedTypeSymbol)instance;
+
                 // Assumption: no witness parameter can depend on any other
                 // witness parameter, so we can do recursive inference in
                 // one pass.
-                ImmutableArray<TypeParameterSymbol> unfixedWitnesses;
-                if (!GetRecursiveUnfixedConceptWitnesses(instance, out unfixedWitnesses))
+                ImmutableArray<int> conceptIndices;
+                ImmutableArray<int> associatedIndices;
+                MutableTypeMap fixedMap;
+                if (!PartitionTypeParameters(
+                    nt.TypeParameters,
+                    nt.TypeArguments,
+                    out conceptIndices,
+                    out associatedIndices,
+                    out fixedMap))
+
                 {
-                    // This instance has some unfixed non-witness type
+                    // This instance has some unfixed non-witness/non-associated type
                     // parameters.  We can't infer these, so give up on this
                     // candidate instance.
                     continue;
                 }
 
-                var fixedInstance = instance;
-                // If there were no unfixed witnesses, we don't need to bother
-                // with recursive inference--there's nothing to infer!
-                if (!unfixedWitnesses.IsEmpty)
+                // If there were no unfixed witnesses/associated types, we don't
+                // need to bother with recursive inference--there's nothing to infer!
+                TypeSymbol fixedInstance;
+                if (conceptIndices.IsEmpty && associatedIndices.IsEmpty)
                 {
-                    Debug.Assert(instance.Kind == SymbolKind.NamedType,
-                        "Tried to do recursive inference on an instance type that cannot have unfixed witnesses");
-                    var nt = (NamedTypeSymbol)instance;
-
-                    // Do cycle detection: have we already set up a recursive
-                    // call for this instance with these type parameters?
-                    if (chain.Contains(nt)) continue;
-                    var newChain = chain.Add(nt);
-
-                    // If this call fails, we couldn't infer all of the
-                    // witnesses.  By our assumption, we can't infer anything
-                    // more on this instance, so we give up on it.
-                    MutableTypeMap recurSubstMap;
-                    if (!InferRecursively(nt, unfixedWitnesses, newChain, out recurSubstMap)) continue;
-
-                    // Else, we now have a map that should fix all of the
-                    // remaining parameters.
-                    fixedInstance = recurSubstMap.SubstituteType(instance).AsTypeSymbolOnly();
+                    fixedInstance = instance;
                 }
-
-                // If we got this far, the instance _should_ have no unfixed
-                // parameters, and can now be considered as a candidate for
-                // inference.
-                secondPassInstanceBuilder.Add(fixedInstance);
+                else
+                {
+                     fixedInstance = InferRecursively((NamedTypeSymbol)instance,
+                        conceptIndices,
+                        associatedIndices,
+                        fixedMap,
+                        chain);
+                }
+                if (fixedInstance != null) secondPassInstanceBuilder.Add(fixedInstance);
             }
             return secondPassInstanceBuilder.ToImmutableAndFree();
         }
@@ -730,110 +779,38 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="instance">
         /// The instance whose missing witnesses are to be inferred.
         /// </param>
-        /// <param name="unfixedWitnesses">
-        /// The set of unfixed witness parameters to infer.
+        /// <param name="conceptIndices">
+        /// The array of indices of unfixed witness parameters to infer.
+        /// </param>
+        /// <param name="associatedIndices">
+        /// The array of indices of unfixed associated types to infer.
+        /// </param>
+        /// <param name="fixedMap">
+        /// The map of fixed parameter substitutions to use in inferring.
         /// </param>
         /// <param name="chain">
         /// The set of instances we've passed through recursively to get here,
         /// used to abort the recursive call if it will create a cycle.
         /// </param>
-        /// <param name="recurSubstMap">
-        /// The map of witness-fixing substitutions to return on success.
-        /// </param>
         /// <returns>
-        /// True if, and only if, we were able to infer every unfixed witness
-        /// for this instance without generating cycles.
+        /// Null if recursive inference failed; else, the fully instantiated
+        /// instance type.
         /// </returns>
-        private bool InferRecursively(NamedTypeSymbol instance, ImmutableArray<TypeParameterSymbol> unfixedWitnesses, ImmutableHashSet<NamedTypeSymbol> chain, out MutableTypeMap recurSubstMap)
+        private TypeSymbol InferRecursively(NamedTypeSymbol instance, ImmutableArray<int> conceptIndices, ImmutableArray<int> associatedIndices, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain)
         {
-            Debug.Assert(chain.Contains(instance),
-                "Current instance has not been put in the cycle detection chain before recursively inferring");
+            // Do cycle detection: have we already set up a recursive
+            // call for this instance with these type parameters?
+            if (chain.Contains(instance)) return null;
+            var newChain = chain.Add(instance);
 
-            // In recursive inference, the set of known type argument
-            // substitutions is those we made when fixing this instance.
-            // We thus need to re-make the fixedMap.
-            var recurFixedMap = new MutableTypeMap();
-            var targs = instance.TypeArguments;
-            var tpars = instance.TypeParameters;
-            for (int i = 0; i < tpars.Length; i++)
-            {
-                if (tpars[i] != targs[i]) recurFixedMap.Add(tpars[i], new TypeWithModifiers(targs[i]));
-            }
+            var inferred = new TypeSymbol[instance.TypeParameters.Length];
+            if (!InferManyInPlace(conceptIndices, instance.TypeParameters, inferred, fixedMap, newChain)) return null;
 
-            // Now try to infer the unfixed witnesses, recursively.
-            // TODO: can this be flattened into an iterative process?
-            // It shouldn't be a massive performance or stack issue,
-            // but still...
-            recurSubstMap = new MutableTypeMap();
-            var maybeFixed = InferMany(unfixedWitnesses, recurFixedMap, chain);
-            for (int i = 0; i < maybeFixed.Length; i++)
-            {
-                if (maybeFixed[i] == null) return false;
-                recurSubstMap.Add(unfixedWitnesses[i], new TypeWithModifiers(maybeFixed[i]));
-            }
+            var recurSubstMap = new MutableTypeMap();
+            foreach (int c in conceptIndices) recurSubstMap.Add(instance.TypeParameters[c], new TypeWithModifiers(inferred[c]));
+            foreach (int a in associatedIndices) recurSubstMap.Add(instance.TypeParameters[a], new TypeWithModifiers(inferred[a]));
 
-            return true;
-        }
-
-        /// <summary>
-        /// Tries to find all unfixed type parameters in a candidate instance,
-        /// adds those which are witnesses to a list, and fails if any is not
-        /// a witness.
-        /// </summary>
-        /// <param name="instance">
-        /// The candidate instance to investigate.
-        /// </param>
-        /// <param name="unfixed">
-        /// The list of unfixed witness parameters to populate.
-        /// </param>
-        /// <returns>
-        /// True if we didn't see any unfixed non-witness type parameters,
-        /// which is a blocker on accepting <paramref name="instance"/> as a
-        /// witness; false otherwise.
-        /// </returns>
-        private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableArray<TypeParameterSymbol> unfixed)
-        {
-            Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter,
-                "Tried to infer recursively on an incorrect instance type");
-
-            var uBuilder = new ArrayBuilder<TypeParameterSymbol>();
-
-            // Only named types (ie instance declarations) can contain
-            // unresolved concept witnesses.
-            if (instance.Kind != SymbolKind.NamedType)
-            {
-                unfixed = uBuilder.ToImmutableAndFree();
-                return true;
-            }
-            var nt = (NamedTypeSymbol)instance;
-
-            var targs = nt.TypeArguments;
-            var tpars = nt.TypeParameters;
-            Debug.Assert(targs.Length == tpars.Length,
-                "Type parameter and argument arrays are out of sync");
-            for (int i = 0; i < tpars.Length; i++)
-            {
-                // If a type parameter is its own argument, we assume this
-                // means it hasn't yet been fixed.
-                if (tpars[i] == targs[i])
-                {
-                    if (!tpars[i].IsConceptWitness)
-                    {
-                        // This is an unfixed non-witness, which kills off our
-                        // attempt to use this instance completely.
-                        unfixed = ImmutableArray<TypeParameterSymbol>.Empty;
-                        uBuilder.Free();
-                        return false;
-                    }
-
-                    // Otherwise, it must be recorded as an unfixed witness.
-                    uBuilder.Add(tpars[i]);
-                }
-            }
-
-            // If we got here, then we haven't seen any unfixed non-witnesses.
-            unfixed = uBuilder.ToImmutableAndFree();
-            return true;
+            return recurSubstMap.SubstituteType(instance).AsTypeSymbolOnly();
         }
 
         #endregion Second pass
@@ -1076,6 +1053,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             int j = 0;
             for (int i = 0; i < typeParameters.Length; i++)
             {
+                // TODO: associated types
                 if (typeParameters[i].IsConceptWitness)
                 {
                     allArgumentsBuilder.Add(typeParameters[i]);
