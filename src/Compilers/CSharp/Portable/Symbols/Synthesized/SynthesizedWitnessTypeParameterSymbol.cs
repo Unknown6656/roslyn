@@ -205,7 +205,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <remarks>
         /// This is specifically a witness synthesis, so it always is.
         /// </remarks>
-        internal override bool IsConceptWitness => true;
+        internal override sealed bool IsConceptWitness => true;
+
+        /// <summary>
+        /// Gets whether this parameter is an associated type.
+        /// </summary>
+        /// <remarks>
+        /// Synthesised witnesses cannot be associated types.
+        /// </remarks>
+        internal override sealed bool IsAssociatedType => false;
 
         /// <summary>
         /// Gets whether this parameter is constrained to be a value type.

@@ -574,6 +574,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         //   synthesised concept witness parameters (for which it is set to true).
 
         /// <summary>
+        /// Is this a symbol for an associated type?
+        /// <para>
+        /// Only type parameters are associated types; everything else will
+        /// return false here.
+        /// </para>
+        /// </summary>
+        internal virtual bool IsAssociatedType => false;
+
+        /// <summary>
         /// Is this a symbol for a Tuple.
         /// </summary>
         public virtual bool IsTupleType => false;

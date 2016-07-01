@@ -142,5 +142,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         //@t-mawind
         internal override bool IsConceptWitness => _underlyingTypeParameter.IsConceptWitness;
+        internal override bool IsAssociatedType => _underlyingTypeParameter.IsAssociatedType;
     }
 }
