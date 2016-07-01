@@ -1607,5 +1607,21 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             return localPosition - this.BodySyntax.SpanStart;
         }
+
+        /// <summary>
+        /// Checks whether a clause is generating an implicit witness parameter.
+        /// </summary>
+        /// <param name="clause">The clause to investigate.</param>
+        /// <param name="typeParameterNames">The array of known type parameter names.</param>
+        /// <param name="typeParameterCount">The number of explicit type parameters.</param>
+        /// <returns></returns>
+        internal bool IsPossibleWitness(TypeParameterConstraintClauseSyntax clause, string[] typeParameterNames, int typeParameterCount)
+        {
+            for (int j = 0; j < typeParameterCount; j++)
+            {
+                if (typeParameterNames[j] == clause.Name.Identifier.ValueText) return false;
+            }
+            return true;
+        }
     }
 }

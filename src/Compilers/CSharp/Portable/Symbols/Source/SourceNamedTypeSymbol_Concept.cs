@@ -25,7 +25,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             var maxImplicits = 0;
             // Find out the maximum number of referenced constraints.
             // There must be a better way...
-            foreach (var syntaxRef in this.SyntaxReferences)
+            foreach (var syntaxRef in DeclaringSyntaxReferences)
             {
                 var typeDecl = syntaxRef.GetSyntax() as TypeDeclarationSyntax;
                 if (typeDecl != null)
@@ -75,7 +75,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             foreach (var clause in clauses)
             {
-                if (!IsPossibleWitness(clause, ref typeParameterNames, typeParameterCount)) continue;
+                if (!IsPossibleWitness(clause, typeParameterNames, typeParameterCount)) continue;
 
                 var clauseName = clause.Name.Identifier.ValueText;
                 var clauseLocation = clause.Name.Location;
@@ -150,7 +150,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="typeParameterNames">The array of known type parameter names.</param>
         /// <param name="typeParameterCount">The number of explicit type parameters.</param>
         /// <returns></returns>
-        internal bool IsPossibleWitness(TypeParameterConstraintClauseSyntax clause, ref string[] typeParameterNames, int typeParameterCount)
+        internal bool IsPossibleWitness(TypeParameterConstraintClauseSyntax clause, string[] typeParameterNames, int typeParameterCount)
         {
             for (int j = 0; j < typeParameterCount; j++)
             {

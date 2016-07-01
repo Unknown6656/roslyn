@@ -2798,7 +2798,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private ImmutableArray<TypeSymbol> PartInferConceptWitnesses(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
         {
-            Debug.Assert(typeArgumentsBuilder.Count + method.ConceptWitnesses.Length == method.Arity,
+            Debug.Assert(typeArgumentsBuilder.Count + method.ImplicitTypeParameterCount == method.Arity,
                 $"Started {nameof(PartInferConceptWitnesses)} with incorrect number of missing arguments");
 
             // Pointless to part-infer without concept witnesses.
@@ -2806,7 +2806,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             
             var allArguments = ConceptWitnessInferrer.ForBinder(_binder).PartInfer(typeArgumentsBuilder.ToImmutable(), method.TypeParameters);
 
-            Debug.Assert(allArguments.IsEmpty || allArguments.Length == typeArgumentsBuilder.Count + method.ConceptWitnesses.Count(),
+            Debug.Assert(allArguments.IsEmpty || allArguments.Length == typeArgumentsBuilder.Count + method.ImplicitTypeParameterCount,
                 "Part-inference did not add in the expected number of new arguments");
             return allArguments;
         }

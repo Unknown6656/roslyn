@@ -1427,7 +1427,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                             // @t-mawind
                             //   Allow a match, for now, if it looks like the
                             //   programmer has omitted concept witnesses only.
-                            if (namedType.Arity - namedType.ConceptWitnesses.Length == arity)
+                            if (namedType.Arity - namedType.ImplicitTypeParameterCount == arity)
                             {
                                 diagInfo = null;
                                 return false;
@@ -1457,7 +1457,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                             // @t-mawind
                             //   Allow a match, for now, if it looks like the
                             //   programmer has omitted concept witnesses only.
-                            if (method.Arity - method.ConceptWitnesses.Length == arity)
+                            if (method.Arity - method.ImplicitTypeParameterCount == arity)
                             {
                                 diagInfo = null;
                                 return false;

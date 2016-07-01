@@ -124,7 +124,7 @@ namespace TupleConcepts
     /// <summary>
     ///     Instance of <see cref="Showable{T}"/> for 2-tuples.
     /// </summary>
-    public instance ShowT2<I, T1, T2> : Showable<I>
+    public instance ShowT2<I, [AssociatedType] T1, [AssociatedType] T2> : Showable<I>
         where T2I : Tuple2<I, T1, T2>
         where ShowT1 : Showable<T1>
         where ShowT2 : Showable<T2>
@@ -146,10 +146,10 @@ namespace TupleConcepts
             // might help here.
 
             var tuple = Tuple.Create(66, 99);
-            Console.Out.WriteLine($"Tuple: {ShowT2<Tuple<int, int>, int, int>.Show(tuple)}");
+            Console.Out.WriteLine($"Tuple: {Show(tuple)}");
 
             var valueTuple = (27, 53);
-            Console.Out.WriteLine($"ValueTuple: {ShowT2<(int, int), int, int>.Show(valueTuple)}");
+            Console.Out.WriteLine($"ValueTuple: {Show(valueTuple)}");
 
             var dict = new Dictionary<int, int>();
             dict.Add(1, 1997);
@@ -157,7 +157,7 @@ namespace TupleConcepts
             dict.Add(3, 2005);
             foreach (KeyValuePair<int, int> kvp in dict)
             {
-                Console.Out.WriteLine($"KeyValuePair: {ShowT2<KeyValuePair<int, int>, int, int>.Show(kvp)}");
+                Console.Out.WriteLine($"KeyValuePair: {Show(kvp)}");
             }
         }
     }

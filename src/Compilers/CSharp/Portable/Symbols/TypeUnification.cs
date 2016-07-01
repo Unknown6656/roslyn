@@ -308,6 +308,10 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case SymbolKind.ErrorType:
                     {
                         NamedTypeSymbol namedType = (NamedTypeSymbol)type;
+
+                        // @t-mawind Simplify tuple case by reducing to generic case.
+                        if (namedType.IsTupleType) namedType = namedType.TupleUnderlyingType;
+
                         while ((object)namedType != null)
                         {
                             foreach (TypeSymbol typeArg in namedType.TypeArgumentsNoUseSiteDiagnostics)

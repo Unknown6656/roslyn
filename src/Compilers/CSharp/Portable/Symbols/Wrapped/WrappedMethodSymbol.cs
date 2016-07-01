@@ -378,5 +378,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         internal override abstract int CalculateLocalSyntaxOffset(int localPosition, SyntaxTree localTree);
+
+        /// <summary>
+        /// Returns the number of implicit type parameters.
+        /// </summary>
+        internal override int ImplicitTypeParameterCount => UnderlyingMethod.ImplicitTypeParameterCount; //@t-mawind
     }
 }

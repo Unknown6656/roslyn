@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
 using Microsoft.CodeAnalysis.Symbols;
 using Roslyn.Utilities;
@@ -207,6 +208,25 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     if (allParams[i].IsConceptWitness) builder.Add(allParams[i]);
                 }
                 return builder.ToImmutableAndFree();
+            }
+        }
+
+        //@t-mawind move?
+        private int _implicitTypeParameterCount = -1;
+
+        /// <summary>
+        /// Returns the number of implicit type parameters.
+        /// </summary>
+        internal virtual int ImplicitTypeParameterCount
+        {
+            get
+            {
+                if (-1 == _implicitTypeParameterCount)
+                {
+                    var count = ConceptWitnesses.Length;
+                    Interlocked.CompareExchange(ref _implicitTypeParameterCount, count, -1);
+                }
+                return _implicitTypeParameterCount;
             }
         }
 

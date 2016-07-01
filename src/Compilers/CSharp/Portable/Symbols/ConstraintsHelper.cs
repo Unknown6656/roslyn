@@ -399,7 +399,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             DiagnosticBag diagnostics)
         {
             Debug.Assert(typeArgumentsSyntax.Count == 0 /*omitted*/ ||
-                typeArgumentsSyntax.Count == type.Arity - type.ConceptWitnesses.Length /* @t-mawind part-inferred */ ||
+                typeArgumentsSyntax.Count == type.Arity - type.ImplicitTypeParameterCount /* @t-mawind part-inferred */ ||
                 typeArgumentsSyntax.Count == type.Arity);
             if (!RequiresChecking(type))
             {

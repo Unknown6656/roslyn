@@ -339,5 +339,10 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <c>System_Concepts_ConceptInstanceAttribute</c> attribute); false otherwise.
         /// </returns>
         internal override bool IsInstance => _underlyingType.IsInstance; //@t-mawind TODO
+
+        /// <summary>
+        /// Returns the number of implicit type parameters.
+        /// </summary>
+        internal override int ImplicitTypeParameterCount => _underlyingType.ImplicitTypeParameterCount;
     }
 }
