@@ -646,7 +646,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // Assumption: no witness parameter can depend on any other
                 // witness parameter, so we can do recursive inference in
                 // one pass.
-                ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses;
+                ImmutableArray<TypeParameterSymbol> unfixedWitnesses;
                 if (!GetRecursiveUnfixedConceptWitnesses(instance, out unfixedWitnesses))
                 {
                     // This instance has some unfixed non-witness type
@@ -708,7 +708,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, we were able to infer every unfixed witness
         /// for this instance without generating cycles.
         /// </returns>
-        private bool InferRecursively(NamedTypeSymbol instance, ImmutableHashSet<TypeParameterSymbol> unfixedWitnesses, ImmutableHashSet<NamedTypeSymbol> chain, out MutableTypeMap recurSubstMap)
+        private bool InferRecursively(NamedTypeSymbol instance, ImmutableArray<TypeParameterSymbol> unfixedWitnesses, ImmutableHashSet<NamedTypeSymbol> chain, out MutableTypeMap recurSubstMap)
         {
             Debug.Assert(chain.Contains(instance),
                 "Current instance has not been put in the cycle detection chain before recursively inferring");
@@ -729,11 +729,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             // It shouldn't be a massive performance or stack issue,
             // but still...
             recurSubstMap = new MutableTypeMap();
-            foreach (var unfixed in unfixedWitnesses)
+            var maybeFixed = InferMany(unfixedWitnesses, recurFixedMap, chain);
+            for (int i = 0; i < maybeFixed.Length; i++)
             {
-                var maybeFixed = Infer(unfixed, recurFixedMap, chain);
-                if (maybeFixed == null) return false;
-                recurSubstMap.Add(unfixed, new TypeWithModifiers(maybeFixed));
+                if (maybeFixed[i] == null) return false;
+                recurSubstMap.Add(unfixedWitnesses[i], new TypeWithModifiers(maybeFixed[i]));
             }
 
             return true;
@@ -755,7 +755,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// which is a blocker on accepting <paramref name="instance"/> as a
         /// witness; false otherwise.
         /// </returns>
-        private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableHashSet<TypeParameterSymbol> unfixed)
+        private static bool GetRecursiveUnfixedConceptWitnesses(TypeSymbol instance, out ImmutableArray<TypeParameterSymbol> unfixed)
         {
             Debug.Assert(instance.Kind == SymbolKind.NamedType || instance.Kind == SymbolKind.TypeParameter,
                 "Tried to infer recursively on an incorrect instance type");
@@ -766,8 +766,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // unresolved concept witnesses.
             if (instance.Kind != SymbolKind.NamedType)
             {
-                unfixed = uBuilder.ToImmutableHashSet();
-                uBuilder.Free();
+                unfixed = uBuilder.ToImmutableAndFree();
                 return true;
             }
             var nt = (NamedTypeSymbol)instance;
@@ -786,7 +785,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     {
                         // This is an unfixed non-witness, which kills off our
                         // attempt to use this instance completely.
-                        unfixed = ImmutableHashSet<TypeParameterSymbol>.Empty;
+                        unfixed = ImmutableArray<TypeParameterSymbol>.Empty;
                         uBuilder.Free();
                         return false;
                     }
@@ -797,8 +796,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             // If we got here, then we haven't seen any unfixed non-witnesses.
-            unfixed = uBuilder.ToImmutableHashSet();
-            uBuilder.Free();
+            unfixed = uBuilder.ToImmutableAndFree();
             return true;
         }
 
