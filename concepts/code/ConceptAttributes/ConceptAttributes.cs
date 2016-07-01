@@ -32,7 +32,28 @@ namespace System.Concepts
     /// Also, type parameters with this attribute are treated as concept
     /// witnesses by the compiler.
     /// </para>
+    /// <para>
+    /// Concept witnesses are handled specially by the type inferrer: if they
+    /// are left unfixed by normal inference, they enter another round of
+    /// inference that tries to find a satisfying instance for the witness.
     /// </summary>
     [AttributeUsage(AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = true)]
     public class ConceptWitnessAttribute : Attribute { }
+
+    /// <summary>
+    /// Attribute marking type parameters as associated types.
+    /// <para>
+    /// Generated associated types are given this attribute in the emitted code.
+    /// Also, type parameters with this attribute are treated as associated
+    /// types by the compiler.
+    /// </para>
+    /// <para>
+    /// Associated type parameters are handled specially by the type
+    /// inferrer: if they are unfixed, the concept inferrer will try to
+    /// back-propagate a definition for them using results from inferring
+    /// concept witnesses.
+    /// </para>
+    /// </summary>
+    [AttributeUsage(AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = true)]
+    public class AssociatedTypeAttribute : Attribute { }
 }

@@ -263,6 +263,7 @@ namespace Microsoft.CodeAnalysis
         System_Concepts_ConceptAttribute, //@t-mawind
         System_Concepts_ConceptInstanceAttribute, //@t-mawind
         System_Concepts_ConceptWitnessAttribute, //@t-mawind
+        System_Concepts_AssociatedTypeAttribute, //@t-mawind
 
         Available,
         Last = Available - 1,
@@ -520,7 +521,8 @@ namespace Microsoft.CodeAnalysis
             //@t-mawind
             "System.Concepts.ConceptAttribute",
             "System.Concepts.ConceptInstanceAttribute",
-            "System.Concepts.ConceptWitnessAttribute"
+            "System.Concepts.ConceptWitnessAttribute",
+            "System.Concepts.AssociatedTypeAttribute"
         };
 
         private readonly static Dictionary<string, WellKnownType> s_nameToTypeIdMap = new Dictionary<string, WellKnownType>((int)Count);
@@ -552,7 +554,7 @@ namespace Microsoft.CodeAnalysis
                 }
                 else if (typeId == WellKnownType.Last)
                 {
-                    typeIdName = "System.Concepts.ConceptWitnessAttribute"; //@t-mawind
+                    typeIdName = "System.Concepts.AssociatedTypeAttribute"; //@t-mawind
                 }
                 else if (typeId == WellKnownType.ExtSentinel)
                 {

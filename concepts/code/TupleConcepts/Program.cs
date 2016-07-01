@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Concepts;
 
 /// <summary>
 ///     Wrapper instances for tuples.
@@ -19,7 +20,7 @@ namespace TupleConcepts
     /// <typeparam name="T2">
     ///     The type of the second item.
     /// </typeparam>
-    public concept Tuple2<I, T1, T2>
+    public concept Tuple2<I, [AssociatedType] T1, [AssociatedType] T2>
     {
         /// <summary>
         ///     Gets the first item of the tuple.

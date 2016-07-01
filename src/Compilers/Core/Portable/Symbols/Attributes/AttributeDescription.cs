@@ -395,6 +395,7 @@ namespace Microsoft.CodeAnalysis
         private static readonly byte[][] s_signaturesOfConceptAttribute = { s_signature_HasThis_Void };
         private static readonly byte[][] s_signaturesOfConceptInstanceAttribute = { s_signature_HasThis_Void };
         private static readonly byte[][] s_signaturesOfConceptWitnessAttribute = { s_signature_HasThis_Void };
+        private static readonly byte[][] s_signaturesOfAssociatedTypeAttribute = { s_signature_HasThis_Void };
 
         // early decoded attributes:
         internal static readonly AttributeDescription OptionalAttribute = new AttributeDescription("System.Runtime.InteropServices", "OptionalAttribute", s_signaturesOfOptionalAttribute);
@@ -501,9 +502,10 @@ namespace Microsoft.CodeAnalysis
         internal static readonly AttributeDescription AssemblyConfigurationAttribute = new AttributeDescription("System.Reflection", "AssemblyConfigurationAttribute", s_signaturesOfAssemblyConfigurationAttribute);
         internal static readonly AttributeDescription AssemblyAlgorithmIdAttribute = new AttributeDescription("System.Reflection", "AssemblyAlgorithmIdAttribute", s_signaturesOfAssemblyAlgorithmIdAttribute);
         internal static readonly AttributeDescription DeprecatedAttribute = new AttributeDescription("Windows.Foundation.Metadata", "DeprecatedAttribute", s_signaturesOfDeprecatedAttribute);
-        //@t-mawind TODO: add namespaces to this _and_ WellKnownXYZ
+        //@t-mawind
         internal static readonly AttributeDescription ConceptAttribute = new AttributeDescription("System.Concepts", "ConceptAttribute", s_signaturesOfConceptAttribute);
         internal static readonly AttributeDescription ConceptInstanceAttribute = new AttributeDescription("System.Concepts", "ConceptInstanceAttribute", s_signaturesOfConceptInstanceAttribute);
         internal static readonly AttributeDescription ConceptWitnessAttribute = new AttributeDescription("System.Concepts", "ConceptWitnessAttribute", s_signaturesOfConceptWitnessAttribute);
+        internal static readonly AttributeDescription AssociatedTypeAttribute = new AttributeDescription("System.Concepts", "AssociatedTypeAttribute", s_signaturesOfAssociatedTypeAttribute);
     }
 }
