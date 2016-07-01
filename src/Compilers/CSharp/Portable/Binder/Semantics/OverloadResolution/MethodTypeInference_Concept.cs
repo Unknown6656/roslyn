@@ -47,23 +47,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             // are checking something on the method definition, but need it
             // in terms of our fixed type arguments, we must make a mapping
             // from parameters to arguments.
-            var fixedMap = this.MakeMethodFixedMap();
+            var fixedMap = MakeMethodFixedMap();
 
             var inferrer = ConceptWitnessInferrer.ForBinder(binder);
-            bool success = true;
-
-            // z
-
-            foreach (int j in conceptIndices)
-            {
-                var maybeFixed = inferrer.Infer(_methodTypeParameters[j], fixedMap);
-                if (maybeFixed == null) return false;
-                Debug.Assert(maybeFixed.IsInstanceType() || maybeFixed.IsConceptWitness,
-                    "Concept witness inference returned something other than a concept instance or witness");
-                _fixedResults[j] = maybeFixed;
-            }
-
-            return success;
+            return inferrer.InferManyInPlace(conceptIndices, _methodTypeParameters, _fixedResults, fixedMap);
         }
 
         /// <summary>
@@ -283,6 +270,55 @@ namespace Microsoft.CodeAnalysis.CSharp
         #region Main driver
 
         /// <summary>
+        /// Tries to infer a batch of concept witnesses in-place in a set of
+        /// general type parameters.
+        /// </summary>
+        /// <param name="conceptIndices">
+        /// An array containing the indices into
+        /// <paramref name="allTypeParameters"/> that have been marked as
+        /// witnesses to infer.
+        /// </param>
+        /// <param name="allTypeParameters">
+        /// The set of all type parameters in the method or type under
+        /// inference.
+        /// </param>
+        /// <param name="destination">
+        /// The destination array into which we will place the results,
+        /// according to their indices in <paramref name="conceptIndices"/>.
+        /// </param>
+        /// <param name="fixedMap">
+        /// The map from all of the fixed, non-witness type parameters in
+        /// <paramref name="allTypeParameters"/> to their arguments.
+        /// </param>
+        /// <param name="chain">
+        /// The set of instances we've passed through recursively to get here,
+        /// used to abort recursive calls if they will create cycles.
+        /// </param>
+        /// <returns>
+        /// True if, and only if, inference succeeded.
+        /// </returns>
+        internal bool InferManyInPlace(
+            ImmutableArray<int> conceptIndices,
+            ImmutableArray<TypeParameterSymbol> allTypeParameters,
+            TypeSymbol[] destination,
+            MutableTypeMap fixedMap,
+            ImmutableHashSet<NamedTypeSymbol> chain = null)
+        {
+            // TODO: perf
+            var toInfer = ArrayBuilder<TypeParameterSymbol>.GetInstance();
+            foreach (int j in conceptIndices) toInfer.Add(allTypeParameters[j]);
+            var maybeFixed = InferMany(toInfer.ToImmutableAndFree(), fixedMap, chain);
+            for (int i = 0; i < maybeFixed.Length; i++)
+            {
+                if (maybeFixed[i] == null) return false;
+                Debug.Assert(maybeFixed[i].IsInstanceType() || maybeFixed[i].IsConceptWitness,
+                    "Concept witness inference returned something other than a concept instance or witness");
+                destination[conceptIndices[i]] = maybeFixed[i];
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Tries to infer a batch of concept witnesses.
         /// </summary>
         /// <param name="witnesses">
@@ -298,7 +334,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// used to abort recursive calls if they will create cycles.
         /// </param>
         /// <returns>
-        /// An array of fixed concept witnesses.  If any is null, then
+        /// An array of fixed concept witnesses.  If any are null, then
         /// inference has failed.
         /// </returns>
         internal ImmutableArray<TypeSymbol> InferMany(
@@ -314,7 +350,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 // TODO: create type map
                 // TODO: backpropagate to associated parameters
-                resultsBuilder.Add(witness);
+                resultsBuilder.Add(Infer(witness, fixedMap, chain));
             }
 
             return resultsBuilder.ToImmutableAndFree();
@@ -1053,23 +1089,14 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
 
-            // Now we can do the inference step.
-            // We assume the given arguments are correct, so
-            // don't bother doing any inference other than that
-            // for witnesses.
-            foreach (int k in missingIndices)
+            var ary = allArgumentsBuilder.ToArrayAndFree();
+            if (!InferManyInPlace(missingIndices.ToImmutableAndFree(), typeParameters, ary, fixedMap))
             {
-                var inferred = Infer(typeParameters[k], fixedMap);
                 // TODO: more specific error?
-                if (inferred == null)
-                {
-                    allArgumentsBuilder.Free();
-                    return ImmutableArray<TypeSymbol>.Empty;
-                }
-                allArgumentsBuilder[k] = inferred;
+                return ImmutableArray<TypeSymbol>.Empty;
             }
 
-            return allArgumentsBuilder.ToImmutableAndFree();
+            return ary.ToImmutableArray();
         }
 
         #endregion Part-inference
