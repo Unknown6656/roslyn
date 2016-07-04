@@ -5096,16 +5096,10 @@ namespace Microsoft.CodeAnalysis.CSharp
                     case BoundKind.TypeExpression:
                         {
                             Debug.Assert((object)leftType != null);
+                            // @t-mawind Allow type parameter receivers if they are concepts.
+                            //   These are lowered into valid receivers later.
                             if (leftType.TypeKind == TypeKind.TypeParameter && !leftType.IsConceptWitness)
                             {
-                                //@t-mawind Attempts to get a member of a witness parameter construct a dictionary of that parameter type.
-                                //if (leftType.IsConceptWitness)
-                                //{
-                                //    BoundExpression newBoundLeft = this.SynthesizeWitnessInvocationReceiver(boundLeft.Syntax, leftType);
-                                //    newBoundLeft = CheckValue(newBoundLeft, BindValueKind.RValue, diagnostics);
-                                //    return BindInstanceMemberAccess(node, right, newBoundLeft, rightName, rightArity, typeArgumentsSyntax, typeArguments, invoked, diagnostics);
-                                //}
-
                                 Error(diagnostics, ErrorCode.ERR_BadSKunknown, boundLeft.Syntax, leftType, MessageID.IDS_SK_TYVAR.Localize());
                                 return BadExpression(node, LookupResultKind.NotAValue, boundLeft);
                             }

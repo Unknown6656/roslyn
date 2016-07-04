@@ -340,10 +340,10 @@ namespace Microsoft.CodeAnalysis.CSharp
                     if (!((rewrittenOperand as BoundMethodGroup)?.Methods.IsEmpty ?? true))
                     {
                         var ro = rewrittenOperand as BoundMethodGroup;
-                        var m = ro.Methods[0] as SynthesizedWitnessMethodSymbol;
-                        if (m != null)
+                        if (ro.ReceiverOpt is BoundTypeExpression && oldNode.SymbolOpt is SynthesizedWitnessMethodSymbol)
                         {
-                            rewrittenOperand = ro.Update(ro.TypeArgumentsOpt, ro.Name, ro.Methods, ro.LookupSymbolOpt, ro.LookupError, ro.Flags, SynthesizeWitnessInvocationReceiver(ro.Syntax, m.Parent), ro.ResultKind);
+                            var ty = (ro.ReceiverOpt as BoundTypeExpression).Type;
+                            rewrittenOperand = ro.Update(ro.TypeArgumentsOpt, ro.Name, ro.Methods, ro.LookupSymbolOpt, ro.LookupError, ro.Flags, SynthesizeWitnessInvocationReceiver(ro.Syntax, ty), ro.ResultKind);
                         }
                     }
                     break;

@@ -135,12 +135,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             // @t-mawind
             //   Here we synthesise a default() call for implicit calls into a
             //   concept instance.
-            if (node.ReceiverOpt == null && node.Method is SynthesizedWitnessMethodSymbol)
-            {
-                rewrittenReceiver = SynthesizeWitnessInvocationReceiver(node.Syntax, ((SynthesizedWitnessMethodSymbol)node.Method).Parent);
-            }
-            else if (!node.Method.IsStatic && node.ReceiverOpt != null && node.ReceiverOpt.Kind == BoundKind.TypeExpression &&
-                     (node.ReceiverOpt.Type.IsInstanceType() || node.ReceiverOpt.Type.IsConceptWitness))
+            if (!node.Method.IsStatic && node.ReceiverOpt != null && node.ReceiverOpt.Kind == BoundKind.TypeExpression &&
+                (node.ReceiverOpt.Type.IsInstanceType() || node.ReceiverOpt.Type.IsConceptWitness))
             {
                 rewrittenReceiver = SynthesizeWitnessInvocationReceiver(node.ReceiverOpt.Syntax, node.ReceiverOpt.Type);
             }

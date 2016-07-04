@@ -318,23 +318,23 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   allow the conversion to go through.
             //   Probably not the right place to put this, but I couldn't
             //   find anywhere better.
-            //var receiverOpt = group.ReceiverOpt;
-            //if (receiverOpt == null && conversion.Method is SynthesizedWitnessMethodSymbol)
-            //{
-            //    receiverOpt = SynthesizeWitnessInvocationReceiver(group.Syntax, ((SynthesizedWitnessMethodSymbol)conversion.Method).Parent);
-            //    group = group.Update(
-            //        group.TypeArgumentsOpt,
-            //        group.Name,
-            //        group.Methods,
-            //        group.LookupSymbolOpt,
-            //        group.LookupError,
-            //        group.Flags,
-            //        receiverOpt, //only change
-            //        group.ResultKind);
-            //}
+            var receiverOpt = group.ReceiverOpt;
+            if (receiverOpt == null && conversion.Method is SynthesizedWitnessMethodSymbol)
+            {
+                receiverOpt = new BoundTypeExpression(syntax, null, (conversion.Method as SynthesizedWitnessMethodSymbol).Parent) { WasCompilerGenerated = true };
+                group = group.Update(
+                    group.TypeArgumentsOpt,
+                    group.Name,
+                    group.Methods,
+                    group.LookupSymbolOpt,
+                    group.LookupError,
+                    group.Flags,
+                    receiverOpt, //only change
+                    group.ResultKind);
+            }
 
             group = FixMethodGroupWithTypeOrValue(group, conversion, diagnostics);
-            var receiverOpt = group.ReceiverOpt;
+            receiverOpt = group.ReceiverOpt;
             MethodSymbol method = conversion.Method;
             bool hasErrors = false;
             if (receiverOpt != null && receiverOpt.Kind == BoundKind.BaseReference && method.IsAbstract)

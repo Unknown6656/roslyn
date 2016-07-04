@@ -114,7 +114,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     // but the unary case is different enough to make me nervous.
                     if (method is SynthesizedWitnessMethodSymbol)
                     {
-                        return BoundCall.Synthesized(syntax, new BoundDefaultOperator(syntax, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true }, method, loweredOperand);
+                        return BoundCall.Synthesized(syntax, SynthesizeWitnessInvocationReceiver(syntax, ((SynthesizedWitnessMethodSymbol)method).Parent), method, loweredOperand);
                     }
 
                     return BoundCall.Synthesized(syntax, null, method, loweredOperand);
