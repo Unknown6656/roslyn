@@ -309,7 +309,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             for (int i = 0; i < typeParameters.Length; i++)
             {
                 // TODO: Is this sufficient for unfixed checking?
-                if (typeArguments[i] == null || typeArguments[i] == typeParameters[i])
+                if (typeArguments[i] == null)
                 {
                     if (typeParameters[i].IsConceptWitness)
                     {
@@ -1194,7 +1194,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // TODO: associated types
                 if (typeParameters[i].IsConceptWitness)
                 {
-                    allArgumentsBuilder.Add(typeParameters[i]);
+                    allArgumentsBuilder.Add(null);
                     missingIndices.Add(i); // Come back to this later.
                 }
                 else
