@@ -318,23 +318,23 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   allow the conversion to go through.
             //   Probably not the right place to put this, but I couldn't
             //   find anywhere better.
-            var receiverOpt = group.ReceiverOpt;
-            if (receiverOpt == null && conversion.Method is SynthesizedWitnessMethodSymbol)
-            {
-                receiverOpt = SynthesizeWitnessInvocationReceiver(group.Syntax, ((SynthesizedWitnessMethodSymbol)conversion.Method).Parent);
-                group = group.Update(
-                    group.TypeArgumentsOpt,
-                    group.Name,
-                    group.Methods,
-                    group.LookupSymbolOpt,
-                    group.LookupError,
-                    group.Flags,
-                    receiverOpt, //only change
-                    group.ResultKind);
-            }
+            //var receiverOpt = group.ReceiverOpt;
+            //if (receiverOpt == null && conversion.Method is SynthesizedWitnessMethodSymbol)
+            //{
+            //    receiverOpt = SynthesizeWitnessInvocationReceiver(group.Syntax, ((SynthesizedWitnessMethodSymbol)conversion.Method).Parent);
+            //    group = group.Update(
+            //        group.TypeArgumentsOpt,
+            //        group.Name,
+            //        group.Methods,
+            //        group.LookupSymbolOpt,
+            //        group.LookupError,
+            //        group.Flags,
+            //        receiverOpt, //only change
+            //        group.ResultKind);
+            //}
 
             group = FixMethodGroupWithTypeOrValue(group, conversion, diagnostics);
-            receiverOpt = group.ReceiverOpt;
+            var receiverOpt = group.ReceiverOpt;
             MethodSymbol method = conversion.Method;
             bool hasErrors = false;
             if (receiverOpt != null && receiverOpt.Kind == BoundKind.BaseReference && method.IsAbstract)
@@ -605,7 +605,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return true;
                 }
             }
-            else if (IsMemberAccessedThroughType(receiverOpt) && !(receiverOpt?.Type.IsInstanceType() ?? false) /* @t-mawind */)
+            else if (IsMemberAccessedThroughType(receiverOpt) && !(receiverOpt?.Type.IsInstanceType() ?? false) && !(receiverOpt?.Type.IsConceptWitness ?? false) /* @t-mawind */)
             {
                 diagnostics.Add(ErrorCode.ERR_ObjectRequired, node.Location, memberSymbol);
                 return true;
@@ -627,7 +627,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 // If we could access the member through implicit "this" the receiver would be a BoundThisReference.
                 // If it is null it means that the instance member is inaccessible.
-                if (receiverOpt == null || ContainingMember().IsStatic)
+                if (!(memberSymbol is SynthesizedWitnessMethodSymbol) && (receiverOpt == null || ContainingMember().IsStatic))
                 {
                     Error(diagnostics, ErrorCode.ERR_ObjectRequired, node, memberSymbol);
                     return true;

@@ -882,10 +882,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   witness-method symbol, need to become dictionary lookups.
             //   At some point it might be nice to clean up all of the
             //   disparate invocations of this lookup synthesis.
-            if (receiver == null && method is SynthesizedWitnessMethodSymbol)
-            {
-                receiver = SynthesizeWitnessInvocationReceiver(expression, ((SynthesizedWitnessMethodSymbol)method).Parent);
-            }
+            //if (receiver == null && method is SynthesizedWitnessMethodSymbol)
+            //{
+            //    receiver = SynthesizeWitnessInvocationReceiver(expression, ((SynthesizedWitnessMethodSymbol)method).Parent);
+            //}
 
             // Note: we specifically want to do final validation (7.6.5.1) without checking delegate compatibility (15.2),
             // so we're calling MethodGroupFinalValidation directly, rather than via MethodGroupConversionHasErrors.
@@ -948,10 +948,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   stage, we're invoking against an explicit instance (hopefully).
             //   If so, desugar the instance call to a dictionary construction
             //  before we continue.
-            if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression && receiver.Type.IsInstanceType())
-            {
-                receiver = SynthesizeWitnessInvocationReceiver(receiver.Syntax, receiver.Type);
-            }
+            //if (!method.IsStatic && receiver != null && receiver.Kind == BoundKind.TypeExpression && receiver.Type.IsInstanceType())
+            //{
+            //    receiver = SynthesizeWitnessInvocationReceiver(receiver.Syntax, receiver.Type);
+            //}
 
             // What if some of the arguments are implicit?  Dev10 reports unsafe errors
             // if the implied argument would have an unsafe type.  We need to check

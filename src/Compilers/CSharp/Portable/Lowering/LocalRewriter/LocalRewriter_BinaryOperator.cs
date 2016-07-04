@@ -703,7 +703,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   default() form.
             if (method is SynthesizedWitnessMethodSymbol)
             {
-                return BoundCall.Synthesized(syntax, new BoundDefaultOperator(syntax, ((SynthesizedWitnessMethodSymbol)method).Parent) { WasCompilerGenerated = true }, method, loweredLeft, loweredRight);
+                return BoundCall.Synthesized(syntax, SynthesizeWitnessInvocationReceiver(syntax, ((SynthesizedWitnessMethodSymbol)method).Parent), method, loweredLeft, loweredRight);
             }
             // Otherwise, nothing special here.
             return BoundCall.Synthesized(syntax, null, method, loweredLeft, loweredRight);

@@ -335,6 +335,19 @@ namespace Microsoft.CodeAnalysis.CSharp
                         explicitCastInCode: explicitCastInCode,
                         rewrittenType: (NamedTypeSymbol)rewrittenType);
 
+                case ConversionKind.MethodGroup:
+                    // TODO: this is a hack.
+                    if (!((rewrittenOperand as BoundMethodGroup)?.Methods.IsEmpty ?? true))
+                    {
+                        var ro = rewrittenOperand as BoundMethodGroup;
+                        var m = ro.Methods[0] as SynthesizedWitnessMethodSymbol;
+                        if (m != null)
+                        {
+                            rewrittenOperand = ro.Update(ro.TypeArgumentsOpt, ro.Name, ro.Methods, ro.LookupSymbolOpt, ro.LookupError, ro.Flags, SynthesizeWitnessInvocationReceiver(ro.Syntax, m.Parent), ro.ResultKind);
+                        }
+                    }
+                    break;
+
                 default:
                     break;
             }
