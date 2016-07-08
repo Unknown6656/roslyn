@@ -194,8 +194,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         AsyncKeyword = 8435,
         AwaitKeyword = 8436,
         WhenKeyword = 8437,
-        ReplaceKeyword = 8439,
-        OriginalKeyword = 8440,
 
         // additional preprocessor keywords
         ElifKeyword = 8467,
@@ -400,7 +398,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         TrueLiteralExpression = 8752,
         FalseLiteralExpression = 8753,
         NullLiteralExpression = 8754,
-        OriginalExpression = 8755,
 
         // primary function expressions
         TypeOfExpression = 8760,
