@@ -337,14 +337,11 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 case ConversionKind.MethodGroup:
                     // TODO: this is a hack.
-                    if (!((rewrittenOperand as BoundMethodGroup)?.Methods.IsEmpty ?? true))
+                    var ro = rewrittenOperand as BoundMethodGroup;
+                    if (ro.ReceiverOpt is BoundTypeExpression)
                     {
-                        var ro = rewrittenOperand as BoundMethodGroup;
-                        if (ro.ReceiverOpt is BoundTypeExpression && oldNode.SymbolOpt is SynthesizedWitnessMethodSymbol)
-                        {
-                            var ty = (ro.ReceiverOpt as BoundTypeExpression).Type;
-                            rewrittenOperand = ro.Update(ro.TypeArgumentsOpt, ro.Name, ro.Methods, ro.LookupSymbolOpt, ro.LookupError, ro.Flags, SynthesizeWitnessInvocationReceiver(ro.Syntax, ty), ro.ResultKind);
-                        }
+                        var ty = (ro.ReceiverOpt as BoundTypeExpression).Type;
+                        if (ty.IsConceptWitness || ty.IsInstanceType()) rewrittenOperand = ro.Update(ro.TypeArgumentsOpt, ro.Name, ro.Methods, ro.LookupSymbolOpt, ro.LookupError, ro.Flags, SynthesizeWitnessInvocationReceiver(ro.Syntax, ty), ro.ResultKind);
                     }
                     break;
 
