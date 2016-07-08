@@ -39,6 +39,7 @@
     <!-- A reference to the entire .NET Framework is automatically included -->
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Lazy.cs" />
     <Compile Include="OpMonoid.cs" />
     <Compile Include="OpPrelude.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

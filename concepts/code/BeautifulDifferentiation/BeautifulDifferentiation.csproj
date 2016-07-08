@@ -40,6 +40,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HoD.cs" />
     <Compile Include="D.cs" />
     <Compile Include="FuncInstances.cs" />
     <Compile Include="Mark1.cs" />
