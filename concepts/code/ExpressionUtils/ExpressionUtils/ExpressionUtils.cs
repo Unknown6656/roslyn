@@ -15,6 +15,7 @@ namespace ExpressionUtils
    
 
     using Env = Func<Exp, ParameterExpression>;
+    using Map = Func<Exp,Exp>;
 
   
     public abstract class Exp {
@@ -32,7 +33,8 @@ namespace ExpressionUtils
         }
 
         public T Run () => Compile()();
-        
+
+        public virtual Exp<T> Reduce(Map M) { return this; }
     }
 
 
@@ -54,6 +56,10 @@ namespace ExpressionUtils
         public override Expression Translate(Env E) {
             return  E(this);
         }
+
+        public override Exp<T> Reduce(Map M) {
+            return (Exp<T>)M(this);
+        }
     }
 
     public class Lam<T,U> : Exp<Func<T,U>> {
@@ -69,6 +75,11 @@ namespace ExpressionUtils
             var Ex = E.Add(v, p);
             return Expression.Lambda(e.Translate(Ex), p);
         }
+
+        public override Exp<Func<T,U>> Reduce(Map M) {
+            return Lam<T,U>(x => e.Reduce(M.Add(v, x)));
+        }
+
     }
 
     public class App<T,U> : Exp<U> {
@@ -81,6 +92,16 @@ namespace ExpressionUtils
 
         public override Expression Translate(Env E) {
             return Expression.Invoke(f.Translate(E), e.Translate(E));
+        }
+
+
+        public override Exp<U> Reduce(Map M) {
+            var fr = f.Reduce(M) as Exp<Func<T, U>>;
+            var er = e.Reduce(M) as Exp<T>;
+            var lambda = fr as Lam<T, U>;
+            return (lambda == null) ?
+                   fr.Apply(er) :
+                   Let(er, x => lambda.e.Reduce(M.Add(lambda.v, x)));
         }
     }
 
@@ -103,6 +124,12 @@ namespace ExpressionUtils
             var fc = f.Translate(Ex);
             return Expression.Block(new [] { p }, Expression.Assign(p, e.Translate(E)),fc);           
         }
+
+        public override Exp<U> Reduce(Map M) {
+            return Let(e.Reduce(M), y => f.Reduce(M.Add(x, y)));
+        }
+
+
     }
 
 
@@ -122,6 +149,10 @@ namespace ExpressionUtils
             return Expression.Block(new[] { p },
                                     Expression.Assign(p, c1),
                                     f.Body);
+        }
+
+        public override Exp<T> Reduce(Map M) {
+            return Prim(f, e1.Reduce(M));
         }
     }
 
@@ -146,6 +177,10 @@ namespace ExpressionUtils
                                     Expression.Assign(q, c2),
                                     f.Body);
         }
+
+        public override Exp<T> Reduce(Map M) {
+            return Prim(f, e1.Reduce(M),e2.Reduce(M));
+        }
     }
 
 
@@ -153,9 +188,13 @@ namespace ExpressionUtils
     public static class Utils {
 
         public static Env Empty = x => { throw new System.ArgumentOutOfRangeException(); };
+        public static Map EmptyMap = x => x;
 
         public static Env Add(this Env E, Exp x, ParameterExpression p) =>
                        (y) => (x == y) ? p : E(x);
+
+        public static Map Add(this Map E, Exp x, Exp p) =>
+                     (y) => (x == y) ? p : E(x);
 
         public static Exp<T> C<T>(T t) => new Constant<T>(t);
         public static Exp<Func<T,U>> Lam<T,U>(Func<Var<T>, Exp<U>> f) =>
@@ -163,7 +202,9 @@ namespace ExpressionUtils
 
 
         public static Exp<U> Let<T, U>(Exp<T> e, Func<Var<T>, Exp<U>> f) =>
-               new Let<T, U>(e, f);
+               (e is Var<T>) ? 
+                 f(e as Var<T>) 
+               : new Let<T, U>(e, f);
 
         public static Exp<U> Apply<T, U>(this Exp<Func<T, U>> f, Exp<T> e) =>
               new App<T, U>(f, e);
@@ -172,6 +213,12 @@ namespace ExpressionUtils
              new Prim<T1,T2,T>(f, e1, e2);
         public static Exp<T> Prim<T1, T>(Expression<Func<T1, T>> f, Exp<T1> e1) =>
              new Prim<T1,T>(f, e1);
+
+
+        public static Exp<Func<T, V>> Compose<T, U, V>(Exp<Func<U, V>> f, Exp<Func<T, U>> g) => Lam<T, V>(x => f.Apply(g.Apply(x)));
+
+        public static Exp<Func<T, T>> Pow<T>(Exp<Func<T, T>> f, int n) => (n > 0) ? Compose(f, Pow(f, n - 1)) : Lam<T,T>( x => x);
+
     }
 
 
@@ -186,6 +233,7 @@ namespace ExpressionUtils
 
             var t3 = t2.Apply(t1);
             var r3 = t3.Run();
+
 
 
             var t4 = Let(t1, x => x);
@@ -204,8 +252,22 @@ namespace ExpressionUtils
             var r8 = t8.Run();
 
 
-            System.Console.WriteLine();
+            var t9 = Compose(t2, t2);
+            var r9 = t9.Run();
+            var r9opt = t9.Reduce(EmptyMap).Run();
 
+
+            var succ = Lam<int, int>(x => Prim(n => n + 1, x));
+            var t10 = Pow(succ, 10);
+            var r10 = t10.Run();
+            var r10opt = t10.Reduce(EmptyMap).Run();
+
+
+            
+            System.Console.WriteLine(r10opt(100));
+
+
+            System.Console.ReadLine();
 
 
 
