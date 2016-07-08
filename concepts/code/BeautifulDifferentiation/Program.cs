@@ -27,10 +27,23 @@ namespace BeautifulDifferentiation
             Console.Out.WriteLine($"D {d3.X} {d3.DX}");
         }
 
+        public static void TestHigherOrder() where FHDA : Floating<HoD<double>>
+        {
+            var d = HoD<double>.Id(2.0);
+
+            var d2 = F(d);
+            var d3 = G(d);
+
+            Console.Out.WriteLine($"HD {d.X} {d.DX.Value.X} {d.DX.Value.DX.Value.X}");
+            Console.Out.WriteLine($"HD {d2.X} {d2.DX.Value.X} {d2.DX.Value.DX.Value.X}");
+            Console.Out.WriteLine($"HD {d3.X} {d3.DX.Value.X} {d3.DX.Value.DX.Value.X}");
+        }
+
         public static void Main()
         {
             Test<Mark1.FloatingDA<double>>();
             Test<Mark2.FloatingDA<double>>();
+            TestHigherOrder<HoMark2.FloatingDA<double>>();
         }
     }
 }

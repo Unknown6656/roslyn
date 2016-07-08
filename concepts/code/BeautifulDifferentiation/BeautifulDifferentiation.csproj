@@ -44,6 +44,7 @@
     <Compile Include="D.cs" />
     <Compile Include="FuncInstances.cs" />
     <Compile Include="Mark1.cs" />
+    <Compile Include="HoMark2.cs" />
     <Compile Include="Mark2.cs" />
     <Compile Include="NumUtils.cs" />
     <Compile Include="Program.cs" />
