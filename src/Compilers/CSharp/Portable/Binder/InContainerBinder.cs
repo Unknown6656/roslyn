@@ -245,6 +245,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             // parameter binders can do that.
             if (onlyExplicitWitnesses) return;
 
+            // We need not check to see if the container itself is a possible
+            // concept instance, because, if it is, then it has a parent
+            // container, and the below check works fine.
+
             GetConceptInstancesInContainer(_container, instances, originalBinder, ref useSiteDiagnostics);
 
             // The above is ok if we just want to get all instances in

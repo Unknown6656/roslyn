@@ -25,7 +25,7 @@ namespace BeautifulDifferentiation.Mark2
             => new D<A>(Sub(x.X, y.X), Sub(x.DX, y.DX));
 
         D<A> Signum(D<A> x) =>
-            D<A>.Chain(Signum, NumF<A, A, NumA>.FromInteger(0))(x);
+            D<A>.Chain(Signum, NumF<A, A>.FromInteger(0))(x);
 
         D<A> Abs(D<A> x) => D<A>.Chain(Abs, Signum)(x);
     }

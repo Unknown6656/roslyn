@@ -8,7 +8,7 @@ namespace BeautifulDifferentiation.Mark1
     using static NumUtils;
 
     instance NumDA<A> : Num<D<A>>
-    where NumA : Num<A>
+        where NumA : Num<A>
     {
         D<A> FromInteger(int x) => D<A>.Const(FromInteger(x));
 

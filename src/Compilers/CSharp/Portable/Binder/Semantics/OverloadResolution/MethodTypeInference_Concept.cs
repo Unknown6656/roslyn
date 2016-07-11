@@ -39,7 +39,10 @@ namespace Microsoft.CodeAnalysis.CSharp
             ImmutableArray<int> conceptIndices;
             ImmutableArray<int> associatedIndices;
             MutableTypeMap fixedMap;
-            if (!ConceptWitnessInferrer.PartitionTypeParameters(
+
+            var inferrer = ConceptWitnessInferrer.ForBinder(binder);
+
+            if (!inferrer.PartitionTypeParameters(
                 _methodTypeParameters,
                 _fixedResults.AsImmutable(),
                 false,
@@ -50,7 +53,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(!conceptIndices.IsEmpty,
                 "Tried to proceed with concept inference with no concept witnesses to infer");
 
-            var inferrer = ConceptWitnessInferrer.ForBinder(binder);
             return inferrer.InferManyInPlace(conceptIndices, associatedIndices, _methodTypeParameters, _fixedResults, fixedMap);
         }
 
@@ -297,7 +299,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, every unfixed type parameter is a concept
         /// witness or associated type.
         /// </returns>
-        internal static bool PartitionTypeParameters(
+        internal bool PartitionTypeParameters(
             ImmutableArray<TypeParameterSymbol> typeParameters,
             ImmutableArray<TypeSymbol> typeArguments,
             bool treatEqualAsUnfixed,
@@ -316,7 +318,16 @@ namespace Microsoft.CodeAnalysis.CSharp
             for (int i = 0; i < typeParameters.Length; i++)
             {
                 // TODO: Is this sufficient for unfixed checking?
-                if (typeArguments[i] == null || (treatEqualAsUnfixed && typeArguments[i] == typeParameters[i]))
+
+                // @t-mawind:
+                // A type argument is unfixed if it is null, or it is
+                // both the same as its parameter _and_ not the same as
+                // a bound type parameter in the current scope...
+                // I think(!).
+                if (typeArguments[i] == null ||
+                    (treatEqualAsUnfixed
+                     && typeArguments[i] == typeParameters[i]
+                     && !(_boundParams.Contains(typeParameters[i]))))
                 {
                     if (typeParameters[i].IsConceptWitness)
                     {
