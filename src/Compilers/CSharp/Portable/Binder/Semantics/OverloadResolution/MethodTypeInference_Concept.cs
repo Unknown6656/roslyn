@@ -372,12 +372,13 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// The array of indices of unfixed associated types to infer.
         /// </param>
         /// <param name="allTypeParameters">
-        /// The set of all type parameters in the method or type under
-        /// inference.
+        /// The entire set of type parameters in this inference round,
+        /// indexed by <paramref name="associatedIndices"/>
         /// </param>
         /// <param name="destination">
-        /// The destination array into which we will place the results,
-        /// according to their indices in <paramref name="conceptIndices"/>.
+        /// The destination array, indexed by
+        /// <paramref name="associatedIndices"/>, into which fixed type
+        /// parameters must be placed.
         /// </param>
         /// <param name="fixedMap">
         /// The map from all of the fixed, non-witness type parameters in
@@ -406,73 +407,33 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             if (unification == null) unification = ArrayBuilder<MutableTypeMap>.GetInstance();
 
-            bool inferredOne;
             bool inferredAll;
-
             var innerUnification = ArrayBuilder<MutableTypeMap>.GetInstance();
             innerUnification.AddRange(unification);
             do
             {
-                inferredOne = false;
-                inferredAll = true;
-
                 // TODO: perf
 
-                // First, try to see if any of our associated types have been fixed by
-                // the incoming unifications.
-                if (!associatedIndices.IsEmpty)
-                {
-                    var newAssociatedIndices = ArrayBuilder<int>.GetInstance();
-                    foreach (int i in associatedIndices)
-                    {
-                        // Have we already fixed this?
-                        if (destination[i] != null && destination[i] != allTypeParameters[i]) continue;
+                if (!associatedIndices.IsEmpty) associatedIndices = TryFixAssociatedTypes(
+                    associatedIndices, allTypeParameters, destination, innerUnification
+                );
 
-                        var associated = allTypeParameters[i];
-
-                        foreach (var unf in innerUnification)
-                        {
-                            // TODO: guarding against inconsistent unifications.
-
-                            var associatedU = unf.SubstituteType(associated).AsTypeSymbolOnly();
-                            if (associatedU != associated) destination[i] = associatedU;
-                        }
-
-                        if (destination[i] == null || destination[i] == allTypeParameters[i])
-                        {
-                            inferredAll = false;
-                            newAssociatedIndices.Add(i);
-                        }
-                    }
-                    associatedIndices = newAssociatedIndices.ToImmutableAndFree();
-                }
-
+                // Make sure we don't accumulate a massive load of unifications
+                // we've already applied and thus don't need.
                 innerUnification.Clear();
 
-                var toInfer = ArrayBuilder<TypeParameterSymbol>.GetInstance();
-                foreach (int j in conceptIndices) toInfer.Add(allTypeParameters[j]);
-                var maybeFixed = InferMany(toInfer.ToImmutableAndFree(), fixedMap, chain);
-                var newConceptIndices = ArrayBuilder<int>.GetInstance();
-                for (int i = 0; i < maybeFixed.Length; i++)
+                bool conceptProgress = false;
+                if (!conceptIndices.IsEmpty)
                 {
-                    if (maybeFixed[i].Instance == null)
-                    {
-                        inferredAll = false;
-                        newConceptIndices.Add(conceptIndices[i]);
-                        continue;
-                    };
-                    inferredOne = true;
-
-                    Debug.Assert(maybeFixed[i].Instance.IsInstanceType() || maybeFixed[i].Instance.IsConceptWitness,
-                        "Concept witness inference returned something other than a concept instance or witness");
-                    destination[conceptIndices[i]] = maybeFixed[i].Instance;
-
-                    innerUnification.AddRange(maybeFixed[i].Unification);
+                    var newConceptIndices = TryFixConceptWitnesses(conceptIndices, allTypeParameters, destination, fixedMap, chain, innerUnification);
+                    conceptProgress = newConceptIndices.Length < conceptIndices.Length;
+                    conceptIndices = newConceptIndices;
                 }
-                conceptIndices = newConceptIndices.ToImmutableAndFree();
 
-                // Did we make no progress this time?
-                if (!inferredOne && !inferredAll) return false;
+                inferredAll = associatedIndices.IsEmpty && conceptIndices.IsEmpty;
+
+                // Stop if we made no progress whatsoever
+                if (!conceptProgress && !inferredAll) return false;
             } while (!inferredAll);
             return true;
         }
@@ -480,8 +441,19 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <summary>
         /// Tries to infer a batch of concept witnesses.
         /// </summary>
-        /// <param name="witnesses">
-        /// The array of concept witnesses to fix.
+        /// <param name="conceptIndices">
+        /// An array containing the indices into
+        /// <paramref name="allTypeParameters"/> that have been marked as
+        /// witnesses to infer.
+        /// </param>
+        /// <param name="allTypeParameters">
+        /// The entire set of type parameters in this inference round,
+        /// indexed by <paramref name="associatedIndices"/>
+        /// </param>
+        /// <param name="destination">
+        /// The destination array, indexed by
+        /// <paramref name="associatedIndices"/>, into which fixed type
+        /// parameters must be placed.
         /// </param>
         /// <param name="fixedMap">
         /// The map from all of the fixed, non-witness type parameters in the
@@ -496,23 +468,94 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// An array of fixed concept witnesses.  If any are null, then
         /// inference has failed.
         /// </returns>
-        internal ImmutableArray<Candidate> InferMany(
-            ImmutableArray<TypeParameterSymbol> witnesses,
-            // TODO: associated parameters
-            MutableTypeMap fixedMap,
-            ImmutableHashSet<NamedTypeSymbol> chain = null
-        )
+        private ImmutableArray<int> TryFixConceptWitnesses(ImmutableArray<int> conceptIndices, ImmutableArray<TypeParameterSymbol> allTypeParameters, TypeSymbol[] destination, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain, ArrayBuilder<MutableTypeMap> innerUnification)
         {
             var resultsBuilder = ArrayBuilder<Candidate>.GetInstance();
 
-            foreach (var witness in witnesses)
+            foreach (int i in conceptIndices)
             {
-                // TODO: create type map
-                // TODO: backpropagate to associated parameters
-                resultsBuilder.Add(Infer(witness, fixedMap, chain));
+                resultsBuilder.Add(Infer(allTypeParameters[i], fixedMap, chain));
+            }
+            var maybeFixed = resultsBuilder.ToImmutableAndFree();
+
+            var newConceptIndices = ArrayBuilder<int>.GetInstance();
+            for (int i = 0; i < maybeFixed.Length; i++)
+            {
+                if (maybeFixed[i].Instance == null)
+                {
+                    newConceptIndices.Add(conceptIndices[i]);
+                    continue;
+                };
+
+                Debug.Assert(maybeFixed[i].Instance.IsInstanceType() || maybeFixed[i].Instance.IsConceptWitness,
+                    "Concept witness inference returned something other than a concept instance or witness");
+                destination[conceptIndices[i]] = maybeFixed[i].Instance;
+
+                innerUnification.AddRange(maybeFixed[i].Unification);
+            }
+            return newConceptIndices.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Given a list of type parameters and a set of indices into them that
+        /// mark unfixed associated type parameters, try to fix the parameters
+        /// at said indices with a unification set and return the remaining
+        /// unfixed parameter indices.
+        /// </summary>
+        /// <param name="associatedIndices">
+        /// The indices of associated type parameters awaiting inference.
+        /// </param>
+        /// <param name="allTypeParameters">
+        /// The entire set of type parameters in this inference round,
+        /// indexed by <paramref name="associatedIndices"/>
+        /// </param>
+        /// <param name="destination">
+        /// The destination array, indexed by
+        /// <paramref name="associatedIndices"/>, into which fixed type
+        /// parameters must be placed.
+        /// </param>
+        /// <param name="innerUnification">
+        /// The set of unifications that have been done by this inferrer
+        /// so far, which may fix some of the remaining associated type
+        /// parameters.
+        /// </param>
+        /// <returns>
+        /// The array of remaining, unfixed associated type parameters.
+        /// If empty, there are no more such parameters to fix.
+        /// </returns>
+        private static ImmutableArray<int> TryFixAssociatedTypes(ImmutableArray<int> associatedIndices, ImmutableArray<TypeParameterSymbol> allTypeParameters, TypeSymbol[] destination, ArrayBuilder<MutableTypeMap> innerUnification)
+        {
+            Debug.Assert(associatedIndices.Length <= allTypeParameters.Length,
+                "Should not have more associated types than actual types.");
+            Debug.Assert(allTypeParameters.Length == destination.Length,
+                "Type parameter and argument destination arrays must be equal length.");
+            Debug.Assert(!associatedIndices.IsEmpty,
+                "Pointless to call TryFixAssociatedTypes on an empty index array.");
+
+            var newAssociatedIndices = ArrayBuilder<int>.GetInstance();
+
+            foreach (int i in associatedIndices)
+            {
+                Debug.Assert(i < allTypeParameters.Length,
+                    $"Associated index {i} out of bounds.");
+
+                // Have we already fixed this?
+                if (destination[i] != null && destination[i] != allTypeParameters[i]) continue;
+
+                var associated = allTypeParameters[i];
+
+                foreach (var unf in innerUnification)
+                {
+                    // TODO: guarding against inconsistent unifications.
+
+                    var associatedU = unf.SubstituteType(associated).AsTypeSymbolOnly();
+                    if (associatedU != associated) destination[i] = associatedU;
+                }
+
+                if (destination[i] == null || destination[i] == allTypeParameters[i]) newAssociatedIndices.Add(i);
             }
 
-            return resultsBuilder.ToImmutableAndFree();
+            return newAssociatedIndices.ToImmutableAndFree();
         }
 
         /// <summary>
@@ -890,12 +933,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
                 else
                 {
-                     fixedInstance = InferRecursively(nt,
-                        candidate.Unification,
-                        conceptIndices,
-                        associatedIndices,
-                        fixedMap,
-                        chain);
+                    fixedInstance = InferRecursively(nt,
+                       candidate.Unification,
+                       conceptIndices,
+                       associatedIndices,
+                       fixedMap,
+                       chain);
                 }
                 if (fixedInstance.Instance != null) secondPassInstanceBuilder.Add(fixedInstance);
             }
