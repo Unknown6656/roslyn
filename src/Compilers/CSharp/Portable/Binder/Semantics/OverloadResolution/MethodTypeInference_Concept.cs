@@ -42,6 +42,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (!ConceptWitnessInferrer.PartitionTypeParameters(
                 _methodTypeParameters,
                 _fixedResults.AsImmutable(),
+                false,
                 out conceptIndices,
                 out associatedIndices,
                 out fixedMap)) return false;
@@ -278,6 +279,11 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// either be represented by a null, or a copy of the corresponding
         /// type parameter.
         /// </param>
+        /// <param name="treatEqualAsUnfixed">
+        /// If true, treat type arguments that are equal to their type
+        /// parameters as unfixed.  This should be true for recursive inference
+        /// calls, but nothing else as it harms completeness.
+        /// </param>
         /// <param name="conceptIndices">
         /// The outgoing array of unfixed concept witnesses.
         /// </param>
@@ -294,6 +300,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         internal static bool PartitionTypeParameters(
             ImmutableArray<TypeParameterSymbol> typeParameters,
             ImmutableArray<TypeSymbol> typeArguments,
+            bool treatEqualAsUnfixed,
             out ImmutableArray<int> conceptIndices,
             out ImmutableArray<int> associatedIndices,
             out MutableTypeMap fixedMap
@@ -309,7 +316,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             for (int i = 0; i < typeParameters.Length; i++)
             {
                 // TODO: Is this sufficient for unfixed checking?
-                if (typeArguments[i] == null)
+                if (typeArguments[i] == null || (treatEqualAsUnfixed && typeArguments[i] == typeParameters[i]))
                 {
                     if (typeParameters[i].IsConceptWitness)
                     {
@@ -851,6 +858,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 if (!PartitionTypeParameters(
                     nt.TypeParameters,
                     nt.TypeArguments,
+                    true,
                     out conceptIndices,
                     out associatedIndices,
                     out fixedMap))
