@@ -45,9 +45,9 @@ namespace OpBeautifulDifferentiation.FuncInstances
     instance FracF<A, B> : Fractional<Func<A, B>>
         where FracB : Fractional<B>
     {
-        Func<A, B> operator +(Func<A, B> f, Func<A, B> g) => Add(f, g);
-        Func<A, B> operator -(Func<A, B> f, Func<A, B> g) => Sub(f, g);
-        Func<A, B> operator *(Func<A, B> f, Func<A, B> g) => Mul(f, g);
+        Func<A, B> operator +(Func<A, B> f, Func<A, B> g) => Add<Func<A, B>, NumF<A, B>>(f, g);
+        Func<A, B> operator -(Func<A, B> f, Func<A, B> g) => Sub<Func<A, B>, NumF<A, B>>(f, g);
+        Func<A, B> operator *(Func<A, B> f, Func<A, B> g) => Mul<Func<A, B>, NumF<A, B>>(f, g);
 
         Func<A, B> Abs(Func<A, B> f) => NumF<A, B, FracB>.Abs(f);
         Func<A, B> Signum(Func<A, B> f) => NumF<A, B, FracB>.Signum(f);
@@ -71,14 +71,14 @@ namespace OpBeautifulDifferentiation.FuncInstances
     instance FloatF<A, B> : Floating<Func<A, B>>
         where FloatB : Floating<B>
     {
-        Func<A, B> operator +(Func<A, B> f, Func<A, B> g) => Add(f, g);
-        Func<A, B> operator -(Func<A, B> f, Func<A, B> g) => Sub(f, g);
-        Func<A, B> operator *(Func<A, B> f, Func<A, B> g) => Mul(f, g);
+        Func<A, B> operator +(Func<A, B> f, Func<A, B> g) => Add<Func<A, B>, NumF<A, B>>(f, g);
+        Func<A, B> operator -(Func<A, B> f, Func<A, B> g) => Sub<Func<A, B>, NumF<A, B>>(f, g);
+        Func<A, B> operator *(Func<A, B> f, Func<A, B> g) => Mul<Func<A, B>, NumF<A, B>>(f, g);
         Func<A, B> Abs(Func<A, B> f) => FracF<A, B, FloatB>.Abs(f);
         Func<A, B> Signum(Func<A, B> f) => FracF<A, B, FloatB>.Signum(f);
         Func<A, B> FromInteger(int k) => FracF<A, B, FloatB>.FromInteger(k);
         Func<A, B> FromRational(Ratio<int> k) => FracF<A, B, FloatB>.FromRational(k);
-        Func<A, B> operator /(Func<A, B> f, Func<A, B> g) => Div(f, g);
+        Func<A, B> operator /(Func<A, B> f, Func<A, B> g) => Div<Func<A, B>, FracF<A, B>>(f, g);
 
         Func<A, B> Pi() => (x) => Pi();
         Func<A, B> Sqrt(Func<A, B> f) => (x) => Sqrt(f(x));

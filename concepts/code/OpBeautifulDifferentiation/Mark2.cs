@@ -36,9 +36,9 @@ namespace OpBeautifulDifferentiation.Mark2
     {
         // Implementation of Num
         D<A> FromInteger(int x)         => NumDA<A>.FromInteger(x);
-        D<A> operator +(D<A> x, D<A> y) => Add(x, y);
-        D<A> operator *(D<A> x, D<A> y) => Mul(x, y);
-        D<A> operator -(D<A> x, D<A> y) => Sub(x, y);
+        D<A> operator +(D<A> x, D<A> y) => Add<D<A>, NumDA<A>>(x, y);
+        D<A> operator *(D<A> x, D<A> y) => Mul<D<A>, NumDA<A>>(x, y);
+        D<A> operator -(D<A> x, D<A> y) => Sub<D<A>, NumDA<A>>(x, y);
         D<A> Signum(D<A> x)             => NumDA<A>.Signum(x);
         D<A> Abs(D<A> x)                => NumDA<A>.Abs(x);
 
@@ -58,15 +58,15 @@ namespace OpBeautifulDifferentiation.Mark2
     {
         // Implementation of Num
         D<A> FromInteger(int x)         => FractionalDA<A>.FromInteger(x);
-        D<A> operator +(D<A> x, D<A> y) => Add(x, y);
-        D<A> operator *(D<A> x, D<A> y) => Mul(x, y);
-        D<A> operator -(D<A> x, D<A> y) => Sub(x, y);
+        D<A> operator +(D<A> x, D<A> y) => Add<D<A>, NumDA<A>>(x, y);
+        D<A> operator *(D<A> x, D<A> y) => Mul<D<A>, NumDA<A>>(x, y);
+        D<A> operator -(D<A> x, D<A> y) => Sub<D<A>, NumDA<A>>(x, y);
         D<A> Signum(D<A> x)             => FractionalDA<A>.Signum(x);
         D<A> Abs(D<A> x)                => FractionalDA<A>.Abs(x);
 
         // Implementation of Fractional
         D<A> FromRational(Ratio<int> x) => FractionalDA<A>.FromRational(x);
-        D<A> operator /(D<A> x, D<A> y) => Div(x, y);
+        D<A> operator /(D<A> x, D<A> y) => Div<D<A>, FractionalDA<A>>(x, y);
 
         // Implementation of Floating
         D<A> Pi() => D<A>.Const(Pi());
