@@ -4357,11 +4357,16 @@ class C
             var tuple3 = (TypeSymbol)comp.CreateTupleTypeSymbol(ImmutableArray.Create<ITypeSymbol>(intType, intType, intType, intType, intType, intType, intType, stringType, stringType),
                                                     ImmutableArray.Create("Item1", "Item2", "Item3", "Item4", "Item5", "Item6", "Item7", "a", "b"));
 
+            var tuple4 = (TypeSymbol)comp.CreateTupleTypeSymbol((INamedTypeSymbol)tuple1.TupleUnderlyingType, ImmutableArray.Create("Item1", "Item2", "Item3", "Item4", "Item5", "Item6", "Item7", "a", "b"));
+
             Assert.True(tuple1.Equals(tuple2));
             Assert.True(tuple1.Equals(tuple2, ignoreDynamic: true));
 
             Assert.False(tuple1.Equals(tuple3));
             Assert.True(tuple1.Equals(tuple3, ignoreDynamic: true));
+
+            Assert.False(tuple1.Equals(tuple4));
+            Assert.True(tuple1.Equals(tuple4, ignoreDynamic: true));
         }
 
         [Fact]
@@ -11006,22 +11011,25 @@ class C
             var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.Regular);
             comp.VerifyDiagnostics(
                 // (6,19): error CS1525: Invalid expression term 'int'
-                //         if (o is (int, int) t)
+                //         if (o is (int, int) t) { }
                 Diagnostic(ErrorCode.ERR_InvalidExprTerm, "int").WithArguments("int").WithLocation(6, 19),
                 // (6,24): error CS1525: Invalid expression term 'int'
-                //         if (o is (int, int) t)
+                //         if (o is (int, int) t) { }
                 Diagnostic(ErrorCode.ERR_InvalidExprTerm, "int").WithArguments("int").WithLocation(6, 24),
                 // (6,29): error CS1026: ) expected
-                //         if (o is (int, int) t)
+                //         if (o is (int, int) t) { }
                 Diagnostic(ErrorCode.ERR_CloseParenExpected, "t").WithLocation(6, 29),
                 // (6,30): error CS1002: ; expected
-                //         if (o is (int, int) t)
+                //         if (o is (int, int) t) { }
                 Diagnostic(ErrorCode.ERR_SemicolonExpected, ")").WithLocation(6, 30),
                 // (6,30): error CS1513: } expected
-                //         if (o is (int, int) t)
+                //         if (o is (int, int) t) { }
                 Diagnostic(ErrorCode.ERR_RbraceExpected, ")").WithLocation(6, 30),
+                // (6,18): error CS0150: A constant value is expected
+                //         if (o is (int, int) t) { }
+                Diagnostic(ErrorCode.ERR_ConstantExpected, "(int, int)").WithLocation(6, 18),
                 // (6,29): error CS0103: The name 't' does not exist in the current context
-                //         if (o is (int, int) t)
+                //         if (o is (int, int) t) { }
                 Diagnostic(ErrorCode.ERR_NameNotInContext, "t").WithArguments("t").WithLocation(6, 29)
                 );
         }
@@ -11041,15 +11049,9 @@ class C
 
             var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.Regular);
             comp.VerifyDiagnostics(
-                // (6,15): error CS1001: Identifier expected
+                // (6,9): error CS0201: Only assignment, call, increment, decrement, and new object expressions can be used as a statement
                 //         (x, x);
-                Diagnostic(ErrorCode.ERR_IdentifierExpected, ";").WithLocation(6, 15),
-                // (6,10): error CS0118: 'x' is a variable but is used like a type
-                //         (x, x);
-                Diagnostic(ErrorCode.ERR_BadSKknown, "x").WithArguments("x", "variable", "type").WithLocation(6, 10),
-                // (6,13): error CS0118: 'x' is a variable but is used like a type
-                //         (x, x);
-                Diagnostic(ErrorCode.ERR_BadSKknown, "x").WithArguments("x", "variable", "type").WithLocation(6, 13)
+                Diagnostic(ErrorCode.ERR_IllegalStatement, "(x, x)").WithLocation(6, 9)
                 );
         }
 
@@ -11074,7 +11076,10 @@ class C
                 Diagnostic(ErrorCode.ERR_SyntaxError, ")").WithArguments("=>", ")").WithLocation(6, 32),
                 // (6,32): error CS1525: Invalid expression term ')'
                 //         if (o is (int a, int b)) { }
-                Diagnostic(ErrorCode.ERR_InvalidExprTerm, ")").WithArguments(")").WithLocation(6, 32)
+                Diagnostic(ErrorCode.ERR_InvalidExprTerm, ")").WithArguments(")").WithLocation(6, 32),
+                // (6,18): error CS1660: Cannot convert lambda expression to type 'object' because it is not a delegate type
+                //         if (o is (int a, int b)) { }
+                Diagnostic(ErrorCode.ERR_AnonMethToNonDel, "(int a, int b)").WithArguments("lambda expression", "object").WithLocation(6, 18)
                 );
         }
 
@@ -11114,7 +11119,7 @@ class C
 }
 " + trivial2uple;
 
-            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.Regular);
+            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.RegularWithPatterns);
             comp.VerifyDiagnostics(
                 // (7,19): error CS1525: Invalid expression term 'int'
                 //             case (int, int) tuple: return;
@@ -11125,6 +11130,9 @@ class C
                 // (7,29): error CS1003: Syntax error, ':' expected
                 //             case (int, int) tuple: return;
                 Diagnostic(ErrorCode.ERR_SyntaxError, "tuple").WithArguments(":", "").WithLocation(7, 29),
+                // (7,18): error CS0150: A constant value is expected
+                //             case (int, int) tuple: return;
+                Diagnostic(ErrorCode.ERR_ConstantExpected, "(int, int)").WithLocation(7, 18),
                 // (7,29): warning CS0164: This label has not been referenced
                 //             case (int, int) tuple: return;
                 Diagnostic(ErrorCode.WRN_UnreferencedLabel, "tuple").WithLocation(7, 29)
@@ -11146,7 +11154,7 @@ class C
 }
 " + trivial2uple;
 
-            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.Regular);
+            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.RegularWithPatterns);
             comp.VerifyDiagnostics(
                 // (7,18): error CS0150: A constant value is expected
                 //             case (1, 1): return;
@@ -11169,11 +11177,14 @@ class C
 }
 " + trivial2uple;
 
-            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.Regular);
+            var comp = CreateCompilationWithMscorlib(source, parseOptions: TestOptions.RegularWithPatterns);
             comp.VerifyDiagnostics(
                 // (7,25): error CS1003: Syntax error, ':' expected
                 //             case (1, 1) t: return;
                 Diagnostic(ErrorCode.ERR_SyntaxError, "t").WithArguments(":", "").WithLocation(7, 25),
+                // (7,18): error CS0150: A constant value is expected
+                //             case (1, 1) t: return;
+                Diagnostic(ErrorCode.ERR_ConstantExpected, "(1, 1)").WithLocation(7, 18),
                 // (7,25): warning CS0164: This label has not been referenced
                 //             case (1, 1) t: return;
                 Diagnostic(ErrorCode.WRN_UnreferencedLabel, "t").WithLocation(7, 25)
