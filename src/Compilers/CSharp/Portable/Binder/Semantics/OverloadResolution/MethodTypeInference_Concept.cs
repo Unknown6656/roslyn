@@ -614,9 +614,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             //
             // If we have multiple satisfying instances, or zero, we fail.
 
-            // TODO: We don't yet have #2, so we presume that if we have any
-            // concept-witness type parameters we've failed.
-
             var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
             // This might happen if, for example, someone explicitly annotates
             // a parameter as [ConceptWitness] but doesn't put any constraints
@@ -665,6 +662,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
         {
+            //TODO: error if interface constraint that is not a concept?
             var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
 
             // The concepts from above are in terms of the method's type
