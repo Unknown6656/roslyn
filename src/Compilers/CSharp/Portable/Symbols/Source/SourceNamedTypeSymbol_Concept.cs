@@ -5,14 +5,58 @@ using System.Collections.Generic;
 using System.Linq;
 using Roslyn.Utilities;
 using System;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Threading;
 
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
     internal partial class SourceNamedTypeSymbol
     {
+        /// <summary>
+        /// Gets the name of this type's associated default struct.
+        /// </summary>
+        internal string DefaultStructName
+        {
+            get
+            {
+                Debug.Assert(IsInstance, "Should never get the default struct name of a non-instance");
+                // @t-mawind TODO: use a non-referenceable name
+                return $"{Name}_default";
+            }
+        }
+
+        /// <summary>
+        /// Attempts to find this type's associated default struct in a binder.
+        /// </summary>
+        /// <param name="binder">
+        /// The binder in which we are looking up the default struct.
+        /// </param>
+        /// <param name="diagnose">
+        /// Whether the lookup should emit diagnostics into
+        /// <paramref name="useSiteDiagnostics"/>.
+        /// </param>
+        /// <param name="useSiteDiagnostics">
+        /// The set of use-site diagnostics to populate with any found during
+        /// lookup.
+        /// </param>
+        /// <returns>
+        /// Null, if the default struct was not found; the struct, otherwise.
+        /// </returns>
+        internal NamedTypeSymbol FindDefaultStruct(Binder binder, bool diagnose, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
+        {
+            Debug.Assert(IsInstance, "Should never get the default struct of a non-instance");
+
+            var lookupResult = LookupResult.GetInstance();
+
+            binder.LookupSymbolsSimpleName(lookupResult, null, DefaultStructName, 0, null, LookupOptions.Default, diagnose, ref useSiteDiagnostics);
+
+            // TODO: actually report errors
+            var ds = lookupResult.SingleSymbolOrDefault;
+            lookupResult.Free();
+            Debug.Assert((ds as NamedTypeSymbol)?.IsDefaultStruct ?? true,
+                "If we got a namedtype it should be a default struct");
+            return ds as NamedTypeSymbol;
+        }
+
         /// <summary>
         /// Gets the maximum number of possible witnesses in this symbol.
         /// </summary>

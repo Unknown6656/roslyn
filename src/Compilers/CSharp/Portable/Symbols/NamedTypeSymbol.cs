@@ -68,6 +68,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         /// <summary>
+        /// Gets whether this type is a default struct.
+        /// </summary>
+        internal virtual bool IsDefaultStruct => false;
+
+        /// <summary>
         /// Returns the type parameters of this type that are concept
         /// witnesses.
         /// </summary>
