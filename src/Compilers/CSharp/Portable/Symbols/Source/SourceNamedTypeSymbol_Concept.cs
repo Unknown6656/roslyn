@@ -18,14 +18,14 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             get
             {
-                Debug.Assert(IsInstance, "Should never get the default struct name of a non-instance");
+                Debug.Assert(IsConcept, "Should never get the default struct name of a non-concept");
                 // @t-mawind TODO: use a non-referenceable name
                 return $"{Name}_default";
             }
         }
 
         /// <summary>
-        /// Attempts to find this type's associated default struct in a binder.
+        /// Attempts to find this concept's associated default struct in a binder.
         /// </summary>
         /// <param name="binder">
         /// The binder in which we are looking up the default struct.
@@ -43,7 +43,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </returns>
         internal NamedTypeSymbol FindDefaultStruct(Binder binder, bool diagnose, ref HashSet<DiagnosticInfo> useSiteDiagnostics)
         {
-            Debug.Assert(IsInstance, "Should never get the default struct of a non-instance");
+            Debug.Assert(IsConcept, "Should never get the default struct of a non-concept");
 
             var lookupResult = LookupResult.GetInstance();
 
