@@ -127,7 +127,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
     }
 
-    internal sealed partial class SynthesizedExplicitImplementationForwardingMethod : SynthesizedImplementationMethod
+    internal /* @t-mawind sorry! sealed */ partial class SynthesizedExplicitImplementationForwardingMethod : SynthesizedImplementationMethod
     {
         internal override bool SynthesizesLoweredBoundBody
         {
