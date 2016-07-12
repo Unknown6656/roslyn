@@ -25,6 +25,18 @@ namespace System.Concepts
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
     public class ConceptInstanceAttribute : Attribute { }
 
+
+    /// <summary>
+    /// Attribute marking structs as concept default structs.
+    /// <para>
+    /// Syntactic defaults are reduced to structs with this attribute in the
+    /// emitted code.  Also, structs with this attribute are treated as concept
+    /// default structs by the compiler.
+    /// </para>
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
+    public class ConceptDefaultAttribute : Attribute { }
+
     /// <summary>
     /// Attribute marking type parameters as concept witnesses.
     /// <para>
