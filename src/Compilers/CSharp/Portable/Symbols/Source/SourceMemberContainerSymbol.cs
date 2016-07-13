@@ -158,7 +158,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private static readonly Dictionary<string, ImmutableArray<NamedTypeSymbol>> s_emptyTypeMembers = new Dictionary<string, ImmutableArray<NamedTypeSymbol>>(EmptyComparer.Instance);
         private Dictionary<string, ImmutableArray<NamedTypeSymbol>> _lazyTypeMembers;
         private ImmutableArray<Symbol> _lazyMembersFlattened;
-        private ImmutableArray<SynthesizedExplicitImplementationForwardingMethod> _lazySynthesizedExplicitImplementations;
+        private ImmutableArray<SynthesizedImplementationForwardingMethod> _lazySynthesizedExplicitImplementations;
         private int _lazyKnownCircularStruct;
         private LexicalSortKey _lazyLexicalSortKey = LexicalSortKey.NotInitialized;
 

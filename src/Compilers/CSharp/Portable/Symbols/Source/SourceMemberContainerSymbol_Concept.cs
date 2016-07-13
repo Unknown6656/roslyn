@@ -22,16 +22,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             (this.IsInterfaceType() && this.HasConceptAttribute);
 
         /// <summary>
-        /// Gets whether this symbol represents a concept.
+        /// Gets whether this symbol represents an instance.
         /// </summary>
         /// <returns>
-        /// True if this symbol is an instance (either it was declared as an
-        /// instance, or it is a struct with the
-        /// <c>System_Concepts_ConceptInstanceAttribute</c> attribute); false otherwise.
+        /// True if this symbol was declared as an instance; false otherwise.
         /// </returns>
         internal override bool IsInstance => //@t-mawind
-            this.MergedDeclaration.Kind == DeclarationKind.Instance ||
-            (this.IsStructType() && this.HasInstanceAttribute);
+            this.MergedDeclaration.Kind == DeclarationKind.Instance;
+        // This used to check HasInstanceAttribute, but this leads to infinite
+        // loops.
 
         #endregion Concept and instance selectors
     }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis.Collections;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
 using Roslyn.Utilities;
@@ -662,6 +663,29 @@ namespace Microsoft.CodeAnalysis.CSharp
             LookupOptions options, Binder originalBinder, TypeSymbol accessThroughType, bool diagnose, ref HashSet<DiagnosticInfo> useSiteDiagnostics, ConsList<Symbol> basesBeingResolved = null)
         {
             var members = GetCandidateMembers(type, name, options, originalBinder);
+
+            // @t-mawind
+            //
+            // Also look up any members of an instance that are about to
+            // forward to a default implementation.
+            //
+            // TODO: this is a painfully horrible hack, but I'm not
+            // sure how else would be best to do it.
+            var allMembersB = ArrayBuilder<Symbol>.GetInstance();
+            allMembersB.AddRange(members);
+            if (type is SourceMemberContainerTypeSymbol)
+            {
+                // TODO:
+                // Ideally this should be restricted to instances for perf,
+                // but this currently triggers an infinite loop.
+
+                var st = type as SourceMemberContainerTypeSymbol;
+                foreach (var mem in st.GetSynthesizedExplicitImplementations(CancellationToken.None))
+                {
+                    if (mem is SynthesizedDefaultStructImplementationMethod && mem.Name == name) allMembersB.Add(mem);
+                }
+            }
+            members = allMembersB.ToImmutableAndFree();
 
             foreach (Symbol member in members)
             {

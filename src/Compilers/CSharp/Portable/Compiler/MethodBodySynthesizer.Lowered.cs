@@ -127,13 +127,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
     }
 
-    internal /* @t-mawind sorry! sealed */ partial class SynthesizedExplicitImplementationForwardingMethod : SynthesizedImplementationMethod
+    internal sealed partial class SynthesizedExplicitImplementationForwardingMethod : SynthesizedImplementationForwardingMethod
     {
-        internal override bool SynthesizesLoweredBoundBody
-        {
-            get { return true; }
-        }
-
         /// <summary>
         /// Given a SynthesizedExplicitImplementationMethod (effectively a tuple (interface method, implementing method, implementing type)),
         /// construct a BoundBlock body.  Consider the tuple (Interface.Foo, Base.Foo, Derived).  The generated method will look like:

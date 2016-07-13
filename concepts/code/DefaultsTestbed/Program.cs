@@ -25,7 +25,7 @@ namespace DefaultsTestbed
         static void Main(string[] args)
         {
             System.Console.WriteLine(EqInt.Eq(27, 53) ? "f" : "p");
-            //System.Console.WriteLine(EqInt.Neq(27, 53) ? "p" : "f");
+            System.Console.WriteLine(EqInt.Neq(27, 53) ? "p" : "f");
         }
     }
 }

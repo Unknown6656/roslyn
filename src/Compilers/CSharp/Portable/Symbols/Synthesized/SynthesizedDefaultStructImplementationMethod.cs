@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
-    internal sealed class SynthesizedDefaultStructImplementationMethod : SynthesizedExplicitImplementationForwardingMethod
+    internal sealed class SynthesizedDefaultStructImplementationMethod : SynthesizedImplementationForwardingMethod
     {
         // @t-mawind
         //   The entire existence of this class is a horrific hack.
@@ -18,6 +18,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         public override string Name => ImplementingMethod.Name;
         public override string MetadataName => ImplementingMethod.MetadataName;
+        public override Accessibility DeclaredAccessibility => Accessibility.Public;
+        public override MethodKind MethodKind => MethodKind.Ordinary;
 
         internal override void GenerateMethodBody(TypeCompilationState compilationState, DiagnosticBag diagnostics)
         {
