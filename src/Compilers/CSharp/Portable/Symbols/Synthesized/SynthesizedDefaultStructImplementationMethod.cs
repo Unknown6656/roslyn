@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
@@ -67,7 +68,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 // Due to above, arity must be at least 1.
 
                 var witnessPar = defs.TypeParameters[defs.Arity - 1];
-
                 if (!witnessPar.IsConceptWitness)
                 {
                     diagnostics.Add(ErrorCode.ERR_DefaultStructNoWitnessParam, conceptLoc, concept.Name);
@@ -75,26 +75,17 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     return;
                 }
 
-                var newTypeArgumentsB = ArrayBuilder<TypeWithModifiers>.GetInstance();
-                foreach (var ta in concept.TypeArguments)
-                {
-                    // TODO: this is wrong, what if the types have modifiers?
-                    newTypeArgumentsB.Add(new TypeWithModifiers(ta));
-                }
-                newTypeArgumentsB.Add(new TypeWithModifiers(instance));
-                var newTypeArguments = newTypeArgumentsB.ToImmutableAndFree();
+                var newTypeArguments = GenerateDefaultTypeArguments();
+                Debug.Assert(newTypeArguments.Length == concept.TypeArguments.Length + 1,
+                    "Conversion from concept type parameters to default struct lost or gained some entries.");
 
                 // Now make the receiver for the call.  As usual, it's a default().
                 var recvType = new ConstructedNamedTypeSymbol(defs, newTypeArguments);
                 var receiver = F.Default(recvType);
 
-                // Transfer over the formal parameters of this method into the arguments of the call.
-                var argumentsB = ArrayBuilder<BoundExpression>.GetInstance();
-                foreach (var p in ImplementingMethod.Parameters)
-                {
-                    argumentsB.Add(F.Parameter(p));
-                }
-                var arguments = argumentsB.ToImmutableAndFree();
+                var arguments = GenerateInnerCallArguments(F);
+                Debug.Assert(arguments.Length == ImplementingMethod.Parameters.Length,
+                    "Conversion from parameters to arguments lost or gained some entries.");
 
                 var call = F.MakeInvocationExpression(BinderFlags.None, F.Syntax, receiver, ImplementingMethod.Name, arguments, diagnostics, ImplementingMethod.TypeArguments);
                 var block = F.Block(F.Return(call));
@@ -106,6 +97,49 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 diagnostics.Add(ex.Diagnostic);
                 F.CloseMethod(F.ThrowNull());
             }
+        }
+
+        /// <summary>
+        /// Generates the correct set of type arguments for the default struct.
+        /// <para>
+        /// This is the same as the concept arguments list, plus one: the
+        /// instance that is calling into the default struct.
+        /// </para>
+        /// </summary>
+        /// <returns>
+        /// The list of type arguments for the default struct.
+        /// </returns>
+        private ImmutableArray<TypeWithModifiers> GenerateDefaultTypeArguments()
+        {
+            var newTypeArgumentsB = ArrayBuilder<TypeWithModifiers>.GetInstance();
+            foreach (var ta in ImplementingMethod.ContainingType.TypeArguments)
+            {
+                // TODO: this is wrong, what if the types have modifiers?
+                newTypeArgumentsB.Add(new TypeWithModifiers(ta));
+            }
+
+            // This should be the extra witness parameter, if the default
+            // struct is well-formed,
+            newTypeArgumentsB.Add(new TypeWithModifiers(ContainingType));
+
+            return newTypeArgumentsB.ToImmutableAndFree();
+        }
+
+        /// <summary>
+        /// Converts the formal parameters of this method into the
+        /// arguments of the inner call.
+        /// </summary>
+        /// <param name="f">
+        /// The factory used to generate the arguments.
+        /// </param>
+        /// <returns>
+        /// A list of bound inner-call arguments.
+        /// </returns>
+        private ImmutableArray<BoundExpression> GenerateInnerCallArguments(SyntheticBoundNodeFactory f)
+        {
+            var argumentsB = ArrayBuilder<BoundExpression>.GetInstance();
+            foreach (var p in ImplementingMethod.Parameters) argumentsB.Add(f.Parameter(p));
+            return argumentsB.ToImmutableAndFree();
         }
     }
 }
