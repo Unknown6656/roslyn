@@ -40,11 +40,13 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ExpInstances.cs" />
     <Compile Include="HoD.cs" />
     <Compile Include="D.cs" />
     <Compile Include="FuncInstances.cs" />
     <Compile Include="Mark1.cs" />
     <Compile Include="HoMark2.cs" />
+    <Compile Include="Mark3.cs" />
     <Compile Include="Mark2.cs" />
     <Compile Include="NumUtils.cs" />
     <Compile Include="Program.cs" />
@@ -61,6 +63,10 @@
     <ProjectReference Include="..\ConceptLibrary\ConceptLibrary.csproj">
       <Project>{1371e0a0-9c1b-4053-9689-838e5fe2a4a7}</Project>
       <Name>ConceptLibrary</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ExpressionUtils\ExpressionUtils\ExpressionUtils.csproj">
+      <Project>{382c1156-121f-41f9-8f3c-d61b15d8783b}</Project>
+      <Name>ExpressionUtils</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
