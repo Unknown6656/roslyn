@@ -95,7 +95,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 // can't just return its result; instead, we have to do the
                 // call on its own _then_ return.
                 BoundBlock block;
-                if (call.Type.PrimitiveTypeCode == Cci.PrimitiveTypeCode.Void)
+                if (call.Type.SpecialType == SpecialType.System_Void)
                 {
                     block = F.Block(F.ExpressionStatement(call), F.Return());
                 }
