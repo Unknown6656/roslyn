@@ -4903,10 +4903,19 @@ To remove the warning, you can use /reference instead (set the Embed Interop Typ
     <value>User-defined concept operator '{0}' must be declared non-static and public.</value>
   </data>
   <data name="ERR_BadConceptUnaryOperatorSignature" xml:space="preserve">
-    <value>The parameter of a concept unary operator must be a type parameter on the concept</value>
+    <value>The parameter of a concept unary operator must be a type parameter on the concept.</value>
   </data>
   <data name="ERR_BadConceptBinaryOperatorSignature" xml:space="preserve">
-    <value>One of the parameters of a binary operator must be a type parameter on the concept</value>
+    <value>One of the parameters of a binary operator must be a type parameter on the concept.</value>
+  </data>
+  <data name="ERR_ConceptMethodNotImplementedAndNoDefault" xml:space="preserve">
+    <value>Instance '{0}' of concept '{1}' does not implement '{2}', and the concept has no default implementation.</value>
+  </data>
+  <data name="ERR_DefaultStructBadArity" xml:space="preserve">
+    <value>Default struct for concept '{0}' has arity '{1}', but expected '{2}'.</value>
+  </data>
+  <data name="ERR_DefaultStructNoWitnessParam" xml:space="preserve">
+    <value>Default struct for concept '{0}' must take a witness for that concept as its last parameter.</value>
   </data>
   <data name="ERR_DeconstructWrongCardinality" xml:space="preserve">
     <value>Cannot deconstruct a tuple of '{0}' elements into '{1}' variables.</value>

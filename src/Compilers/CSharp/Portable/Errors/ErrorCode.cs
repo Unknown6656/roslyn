@@ -1132,11 +1132,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         ERR_NoSuchMemberOrExtensionNeedUsing = 4036,
         #endregion diagnostics introduced in C# 5
 
-        ERR_ConceptConstraintOnNonOverride = 4037, //@t-mawind
-        ERR_ConceptOperatorsMustBeNonStatic = 4038, //@t-mawind
-        ERR_BadConceptUnaryOperatorSignature = 4039, //@t-mawind
-        ERR_BadConceptBinaryOperatorSignature = 4040, //@t-mawind
-
         // available 4037-4999
 
         #region diagnostics introduced in C# 6
@@ -1432,5 +1427,18 @@ namespace Microsoft.CodeAnalysis.CSharp
         ERR_ImplicitlyTypedOutVariableUsedInTheSameArgumentList = 8944,
         ERR_TypeInferenceFailedForImplicitlyTypedOutVariable = 8945,
         #endregion diagnostics for out var
+
+        // @t-mawind
+        #region diagnostics for concepts
+
+        ERR_ConceptConstraintOnNonOverride = 8946,
+        ERR_ConceptOperatorsMustBeNonStatic = 8947,
+        ERR_BadConceptUnaryOperatorSignature = 8948,
+        ERR_BadConceptBinaryOperatorSignature = 8949,
+        ERR_ConceptMethodNotImplementedAndNoDefault = 8950,
+        ERR_DefaultStructBadArity = 8951,
+        ERR_DefaultStructNoWitnessParam = 8952,
+
+        #endregion diagnostics for concepts
     }
 }

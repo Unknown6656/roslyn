@@ -21,9 +21,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         internal override void GenerateMethodBody(TypeCompilationState compilationState, DiagnosticBag diagnostics)
         {
             var concept = ImplementingMethod.ContainingType;
+            var conceptLoc = concept.Locations.IsEmpty ? Location.None : concept.Locations[0];
+            // TODO: wrong location?
+
             Debug.Assert(concept.IsConcept, "Tried to synthesise default struct implementation on a non-concept interface");
             
             var instance = ContainingType;
+            var instanceLoc = instance.Locations.IsEmpty ? Location.None : instance.Locations[0];
+            // TODO: wrong location?
+
             Debug.Assert(instance.IsInstance, "Tried to synthesise default struct implementation for a non-instance");
 
             SyntheticBoundNodeFactory F = new SyntheticBoundNodeFactory(this, this.GetNonNullSyntaxNode(), compilationState, diagnostics);
@@ -40,17 +46,20 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                 if (defs == null)
                 {
-                    // TODO: error
+                    diagnostics.Add(ErrorCode.ERR_ConceptMethodNotImplementedAndNoDefault, instanceLoc, instance.Name, concept.Name, ImplementingMethod.ToDisplayString());
                     F.CloseMethod(F.ThrowNull());
                     return;
                 }
 
                 // Suppose the target concept is Foo<A, B>.
                 // Then, the default must take type parameters <A, B, FooAB>,
-                // where FooAB : Foo<A, B>.
+                // where FooAB : Foo<A, B>.  Thus, the arity is one higher than
+                // the concept.
                 if (defs.Arity != concept.Arity + 1)
                 {
-                    // TODO: error
+                    // Don't use the default struct's location: it is an
+                    // implementation detail and may not actually exist.
+                    diagnostics.Add(ErrorCode.ERR_DefaultStructBadArity, conceptLoc, concept.Name, defs.Arity, concept.Arity + 1);
                     F.CloseMethod(F.ThrowNull());
                     return;
                 }
@@ -61,7 +70,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                 if (!witnessPar.IsConceptWitness)
                 {
-                    // TODO: error
+                    diagnostics.Add(ErrorCode.ERR_DefaultStructNoWitnessParam, conceptLoc, concept.Name);
                     F.CloseMethod(F.ThrowNull());
                     return;
                 }

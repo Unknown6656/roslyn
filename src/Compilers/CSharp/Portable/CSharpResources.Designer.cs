@@ -1250,7 +1250,7 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to One of the parameters of a binary operator must be a type parameter on the concept.
+        ///   Looks up a localized string similar to One of the parameters of a binary operator must be a type parameter on the concept..
         /// </summary>
         internal static string ERR_BadConceptBinaryOperatorSignature {
             get {
@@ -1259,7 +1259,7 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The parameter of a concept unary operator must be a type parameter on the concept.
+        ///   Looks up a localized string similar to The parameter of a concept unary operator must be a type parameter on the concept..
         /// </summary>
         internal static string ERR_BadConceptUnaryOperatorSignature {
             get {
@@ -2834,6 +2834,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Instance &apos;{0}&apos; of concept &apos;{1}&apos; does not implement &apos;{2}&apos;, and the concept has no default implementation..
+        /// </summary>
+        internal static string ERR_ConceptMethodNotImplementedAndNoDefault {
+            get {
+                return ResourceManager.GetString("ERR_ConceptMethodNotImplementedAndNoDefault", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to User-defined concept operator &apos;{0}&apos; must be declared non-static and public..
         /// </summary>
         internal static string ERR_ConceptOperatorsMustBeNonStatic {
@@ -3172,6 +3181,24 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string ERR_DefaultMemberOnIndexedType {
             get {
                 return ResourceManager.GetString("ERR_DefaultMemberOnIndexedType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Default struct for concept &apos;{0}&apos; has arity &apos;{1}&apos;, but expected &apos;{2}&apos;..
+        /// </summary>
+        internal static string ERR_DefaultStructBadArity {
+            get {
+                return ResourceManager.GetString("ERR_DefaultStructBadArity", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Default struct for concept &apos;{0}&apos; must take a witness for that concept as its last parameter..
+        /// </summary>
+        internal static string ERR_DefaultStructNoWitnessParam {
+            get {
+                return ResourceManager.GetString("ERR_DefaultStructNoWitnessParam", resourceCulture);
             }
         }
         

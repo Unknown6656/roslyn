@@ -142,7 +142,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     // @t-mawind
                     if (!wasImplementingMemberFound && (object)synthesizedImplementation == null && interfaceMemberKind == SymbolKind.Method && IsInstance && @interface.IsConcept)
                     {
-                        synthesizedImplementation = SynthesizeDefaultStructImplementation(interfaceMember as MethodSymbol);
+                        var conceptMethod = interfaceMember as MethodSymbol;
+                        synthesizedImplementation = new SynthesizedDefaultStructImplementationMethod(conceptMethod, this);
                         if (synthesizedImplementation != null) wasImplementingMemberFound = true;
                     }
 

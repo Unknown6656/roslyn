@@ -34,28 +34,5 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             (this.IsStructType() && this.HasInstanceAttribute);
 
         #endregion Concept and instance selectors
-
-        /// <summary>
-        /// Tries to construct a synthesised method to represent an access by
-        /// an instance into a concept's default dictionary.
-        /// </summary>
-        /// <param name="conceptMethod">
-        /// The method for which we are accessing the default dictionary.
-        /// </param>
-        /// <returns>
-        /// A synthesised forwarding method that, or null if one could not be
-        /// constructed.
-        /// </returns>
-        private SynthesizedExplicitImplementationForwardingMethod SynthesizeDefaultStructImplementation(MethodSymbol conceptMethod)
-        {
-            Debug.Assert(conceptMethod.ContainingType.IsConcept,
-                $"Method at {nameof(SynthesizeDefaultStructImplementation)} must belong to a concept.");
-
-            // At this stage, we don't even know if we _have_ a default
-            // dictionary: we rely on the method body synthesis to bail
-            // if there isn't one.
-
-            return new SynthesizedDefaultStructImplementationMethod(conceptMethod, this);
-        }
     }
 }
