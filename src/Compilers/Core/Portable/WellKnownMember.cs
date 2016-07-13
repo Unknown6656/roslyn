@@ -414,6 +414,7 @@ namespace Microsoft.CodeAnalysis
         System_Concepts_ConceptInstanceAttribute__ctor,
         System_Concepts_ConceptWitnessAttribute__ctor,
         System_Concepts_AssociatedTypeAttribute__ctor,
+        System_Concepts_ConceptDefaultAttribute__ctor,
 
         Count
     }

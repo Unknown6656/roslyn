@@ -448,21 +448,26 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </param>
         /// <param name="allTypeParameters">
         /// The entire set of type parameters in this inference round,
-        /// indexed by <paramref name="associatedIndices"/>
+        /// indexed by <paramref name="conceptIndices"/>
         /// </param>
         /// <param name="destination">
         /// The destination array, indexed by
-        /// <paramref name="associatedIndices"/>, into which fixed type
+        /// <paramref name="conceptIndices"/>, into which fixed type
         /// parameters must be placed.
         /// </param>
         /// <param name="fixedMap">
         /// The map from all of the fixed, non-witness type parameters in the
-        /// same type parameter list as <paramref name="witnesses"/>
+        /// same type parameter list as <paramref name="conceptIndices"/>
         /// to their arguments.
         /// </param>
         /// <param name="chain">
         /// The set of instances we've passed through recursively to get here,
         /// used to abort recursive calls if they will create cycles.
+        /// </param>
+        /// <param name="innerUnification">
+        /// This contains a list of all unifications made when inferring
+        /// witnesses in this current chain, to which we add any new
+        /// unifications made at this point.
         /// </param>
         /// <returns>
         /// An array of fixed concept witnesses.  If any are null, then
@@ -614,9 +619,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             //
             // If we have multiple satisfying instances, or zero, we fail.
 
-            // TODO: We don't yet have #2, so we presume that if we have any
-            // concept-witness type parameters we've failed.
-
             var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
             // This might happen if, for example, someone explicitly annotates
             // a parameter as [ConceptWitness] but doesn't put any constraints
@@ -665,6 +667,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
         {
+            //TODO: error if interface constraint that is not a concept?
             var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
 
             // The concepts from above are in terms of the method's type

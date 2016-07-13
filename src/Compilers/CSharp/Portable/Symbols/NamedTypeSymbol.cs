@@ -48,45 +48,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
 
-        //@t-mawind move?
-        private int _implicitTypeParameterCount = -1;
-
-        /// <summary>
-        /// Returns the number of implicit type parameters.
-        /// </summary>
-        internal virtual int ImplicitTypeParameterCount
-        {
-            get
-            {
-                if (-1 == _implicitTypeParameterCount)
-                {
-                    var count = ConceptWitnesses.Length;
-                    Interlocked.CompareExchange(ref _implicitTypeParameterCount, count, -1);
-                }
-                return _implicitTypeParameterCount;
-            }
-        }
-
-        /// <summary>
-        /// Returns the type parameters of this type that are concept
-        /// witnesses.
-        /// </summary>
-        internal ImmutableArray<TypeParameterSymbol> ConceptWitnesses
-        {
-            // @t-mawind TODO: this is possibly very slow, cache it?
-            get
-            {
-                var builder = new ArrayBuilder<TypeParameterSymbol>();
-                var allParams = TypeParameters;
-                int numParams = allParams.Length;
-                for (int i = 0; i < numParams; i++)
-                {
-                    if (allParams[i].IsConceptWitness) builder.Add(allParams[i]);
-                }
-                return builder.ToImmutableAndFree();
-            }
-        }
-
         /// <summary>
         /// Returns the type arguments that have been substituted for the type parameters. 
         /// If nothing has been substituted for a give type parameters,
