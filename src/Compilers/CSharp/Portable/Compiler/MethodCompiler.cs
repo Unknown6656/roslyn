@@ -684,14 +684,16 @@ namespace Microsoft.CodeAnalysis.CSharp
             // we are not generating any observable diagnostics here so it is ok to short-circuit on global errors.
             if (!_globalHasErrors)
             {
-                foreach (var synthesizedExplicitImpl in sourceTypeSymbol.GetSynthesizedExplicitImplementations(_cancellationToken))
+                // @t-mawind TODO: this has been shoehorned in a bit
+                // @t-mawind TODO: observable diagnostics!
+                foreach (var synthesizedImpl in sourceTypeSymbol.GetSynthesizedImplementations(_cancellationToken))
                 {
-                    Debug.Assert(synthesizedExplicitImpl.SynthesizesLoweredBoundBody);
+                    Debug.Assert(synthesizedImpl.SynthesizesLoweredBoundBody);
                     var discardedDiagnostics = DiagnosticBag.GetInstance();
-                    synthesizedExplicitImpl.GenerateMethodBody(compilationState, discardedDiagnostics);
+                    synthesizedImpl.GenerateMethodBody(compilationState, discardedDiagnostics);
                     Debug.Assert(!discardedDiagnostics.HasAnyErrors());
                     discardedDiagnostics.Free();
-                    _moduleBeingBuiltOpt.AddSynthesizedDefinition(sourceTypeSymbol, synthesizedExplicitImpl);
+                    _moduleBeingBuiltOpt.AddSynthesizedDefinition(sourceTypeSymbol, synthesizedImpl);
                 }
             }
         }

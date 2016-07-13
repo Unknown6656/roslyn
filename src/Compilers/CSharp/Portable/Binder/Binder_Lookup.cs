@@ -673,16 +673,12 @@ namespace Microsoft.CodeAnalysis.CSharp
             // sure how else would be best to do it.
             var allMembersB = ArrayBuilder<Symbol>.GetInstance();
             allMembersB.AddRange(members);
-            if (type is SourceMemberContainerTypeSymbol)
+            if (type is SourceMemberContainerTypeSymbol && type.IsInstanceType())
             {
-                // TODO:
-                // Ideally this should be restricted to instances for perf,
-                // but this currently triggers an infinite loop.
-
                 var st = type as SourceMemberContainerTypeSymbol;
-                foreach (var mem in st.GetSynthesizedExplicitImplementations(CancellationToken.None))
+                foreach (var mem in st.GetSynthesizedDefaultImplementations(CancellationToken.None))
                 {
-                    if (mem is SynthesizedDefaultStructImplementationMethod && mem.Name == name) allMembersB.Add(mem);
+                    if (mem.Name == name) allMembersB.Add(mem);
                 }
             }
             members = allMembersB.ToImmutableAndFree();

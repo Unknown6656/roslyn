@@ -12,16 +12,64 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
     internal partial class SourceMemberContainerTypeSymbol
     {
+        internal ImmutableArray<SynthesizedDefaultStructImplementationMethod> GetSynthesizedDefaultImplementations(
+            CancellationToken cancellationToken)
+        {
+            if (_lazySynthesizedDefaultImplementations.IsDefault)
+            {
+                var builder = ArrayBuilder<SynthesizedDefaultStructImplementationMethod>.GetInstance();
+                var all = GetSynthesizedImplementations(cancellationToken);
+                foreach (var impl in all)
+                {
+                    if (impl is SynthesizedDefaultStructImplementationMethod) builder.Add(impl as SynthesizedDefaultStructImplementationMethod);
+                }
+
+                if (ImmutableInterlocked.InterlockedCompareExchange(
+                        ref _lazySynthesizedDefaultImplementations,
+                        builder.ToImmutableAndFree(),
+                        default(ImmutableArray<SynthesizedDefaultStructImplementationMethod>)).IsDefault)
+                {
+                    // @t-mawind do nothing here?
+                }
+            }
+
+            return _lazySynthesizedDefaultImplementations;
+        }
+
         /// <summary>
         /// In some circumstances (e.g. implicit implementation of an interface method by a non-virtual method in a 
         /// base type from another assembly) it is necessary for the compiler to generate explicit implementations for
         /// some interface methods.  They don't go in the symbol table, but if we are emitting, then we should
         /// generate code for them.
         /// </summary>
-        internal ImmutableArray<SynthesizedImplementationForwardingMethod> GetSynthesizedExplicitImplementations(
+        internal ImmutableArray<SynthesizedExplicitImplementationForwardingMethod> GetSynthesizedExplicitImplementations(
             CancellationToken cancellationToken)
         {
             if (_lazySynthesizedExplicitImplementations.IsDefault)
+            {
+                var builder = ArrayBuilder<SynthesizedExplicitImplementationForwardingMethod>.GetInstance();
+                var all = GetSynthesizedImplementations(cancellationToken);
+                foreach (var impl in all)
+                {
+                    if (impl is SynthesizedExplicitImplementationForwardingMethod) builder.Add(impl as SynthesizedExplicitImplementationForwardingMethod);
+                }
+
+                if (ImmutableInterlocked.InterlockedCompareExchange(
+                        ref _lazySynthesizedExplicitImplementations,
+                        builder.ToImmutableAndFree(),
+                        default(ImmutableArray<SynthesizedExplicitImplementationForwardingMethod>)).IsDefault)
+                {
+                    // @t-mawind do nothing here?
+                }
+            }
+
+            return _lazySynthesizedExplicitImplementations;
+        }
+
+        internal ImmutableArray<SynthesizedImplementationForwardingMethod> GetSynthesizedImplementations(
+            CancellationToken cancellationToken)
+        {
+            if (_lazySynthesizedImplementations.IsDefault)
             {
                 var diagnostics = DiagnosticBag.GetInstance();
                 try
@@ -42,7 +90,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     }
 
                     if (ImmutableInterlocked.InterlockedCompareExchange(
-                            ref _lazySynthesizedExplicitImplementations,
+                            ref _lazySynthesizedImplementations,
                             ComputeInterfaceImplementations(diagnostics, cancellationToken),
                             default(ImmutableArray<SynthesizedImplementationForwardingMethod>)).IsDefault)
                     {
@@ -59,7 +107,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 }
             }
 
-            return _lazySynthesizedExplicitImplementations;
+            return _lazySynthesizedImplementations;
         }
 
         private void CheckAbstractClassImplementations(DiagnosticBag diagnostics)
