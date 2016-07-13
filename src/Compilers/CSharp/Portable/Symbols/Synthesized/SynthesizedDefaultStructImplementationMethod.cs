@@ -90,7 +90,19 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     "Conversion from parameters to arguments lost or gained some entries.");
 
                 var call = F.MakeInvocationExpression(BinderFlags.None, F.Syntax, receiver, ImplementingMethod.Name, arguments, diagnostics, ImplementingMethod.TypeArguments);
-                var block = F.Block(F.Return(call));
+
+                // If whichever call we end up making returns void, then we
+                // can't just return its result; instead, we have to do the
+                // call on its own _then_ return.
+                BoundBlock block;
+                if (call.Type.PrimitiveTypeCode == Cci.PrimitiveTypeCode.Void)
+                {
+                    block = F.Block(F.ExpressionStatement(call), F.Return());
+                }
+                else
+                {
+                    block = F.Block(F.Return(call));
+                }
 
                 F.CloseMethod(block);
             }
