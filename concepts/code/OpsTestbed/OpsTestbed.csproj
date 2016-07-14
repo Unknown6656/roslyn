@@ -4,15 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7D9E947C-4359-4EBE-9E8F-17465EE88451}</ProjectGuid>
+    <ProjectGuid>{866879CE-D3B2-4222-AD8F-8918276E2CE5}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DefaultsTestbed</RootNamespace>
-    <AssemblyName>DefaultsTestbed</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>OpsTestbed</RootNamespace>
+    <AssemblyName>OpsTestbed</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -50,6 +49,10 @@
     <ProjectReference Include="..\ConceptAttributes\ConceptAttributes.csproj">
       <Project>{c9c414c3-ef73-4170-82cd-2f4f8ff27a5e}</Project>
       <Name>ConceptAttributes</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\OpConceptLibrary\OpConceptLibrary.csproj">
+      <Project>{dc8d5061-841a-4f36-afc6-7f9ab04266fb}</Project>
+      <Name>OpConceptLibrary</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
