@@ -66,7 +66,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return _lazySynthesizedExplicitImplementations;
         }
 
-        internal ImmutableArray<SynthesizedImplementationForwardingMethod> GetSynthesizedImplementations(
+        private ImmutableArray<SynthesizedImplementationForwardingMethod> GetSynthesizedImplementations(
             CancellationToken cancellationToken)
         {
             if (_lazySynthesizedImplementations.IsDefault)
@@ -182,19 +182,26 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                     var implementingMemberAndDiagnostics = this.FindImplementationForInterfaceMemberWithDiagnostics(interfaceMember);
                     var implementingMember = implementingMemberAndDiagnostics.Symbol;
-                    var synthesizedImplementation = this.SynthesizeInterfaceMemberImplementation(implementingMemberAndDiagnostics, interfaceMember);
+
+                    // @t-mawind
+                    //   Optimistically insert a default struct forward if
+                    //   we're in a concept, under the understanding that
+                    //   we'll trigger an error later if it doesn't exist.
+                    if (implementingMember == null && interfaceMemberKind == SymbolKind.Method && IsInstance && @interface.IsConcept)
+                    {
+                        var conceptMethod = interfaceMember as MethodSymbol;
+                        var def = new SynthesizedDefaultStructImplementationMethod(conceptMethod, this);
+                        if (def != null)
+                        {
+                            synthesizedImplementations.Add(def);
+                            implementingMember = def;
+                            implementingMemberAndDiagnostics = new SymbolAndDiagnostics(implementingMember, ImmutableArray<Diagnostic>.Empty);
+                        }
+                    }
 
                     bool wasImplementingMemberFound = (object)implementingMember != null;
 
-
-                    // @t-mawind
-                    if (!wasImplementingMemberFound && (object)synthesizedImplementation == null && interfaceMemberKind == SymbolKind.Method && IsInstance && @interface.IsConcept)
-                    {
-                        var conceptMethod = interfaceMember as MethodSymbol;
-                        synthesizedImplementation = new SynthesizedDefaultStructImplementationMethod(conceptMethod, this);
-                        if (synthesizedImplementation != null) wasImplementingMemberFound = true;
-                    }
-
+                    var synthesizedImplementation = this.SynthesizeInterfaceMemberImplementation(implementingMemberAndDiagnostics, interfaceMember);
                     if ((object)synthesizedImplementation != null)
                     {
                         synthesizedImplementations.Add(synthesizedImplementation);

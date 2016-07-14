@@ -369,6 +369,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 if (compilationState.Emitting)
                 {
+                    CompileSynthesizedDefaultImplementations(sourceTypeSymbol, compilationState);
                     CompileSynthesizedExplicitImplementations(sourceTypeSymbol, compilationState);
                 }
             }
@@ -684,9 +685,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // we are not generating any observable diagnostics here so it is ok to short-circuit on global errors.
             if (!_globalHasErrors)
             {
-                // @t-mawind TODO: this has been shoehorned in a bit
-                // @t-mawind TODO: observable diagnostics!
-                foreach (var synthesizedImpl in sourceTypeSymbol.GetSynthesizedImplementations(_cancellationToken))
+                foreach (var synthesizedImpl in sourceTypeSymbol.GetSynthesizedExplicitImplementations(_cancellationToken))
                 {
                     Debug.Assert(synthesizedImpl.SynthesizesLoweredBoundBody);
                     var discardedDiagnostics = DiagnosticBag.GetInstance();
@@ -695,6 +694,32 @@ namespace Microsoft.CodeAnalysis.CSharp
                     discardedDiagnostics.Free();
                     _moduleBeingBuiltOpt.AddSynthesizedDefinition(sourceTypeSymbol, synthesizedImpl);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Compiles stubs redirecting missing concept instance methods to
+        /// their default implementation.
+        /// </summary>
+        /// <param name="sourceTypeSymbol">
+        /// The type symbol whose default implementations are being compiled.
+        /// </param>
+        /// <param name="compilationState">
+        /// The current state of the compilation.
+        /// </param>
+        /// <remarks>
+        /// Unlike compiling explicit instances, this can fail, for example if
+        /// the default struct is missing or does not have the method in
+        /// question.  Thus, we emit diagnostics here.  Ideally these checks
+        /// should be made earlier in a production version.
+        /// </remarks>
+        private void CompileSynthesizedDefaultImplementations(SourceMemberContainerTypeSymbol sourceTypeSymbol, TypeCompilationState compilationState)
+        {
+            foreach (var synthesizedImpl in sourceTypeSymbol.GetSynthesizedDefaultImplementations(_cancellationToken))
+            {
+                Debug.Assert(synthesizedImpl.SynthesizesLoweredBoundBody);
+                synthesizedImpl.GenerateMethodBody(compilationState, _diagnostics);
+                _moduleBeingBuiltOpt.AddSynthesizedDefinition(sourceTypeSymbol, synthesizedImpl);
             }
         }
 

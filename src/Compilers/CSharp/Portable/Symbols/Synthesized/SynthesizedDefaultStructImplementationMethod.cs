@@ -16,10 +16,17 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
         }
 
+        public override Accessibility DeclaredAccessibility => Accessibility.Public;
+        public override MethodKind MethodKind => ImplementingMethod.MethodKind;
+
+        // @t-mawind TODO: should this be an explicit implementation?
+        //   if it is, we need to figure out how to make it visible to the
+        //   binder.
+        internal override bool IsExplicitInterfaceImplementation => false;
+        public override ImmutableArray<MethodSymbol> ExplicitInterfaceImplementations => ImmutableArray<MethodSymbol>.Empty;
+
         public override string Name => ImplementingMethod.Name;
         public override string MetadataName => ImplementingMethod.MetadataName;
-        public override Accessibility DeclaredAccessibility => Accessibility.Public;
-        public override MethodKind MethodKind => MethodKind.Ordinary;
 
         internal override void GenerateMethodBody(TypeCompilationState compilationState, DiagnosticBag diagnostics)
         {

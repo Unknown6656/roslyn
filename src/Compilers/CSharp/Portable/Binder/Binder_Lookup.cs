@@ -673,7 +673,8 @@ namespace Microsoft.CodeAnalysis.CSharp
             // sure how else would be best to do it.
             var allMembersB = ArrayBuilder<Symbol>.GetInstance();
             allMembersB.AddRange(members);
-            if (type is SourceMemberContainerTypeSymbol && type.IsInstanceType())
+            if (type is SourceMemberContainerTypeSymbol && type.IsInstanceType()
+                && ((options & (LookupOptions.NamespacesOrTypesOnly | LookupOptions.NamespaceAliasesOnly)) == 0))
             {
                 var st = type as SourceMemberContainerTypeSymbol;
                 foreach (var mem in st.GetSynthesizedDefaultImplementations(CancellationToken.None))
