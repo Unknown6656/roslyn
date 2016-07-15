@@ -8,16 +8,120 @@ using static ExpressionUtils.Utils;
 /// </summary>
 namespace BeautifulDifferentiation.ExpInstances
 {
-    /// <summary>
-    ///     Numeric instance for functions.
-    /// </summary>
-    /// <typeparam name="A">
-    ///     The domain of the function; unconstrained.
-    /// </typeparam>
-    /// <typeparam name="B">
-    ///     The range of the function; must be <c>Num</c>.
-    /// </typeparam>
-    instance NumF<A, B> : Num<Exp<Func<A, B>>>
+    instance NumExp : Num<Exp<double>>
+    {
+        Exp<double> Add(Exp<double> e1, Exp<double> e2) =>
+            Prim((d1, d2) => d1 + d2, e1, e2);
+        Exp<double> Sub(Exp<double> e1, Exp<double> e2) =>
+            Prim((d1, d2) => d1 - d2, e1, e2);
+        Exp<double> Mul(Exp<double> e1, Exp<double> e2) =>
+            Prim((d1, d2) => d1 * d2, e1, e2);
+        Exp<double> FromInteger(int i) =>
+           new Constant<double>(i);
+        Exp<double> Signum(Exp<double> e1) => //TBR
+           Prim(d => (d > 0.0) ? 0.0 : (d < 0.0) ? -1.0 : 0.0, 
+                e1);
+        Exp<double> Abs(Exp<double> e1) =>
+           Prim(d => Math.Abs(d), e1);
+    }
+
+    public instance ExpDouble : 
+        //Ord<Exp<double>>, 
+        Floating<Exp<double>>
+    {
+        //
+        // Eq (via Ord)
+        //
+        Exp<bool> Equals(Exp<double> x, Exp<double> y) => 
+             Prim((d1,d2) => d1 == d2, x,y);
+
+        //
+        // Ord
+        //
+        Exp<bool> Leq(Exp<double> x, Exp<double> y) => 
+              Prim((d1, d2) => d1 <= d2, x, y);
+        //
+        // Num (via Floating)
+        //
+        Exp<double> Add(Exp<double> x, Exp<double> y) =>
+               Prim((d1, d2) => d1 + d2, x, y);
+        Exp<double> Sub(Exp<double> x, Exp<double> y) =>
+               Prim((d1, d2) => d1 - d2, x, y);
+        Exp<double> Mul(Exp<double> x, Exp<double> y) => 
+               Prim((d1, d2) => d1 * d2, x, y);
+        Exp<double> Abs(Exp<double> x) =>
+               Prim(d => Math.Abs(d), x); 
+        Exp<double> Signum(Exp<double> x) =>
+               Prim<double,double>(d => Math.Sign(d),x);
+        Exp<double> FromInteger(int x)
+            => new Constant<double>(x);
+
+        //
+        // Fractional (via Floating)
+        //
+        Exp<double> Div(Exp<double> x, Exp<double> y) =>
+            Prim((d1, d2) => d1 / d2, x, y);
+        Exp<double> FromRational(Ratio<int> x) =>
+            new Constant<double>(x.num / x.den);
+        //
+        // Floating
+        //
+        Exp<double> Pi() => new Constant<double>(Math.PI);
+        Exp<double> Exp(Exp<double> x) =>
+            Prim(d => Math.Exp(d), x);
+        Exp<double> Sqrt(Exp<double> x) =>
+            Prim(d => Math.Sqrt(d), x);
+        Exp<double> Log(Exp<double> x) =>
+            Prim(d => Math.Log(d), x);
+        Exp<double> Pow(Exp<double> x, Exp<double> y) =>
+            Prim((d1, d2) => Math.Pow(d1, d2), x, y);
+        // Haskell and C# put the base in different places.
+        // Maybe we should adopt the C# version?
+        Exp<double> LogBase(Exp<double> b, Exp<double> x) => 
+            Prim((d1,d2) => Math.Log(d1, d2),x,b);
+        Exp<double> Sin(Exp<double> x) => 
+            Prim(d => Math.Sin(d),x);
+        Exp<double> Cos(Exp<double> x) => 
+            Prim(d => Math.Cos(d),x);
+        Exp<double> Tan(Exp<double> x) =>
+            Prim(d => Math.Tan(d),x);
+        Exp<double> Asin(Exp<double> x) => 
+            Prim(d => Math.Asin(d),x);
+        Exp<double> Acos(Exp<double> x) =>
+            Prim(d => Math.Acos(d), x);
+        Exp<double> Atan(Exp<double> x) =>
+            Prim(d => Math.Atan(d), x);
+        Exp<double> Sinh(Exp<double> x) =>
+            Prim(d => Math.Sinh(d), x);
+        Exp<double> Cosh(Exp<double> x) =>
+            Prim(d => Math.Cosh(d), x);
+        Exp<double> Tanh(Exp<double> x) =>
+            Prim(d => Math.Tanh(d), x);
+        // Math doesn't have these, so define them directly in terms of
+        // logarithms.
+        Exp<double> Asinh(Exp<double> x) => 
+            Prim(d => Math.Log(d + Math.Sqrt((d * d) + 1.0)), x);
+        Exp<double> Acosh(Exp<double> x) =>
+            Prim(d => Math.Log(d + Math.Sqrt((d * d) - 1.0)), x);
+        Exp<double> Atanh(Exp<double> x) =>
+            Prim(d => 0.5 * Math.Log((1.0 + d) / (1.0 - d)), x);
+  
+    }
+
+
+
+
+
+/// <summary>
+///     Numeric instance for functions.
+/// </summary>
+/// <typeparam name="A">
+///     The domain of the function; unconstrained.
+/// </typeparam>
+/// <typeparam name="B">
+///     The range of the function; must be <c>Num</c>.
+/// </typeparam>
+instance NumF<A, B> : Num<Exp<Func<A, B>>>
         where NumB : Num<Exp<B>>
     {
         Exp<Func<A, B>> Add(Exp<Func<A, B>> f, Exp<Func<A, B>> g)
