@@ -19,8 +19,7 @@ namespace BeautifulDifferentiation.ExpInstances
         Exp<double> FromInteger(int i) =>
            new Constant<double>(i);
         Exp<double> Signum(Exp<double> e1) => //TBR
-           Prim(d => (d > 0.0) ? 0.0 : (d < 0.0) ? -1.0 : 0.0, 
-                e1);
+           Prim(d => (double)Math.Sign(d),e1);
         Exp<double> Abs(Exp<double> e1) =>
            Prim(d => Math.Abs(d), e1);
     }
