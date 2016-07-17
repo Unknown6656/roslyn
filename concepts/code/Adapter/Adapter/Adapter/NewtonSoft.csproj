@@ -7,8 +7,8 @@
     <ProjectGuid>{CD329A93-E519-42CF-A05D-7E74BE1B7F01}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Adapter</RootNamespace>
-    <AssemblyName>Adapter</AssemblyName>
+    <RootNamespace>NewtonSoft</RootNamespace>
+    <AssemblyName>NewtonSoft</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
