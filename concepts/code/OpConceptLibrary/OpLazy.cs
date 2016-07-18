@@ -3,7 +3,7 @@
 /// <summary>
 ///     Prelude instances for <see cref="System.Lazy{T}"/>.
 /// </summary>
-namespace System.Concepts.Lazy
+namespace System.Concepts.OpLazy
 {
     instance LazyEq<T> : Eq<Lazy<T>> where EqT : Eq<T>
     {
