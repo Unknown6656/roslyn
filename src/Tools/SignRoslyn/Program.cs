@@ -35,8 +35,32 @@ namespace SignRoslyn
             using (var file = File.OpenText(filePath))
             {
                 var serializer = new JsonSerializer();
-                var fileJson = (FileJson)serializer.Deserialize(file, typeof(FileJson));
-                return new SignData(rootBinaryPath, fileJson.SignList, fileJson.ExcludeList);
+                var fileJson = (Json.FileJson)serializer.Deserialize(file, typeof(Json.FileJson));
+                var map = new Dictionary<string, FileSignData>();
+                var allGood = true;
+                foreach (var item in fileJson.SignList)
+                {
+                    var data = new FileSignData(certificate: item.Certificate, strongName: item.StrongName);
+                    foreach (var name in item.FileList)
+                    {
+                        if (map.ContainsKey(name))
+                        {
+                            Console.WriteLine($"Duplicate file entry: {name}");
+                            allGood = false;
+                        }
+                        else
+                        {
+                            map.Add(name, data);
+                        }
+                    }
+                }
+
+                if (!allGood)
+                {
+                    Environment.Exit(1);
+                }
+
+                return new SignData(rootBinaryPath, map, fileJson.ExcludeList);
             }
         }
 

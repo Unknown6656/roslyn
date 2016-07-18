@@ -1373,6 +1373,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         ERR_ConversionNotTupleCompatible = 8214,
         ERR_DeconstructionVarFormDisallowsSpecificType = 8215,
 
+        ERR_TupleElementNamesAttributeMissing = 8216,
+        ERR_ExplicitTupleElementNames = 8217,
+
         #endregion tuple diagnostics introduced in C# 7
 
         // huge gap here; available 8216-8889
