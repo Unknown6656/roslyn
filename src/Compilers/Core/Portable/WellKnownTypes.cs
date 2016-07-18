@@ -260,6 +260,8 @@ namespace Microsoft.CodeAnalysis
         System_ValueTuple_T7,
         System_ValueTuple_TRest,
 
+        System_Runtime_CompilerServices_TupleElementNamesAttribute,
+
         System_Concepts_ConceptAttribute, //@t-mawind
         System_Concepts_ConceptInstanceAttribute, //@t-mawind
         System_Concepts_ConceptWitnessAttribute, //@t-mawind
@@ -517,6 +519,8 @@ namespace Microsoft.CodeAnalysis
 
             "System.ValueTuple`7",
             "System.ValueTuple`8",
+
+            "System.Runtime.CompilerServices.TupleElementNamesAttribute",
 
             //@t-mawind
             "System.Concepts.ConceptAttribute",

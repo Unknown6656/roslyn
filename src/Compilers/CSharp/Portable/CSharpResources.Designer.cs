@@ -4031,6 +4031,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot reference &apos;System.Runtime.CompilerServices.TupleElementNamesAttribute&apos; explicitly. Use the tuple syntax to define tuple names..
+        /// </summary>
+        internal static string ERR_ExplicitTupleElementNames {
+            get {
+                return ResourceManager.GetString("ERR_ExplicitTupleElementNames", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Type &apos;{0}&apos; exported from module &apos;{1}&apos; conflicts with type declared in primary module of this assembly..
         /// </summary>
         internal static string ERR_ExportedTypeConflictsWithDeclaration {
@@ -8743,6 +8752,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string ERR_TupleDuplicateMemberName {
             get {
                 return ResourceManager.GetString("ERR_TupleDuplicateMemberName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot define a class or member that utilizes tuples because the compiler required type &apos;{0}&apos; cannot be found. Are you missing a reference?.
+        /// </summary>
+        internal static string ERR_TupleElementNamesAttributeMissing {
+            get {
+                return ResourceManager.GetString("ERR_TupleElementNamesAttributeMissing", resourceCulture);
             }
         }
         

@@ -3,15 +3,16 @@
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.CodeAnalysis.Host;
+using Microsoft.CodeAnalysis.LanguageServices;
 using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.Shared.Extensions.ContextQuery
 {
-    internal abstract class AbstractSyntaxContext
+    internal abstract class SyntaxContext
     {
         private ISet<INamedTypeSymbol> _outerTypes;
 
-        protected AbstractSyntaxContext(
+        protected SyntaxContext(
             Workspace workspace,
             SemanticModel semanticModel,
             int position,
@@ -28,7 +29,9 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions.ContextQuery
             bool isEnumTypeMemberAccessContext,
             bool isNameOfContext,
             bool isInQuery,
-            bool isInImportsDirective)
+            bool isInImportsDirective,
+            bool isWithinAsyncMethod,
+            CancellationToken cancellationToken)
         {
             this.Workspace = workspace;
             this.SemanticModel = semanticModel;
@@ -48,6 +51,8 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions.ContextQuery
             this.IsNameOfContext = isNameOfContext;
             this.IsInQuery = isInQuery;
             this.IsInImportsDirective = isInImportsDirective;
+            this.IsWithinAsyncMethod = isWithinAsyncMethod;
+            this.InferredTypes = ComputeInferredTypes(workspace, semanticModel, position, cancellationToken);
         }
 
         public Workspace Workspace { get; }
@@ -74,6 +79,9 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions.ContextQuery
 
         public bool IsInQuery { get; }
         public bool IsInImportsDirective { get; }
+        public bool IsWithinAsyncMethod { get; }
+
+        public IEnumerable<ITypeSymbol> InferredTypes { get; }
 
         private ISet<INamedTypeSymbol> ComputeOuterTypes(CancellationToken cancellationToken)
         {
@@ -89,6 +97,18 @@ namespace Microsoft.CodeAnalysis.Shared.Extensions.ContextQuery
 
             return SpecializedCollections.EmptySet<INamedTypeSymbol>();
         }
+
+        protected IEnumerable<ITypeSymbol> ComputeInferredTypes(Workspace workspace,
+            SemanticModel semanticModel,
+            int position,
+            CancellationToken cancellationToken)
+        {
+            var typeInferenceService = workspace?.Services.GetLanguageServices(semanticModel.Language).GetService<ITypeInferenceService>()
+                ?? GetTypeInferenceServiceWithoutWorkspace();
+            return typeInferenceService.InferTypes(semanticModel, position, cancellationToken);
+        }
+
+        internal abstract ITypeInferenceService GetTypeInferenceServiceWithoutWorkspace();
 
         public ISet<INamedTypeSymbol> GetOuterTypes(CancellationToken cancellationToken)
         {
