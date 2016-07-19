@@ -38,7 +38,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // that we know where they all are so we can infer them later.
             ImmutableArray<int> conceptIndices;
             ImmutableArray<int> associatedIndices;
-            MutableTypeMap fixedMap;
+            ImmutableTypeMap fixedParamMap;
 
             var inferrer = ConceptWitnessInferrer.ForBinder(binder);
 
@@ -48,31 +48,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                 false,
                 out conceptIndices,
                 out associatedIndices,
-                out fixedMap)) return false;
+                out fixedParamMap)) return false;
 
             Debug.Assert(!conceptIndices.IsEmpty,
                 "Tried to proceed with concept inference with no concept witnesses to infer");
 
-            return inferrer.InferManyInPlace(conceptIndices, associatedIndices, _methodTypeParameters, _fixedResults, fixedMap);
-        }
-
-        /// <summary>
-        /// Constructs a map from fixed method type parameters to their
-        /// inferred arguments.
-        /// </summary>
-        /// <returns>
-        /// A map mapping each fixed parameter to its argument.
-        /// </returns>
-        private MutableTypeMap MakeMethodFixedMap()
-        {
-            MutableTypeMap mt = new MutableTypeMap();
-
-            for (int i = 0; i < _methodTypeParameters.Length; i++)
-            {
-                if (!IsUnfixed(i)) mt.Add(_methodTypeParameters[i], new TypeWithModifiers(_fixedResults[i]));
-            }
-
-            return mt;
+            return inferrer.InferManyInPlace(conceptIndices, associatedIndices, _methodTypeParameters, _fixedResults, fixedParamMap);
         }
     }
 
@@ -109,9 +90,9 @@ namespace Microsoft.CodeAnalysis.CSharp
             public readonly TypeSymbol Instance;
 
             /// <summary>
-            /// The unifications that must be made to accept this instance.
+            /// The unification that must be made to accept this instance.
             /// </summary>
-            public readonly ArrayBuilder<MutableTypeMap> Unification;
+            public readonly ImmutableTypeMap Unification;
 
             /// <summary>
             /// Constructs a Candidate.
@@ -120,9 +101,9 @@ namespace Microsoft.CodeAnalysis.CSharp
             /// The candidate instance.
             /// </param>
             /// <param name="unification">
-            /// The unifications that must be made to accept this instance.
+            /// The unification that must be made to accept this instance.
             /// </param>
-            public Candidate(TypeSymbol instance, ArrayBuilder<MutableTypeMap> unification)
+            public Candidate(TypeSymbol instance, ImmutableTypeMap unification)
             {
                 Instance = instance;
                 Unification = unification;
@@ -292,7 +273,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="associatedIndices">
         /// The outgoing array of unfixed associated type parameters.
         /// </param>
-        /// <param name="fixedMap">
+        /// <param name="fixedParamMap">
         /// The outgoing map of fixed type parameters to type arguments.
         /// </param>
         /// <returns>
@@ -305,7 +286,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool treatEqualAsUnfixed,
             out ImmutableArray<int> conceptIndices,
             out ImmutableArray<int> associatedIndices,
-            out MutableTypeMap fixedMap
+            out ImmutableTypeMap fixedParamMap
         )
         {
             Debug.Assert(typeParameters.Length == typeArguments.Length,
@@ -313,7 +294,8 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var wBuilder = ArrayBuilder<int>.GetInstance();
             var aBuilder = ArrayBuilder<int>.GetInstance();
-            fixedMap = new MutableTypeMap();
+            fixedParamMap = new ImmutableTypeMap();
+            var fixedMapB = new MutableTypeMap();
 
             for (int i = 0; i < typeParameters.Length; i++)
             {
@@ -347,11 +329,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                     return false;
                 }
                 // If we got here, the parameter is fixed.
-                fixedMap.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
+                fixedMapB.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
             }
 
             conceptIndices = wBuilder.ToImmutableAndFree();
             associatedIndices = aBuilder.ToImmutableAndFree();
+            fixedParamMap = fixedMapB.ToUnification();
             return true;
         }
 
@@ -380,18 +363,15 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <paramref name="associatedIndices"/>, into which fixed type
         /// parameters must be placed.
         /// </param>
-        /// <param name="fixedMap">
-        /// The map from all of the fixed, non-witness type parameters in
-        /// <paramref name="allTypeParameters"/> to their arguments.
+        /// <param name="parentSubstitution">
+        /// A substitution applying all of the unifications made in previous
+        /// inferences in a recursive chain, as well as any fixed type
+        /// parameters on the parent instance, method or class of this
+        /// inference run.
         /// </param>
         /// <param name="chain">
         /// The set of instances we've passed through recursively to get here,
         /// used to abort recursive calls if they will create cycles.
-        /// </param>
-        /// <param name="unification">
-        /// Supplied in recursive calls, this contains a list of all
-        /// unifications made when inferring witnesses in this current chain,
-        /// to which we add any new unifications made at this point.
         /// </param>
         /// <returns>
         /// True if, and only if, inference succeeded.
@@ -401,31 +381,52 @@ namespace Microsoft.CodeAnalysis.CSharp
             ImmutableArray<int> associatedIndices,
             ImmutableArray<TypeParameterSymbol> allTypeParameters,
             TypeSymbol[] destination,
-            MutableTypeMap fixedMap,
-            ImmutableHashSet<NamedTypeSymbol> chain = null,
-            ArrayBuilder<MutableTypeMap> unification = null)
+            ImmutableTypeMap parentSubstitution,
+            ImmutableHashSet<NamedTypeSymbol> chain = null)
         {
-            if (unification == null) unification = ArrayBuilder<MutableTypeMap>.GetInstance();
-
             bool inferredAll;
-            var innerUnification = ArrayBuilder<MutableTypeMap>.GetInstance();
-            innerUnification.AddRange(unification);
+
+            // Our goal is to infer both associated types and concept witnesses
+            // here, but they are mutually recursive.
+            //
+            // This is because associated types are generally not known until
+            // we happen to fix a concept witness that names the associated
+            // type in one of its type parameters, ie the witness that
+            // 'defines' the associated type.
+            //
+            // However, the associated type itself may have some concept
+            // witnesses defined on it, so these will fail to infer until the
+            // associated type itself is fixed.
+            //
+            // With this in mind, what we do is:
+            //
+            // 1) Substitute in the set of substitutions made so far in the
+            //    inference path leading to this call.  This includes any
+            //    already-inferred type parameters as well as any unifications
+            //    made during concept witness inference earlier in the chain.
+            // 2) Try to fix all associated types using the current set of
+            //    substitutions.  Eliminate all fixed types from the set to
+            //    fix, and create a new substitution from them.
+            // 3) Try to fix all concept witnesses using the substitution from
+            //    2), appending to it any unifications made in any recursive
+            //    call inside the concept witness inference round.
+            // 4) If we made no progress in 3) and there are some unfixed types
+            //    left, fail.  Otherwise, if no unfixed types remain, succeed.
+            //    Otherwise, return to 2) with the substitution from 3).
+
+            var currentSubstitution = parentSubstitution;
             do
             {
                 // TODO: perf
 
                 if (!associatedIndices.IsEmpty) associatedIndices = TryFixAssociatedTypes(
-                    associatedIndices, allTypeParameters, destination, innerUnification
+                    associatedIndices, allTypeParameters, destination, ref currentSubstitution
                 );
-
-                // Make sure we don't accumulate a massive load of unifications
-                // we've already applied and thus don't need.
-                innerUnification.Clear();
 
                 bool conceptProgress = false;
                 if (!conceptIndices.IsEmpty)
                 {
-                    var newConceptIndices = TryFixConceptWitnesses(conceptIndices, allTypeParameters, destination, fixedMap, chain, innerUnification);
+                    var newConceptIndices = TryFixConceptWitnesses(conceptIndices, allTypeParameters, destination, parentSubstitution, chain, ref currentSubstitution);
                     conceptProgress = newConceptIndices.Length < conceptIndices.Length;
                     conceptIndices = newConceptIndices;
                 }
@@ -455,31 +456,39 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <paramref name="conceptIndices"/>, into which fixed type
         /// parameters must be placed.
         /// </param>
-        /// <param name="fixedMap">
-        /// The map from all of the fixed, non-witness type parameters in the
-        /// same type parameter list as <paramref name="conceptIndices"/>
-        /// to their arguments.
+        /// <param name="parentSubstitution">
+        /// A substitution applying all of the unifications made in previous
+        /// inferences in a recursive chain, as well as any fixed type
+        /// parameters on the parent instance, method or class of this
+        /// inference run.
         /// </param>
         /// <param name="chain">
         /// The set of instances we've passed through recursively to get here,
         /// used to abort recursive calls if they will create cycles.
         /// </param>
-        /// <param name="innerUnification">
-        /// This contains a list of all unifications made when inferring
-        /// witnesses in this current chain, to which we add any new
-        /// unifications made at this point.
+        /// <param name="currentSubstitution">
+        /// The current set of substitutions that have been made in this round
+        /// of inference, to which this method will add any unifications made
+        /// when fixing the current concept witnesses.  This is then used to
+        /// fix associated type parameters.
         /// </param>
         /// <returns>
         /// An array of fixed concept witnesses.  If any are null, then
         /// inference has failed.
         /// </returns>
-        private ImmutableArray<int> TryFixConceptWitnesses(ImmutableArray<int> conceptIndices, ImmutableArray<TypeParameterSymbol> allTypeParameters, TypeSymbol[] destination, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain, ArrayBuilder<MutableTypeMap> innerUnification)
+        private ImmutableArray<int> TryFixConceptWitnesses(
+            ImmutableArray<int> conceptIndices,
+            ImmutableArray<TypeParameterSymbol> allTypeParameters,
+            TypeSymbol[] destination,
+            ImmutableTypeMap parentSubstitution,
+            ImmutableHashSet<NamedTypeSymbol> chain,
+            ref ImmutableTypeMap currentSubstitution)
         {
             var resultsBuilder = ArrayBuilder<Candidate>.GetInstance();
 
             foreach (int i in conceptIndices)
             {
-                resultsBuilder.Add(Infer(allTypeParameters[i], fixedMap, chain));
+                resultsBuilder.Add(Infer(allTypeParameters[i], parentSubstitution, chain));
             }
             var maybeFixed = resultsBuilder.ToImmutableAndFree();
 
@@ -496,7 +505,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     "Concept witness inference returned something other than a concept instance or witness");
                 destination[conceptIndices[i]] = maybeFixed[i].Instance;
 
-                innerUnification.AddRange(maybeFixed[i].Unification);
+                currentSubstitution = currentSubstitution.Merge(maybeFixed[i].Unification);
             }
             return newConceptIndices.ToImmutableAndFree();
         }
@@ -519,17 +528,20 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <paramref name="associatedIndices"/>, into which fixed type
         /// parameters must be placed.
         /// </param>
-        /// <param name="innerUnification">
+        /// <param name="currentSubstitution">
         /// The set of unifications that have been done by this inferrer
         /// so far, which may fix some of the remaining associated type
-        /// parameters.
+        /// parameters.  This will be cleared and replaced with the
+        /// substitutions arising from this method.
         /// </param>
         /// <returns>
         /// The array of remaining, unfixed associated type parameters.
         /// If empty, there are no more such parameters to fix.
         /// </returns>
-        private static ImmutableArray<int> TryFixAssociatedTypes(ImmutableArray<int> associatedIndices, ImmutableArray<TypeParameterSymbol> allTypeParameters, TypeSymbol[] destination, ArrayBuilder<MutableTypeMap> innerUnification)
+        private static ImmutableArray<int> TryFixAssociatedTypes(ImmutableArray<int> associatedIndices, ImmutableArray<TypeParameterSymbol> allTypeParameters, TypeSymbol[] destination, ref ImmutableTypeMap currentSubstitution)
         {
+            var newSubstitutions = new MutableTypeMap();
+
             Debug.Assert(associatedIndices.Length <= allTypeParameters.Length,
                 "Should not have more associated types than actual types.");
             Debug.Assert(allTypeParameters.Length == destination.Length,
@@ -549,17 +561,14 @@ namespace Microsoft.CodeAnalysis.CSharp
 
                 var associated = allTypeParameters[i];
 
-                foreach (var unf in innerUnification)
-                {
-                    // TODO: guarding against inconsistent unifications.
-
-                    var associatedU = unf.SubstituteType(associated).AsTypeSymbolOnly();
-                    if (associatedU != associated) destination[i] = associatedU;
-                }
+                // TODO: guarding against inconsistent unifications.
+                var associatedU = currentSubstitution.SubstituteType(associated).AsTypeSymbolOnly();
+                if (associatedU != associated) destination[i] = associatedU;
 
                 if (destination[i] == null || destination[i] == allTypeParameters[i]) newAssociatedIndices.Add(i);
             }
 
+            currentSubstitution = newSubstitutions.ToUnification();
             return newAssociatedIndices.ToImmutableAndFree();
         }
 
@@ -584,7 +593,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// Null if inference failed; else, the inferred concept instance and
         /// its unification.
         /// </returns>
-        internal Candidate Infer(TypeParameterSymbol typeParam, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
+        internal Candidate Infer(TypeParameterSymbol typeParam, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
         {
             if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
 
@@ -665,7 +674,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// An array of concepts required by <paramref name="typeParam"/>.
         /// </returns>
-        private static ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, MutableTypeMap fixedMap)
+        private static ImmutableArray<TypeSymbol> GetRequiredConceptsFor(TypeParameterSymbol typeParam, ImmutableTypeMap fixedMap)
         {
             //TODO: error if interface constraint that is not a concept?
             var rawRequiredConcepts = typeParam.AllEffectiveInterfacesNoUseSiteDiagnostics;
@@ -756,7 +765,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             var firstPassInstanceBuilder = new ArrayBuilder<Candidate>();
             foreach (var instance in _allInstances)
             {
-                MutableTypeMap unifyingSubstitutions;
+                ImmutableTypeMap unifyingSubstitutions;
                 if (AllRequiredConceptsProvided(requiredConcepts, instance, out unifyingSubstitutions))
                 {
                     // The unification may have provided us with substitutions
@@ -766,7 +775,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     // It may be that some of these substitutions also need to
                     // apply to the actual instance so it can satisfy #2.
                     var result = unifyingSubstitutions.SubstituteType(instance).AsTypeSymbolOnly();
-                    firstPassInstanceBuilder.Add(new Candidate(result, ArrayBuilder<MutableTypeMap>.GetInstance(1, unifyingSubstitutions)));
+                    firstPassInstanceBuilder.Add(new Candidate(result, unifyingSubstitutions));
                 }
             }
             return firstPassInstanceBuilder.ToImmutableAndFree();
@@ -794,12 +803,13 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// True if, and only if, the given instance implements the given list
         /// of concepts.
         /// </returns>
-        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts, TypeSymbol instance, out MutableTypeMap unifyingSubstitutions)
+        private bool AllRequiredConceptsProvided(ImmutableArray<TypeSymbol> requiredConcepts, TypeSymbol instance, out ImmutableTypeMap unifyingSubstitutions)
         {
             Debug.Assert(!requiredConcepts.IsEmpty,
                 "Checking that all required concepts are provided is pointless when there are none");
 
-            unifyingSubstitutions = new MutableTypeMap();
+            var subst = new MutableTypeMap();
+            unifyingSubstitutions = new ImmutableTypeMap();
 
             var providedConcepts =
                 ((instance as TypeParameterSymbol)?.AllEffectiveInterfacesNoUseSiteDiagnostics
@@ -809,10 +819,11 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             foreach (var requiredConcept in requiredConcepts)
             {
-                if (!IsRequiredConceptProvided(requiredConcept, providedConcepts, ref unifyingSubstitutions)) return false;
+                if (!IsRequiredConceptProvided(requiredConcept, providedConcepts, ref subst)) return false;
             }
 
             // If we got here, all required concepts must have been provided.
+            unifyingSubstitutions = subst.ToUnification();
             return true;
         }
 
@@ -911,7 +922,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // one pass.
                 ImmutableArray<int> conceptIndices;
                 ImmutableArray<int> associatedIndices;
-                MutableTypeMap fixedMap;
+                ImmutableTypeMap fixedMap;
                 if (!PartitionTypeParameters(
                     nt.TypeParameters,
                     nt.TypeArguments,
@@ -937,10 +948,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                 else
                 {
                     fixedInstance = InferRecursively(nt,
-                       candidate.Unification,
                        conceptIndices,
                        associatedIndices,
-                       fixedMap,
+                       candidate.Unification.Merge(fixedMap),
                        chain);
                 }
                 if (fixedInstance.Instance != null) secondPassInstanceBuilder.Add(fixedInstance);
@@ -954,12 +964,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <param name="instance">
         /// The instance whose missing witnesses are to be inferred.
         /// </param>
-        /// <param name="unification">
-        /// The unification list that created this instance in the first place.
-        /// This will be added to the unifications of the winning candidates of
-        /// the recursive inference to produce the final list of unifications
-        /// used in this instance.  The array builder is freed if this fails.
-        /// </param>
         /// <param name="conceptIndices">
         /// The array of indices of unfixed witness parameters to infer.
         /// </param>
@@ -967,7 +971,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// The array of indices of unfixed associated types to infer.
         /// </param>
         /// <param name="fixedMap">
-        /// The map of fixed parameter substitutions to use in inferring.
+        /// The map of fixed parameter substitutions and unifications to use in inferring.
         /// </param>
         /// <param name="chain">
         /// The set of instances we've passed through recursively to get here,
@@ -979,30 +983,21 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private Candidate InferRecursively(
             NamedTypeSymbol instance,
-            ArrayBuilder<MutableTypeMap> unification,
-            ImmutableArray<int> conceptIndices, ImmutableArray<int> associatedIndices, MutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain)
+            ImmutableArray<int> conceptIndices, ImmutableArray<int> associatedIndices, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain)
         {
             // Do cycle detection: have we already set up a recursive
             // call for this instance with these type parameters?
-            if (chain.Contains(instance))
-            {
-                unification.Free();
-                return default(Candidate);
-            }
+            if (chain.Contains(instance)) return default(Candidate);
             var newChain = chain.Add(instance);
 
             var inferred = new TypeSymbol[instance.TypeParameters.Length];
-            if (!InferManyInPlace(conceptIndices, associatedIndices, instance.TypeParameters, inferred, fixedMap, newChain, unification))
-            {
-                unification.Free();
-                return default(Candidate);
-            }
+            if (!InferManyInPlace(conceptIndices, associatedIndices, instance.TypeParameters, inferred, fixedMap, newChain)) return default(Candidate);
 
             var recurSubstMap = new MutableTypeMap();
             foreach (int c in conceptIndices) recurSubstMap.Add(instance.TypeParameters[c], new TypeWithModifiers(inferred[c]));
             foreach (int a in associatedIndices) recurSubstMap.Add(instance.TypeParameters[a], new TypeWithModifiers(inferred[a]));
 
-            return new Candidate(recurSubstMap.SubstituteType(instance).AsTypeSymbolOnly(), unification);
+            return new Candidate(recurSubstMap.SubstituteType(instance).AsTypeSymbolOnly(), fixedMap);
         }
 
         #endregion Second pass
@@ -1064,11 +1059,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // TODO: This can invariably be made more efficient.
             foreach (var instance in candidateInstances)
             {
-                if (!ImplementsConceptsOfOtherInstances(instance, candidateInstances))
-                {
-                    instance.Unification.Free();
-                    continue;
-                }
+                if (!ImplementsConceptsOfOtherInstances(instance, candidateInstances)) continue;
                 arb.Add(instance);
 
                 // Note that this will only break ties if one instance
@@ -1149,11 +1140,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // TODO: This can invariably be made more efficient.
             foreach (var instance in candidateInstances)
             {
-                if (ParamsLessSpecific(instance, candidateInstances))
-                {
-                    instance.Unification.Free();
-                    continue;
-                }
+                if (ParamsLessSpecific(instance, candidateInstances)) continue;
                 arb.Add(instance);
             }
 
@@ -1271,7 +1258,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             var ary = allArgumentsBuilder.ToArrayAndFree();
-            if (!InferManyInPlace(missingIndices.ToImmutableAndFree(), ImmutableArray<int>.Empty, typeParameters, ary, fixedMap))
+            if (!InferManyInPlace(missingIndices.ToImmutableAndFree(), ImmutableArray<int>.Empty, typeParameters, ary, fixedMap.ToUnification()))
             {
                 // TODO: more specific error?
                 return ImmutableArray<TypeSymbol>.Empty;
