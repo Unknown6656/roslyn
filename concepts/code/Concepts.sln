@@ -39,6 +39,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RWHSimpleJson", "RWHSimpleJson\RWHSimpleJson.csproj", "{CAA6AB2B-0E59-441C-8C8D-605524523C35}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExpressionUtils", "ExpressionUtils\ExpressionUtils\ExpressionUtils.csproj", "{382C1156-121F-41F9-8F3C-D61B15D8783B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C9C414C3-EF73-4170-82CD-2F4F8FF27A5E} = {C9C414C3-EF73-4170-82CD-2F4F8FF27A5E}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DefaultsTestbed", "DefaultsTestbed\DefaultsTestbed.csproj", "{7D9E947C-4359-4EBE-9E8F-17465EE88451}"
 	ProjectSection(ProjectDependencies) = postProject
