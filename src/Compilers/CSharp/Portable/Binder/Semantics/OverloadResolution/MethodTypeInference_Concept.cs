@@ -53,7 +53,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(!conceptIndices.IsEmpty,
                 "Tried to proceed with concept inference with no concept witnesses to infer");
 
-            return inferrer.InferManyInPlace(conceptIndices, associatedIndices, _methodTypeParameters, _fixedResults, fixedParamMap);
+            return inferrer.Infer(conceptIndices, associatedIndices, _methodTypeParameters, _fixedResults, fixedParamMap);
         }
     }
 
@@ -376,7 +376,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <returns>
         /// True if, and only if, inference succeeded.
         /// </returns>
-        internal bool InferManyInPlace(
+        internal bool Infer(
             ImmutableArray<int> conceptIndices,
             ImmutableArray<int> associatedIndices,
             ImmutableArray<TypeParameterSymbol> allTypeParameters,
@@ -387,16 +387,18 @@ namespace Microsoft.CodeAnalysis.CSharp
             bool inferredAll;
 
             // Our goal is to infer both associated types and concept witnesses
-            // here, but they are mutually recursive.
+            // here.  We first do the latter, then the former.
             //
             // This is because associated types are generally not known until
             // we happen to fix a concept witness that names the associated
             // type in one of its type parameters, ie the witness that
             // 'defines' the associated type.
             //
-            // However, the associated type itself may have some concept
-            // witnesses defined on it, so these will fail to infer until the
-            // associated type itself is fixed.
+            // Although concept witnesses may themselves depend on associated
+            // types, any substitutions we make that could infer them come
+            // precisely from the concept witnesses.  This means we can just
+            // keep iterating over the concept witnesses and any insights from
+            // the associated types will be applied automatically.
             //
             // With this in mind, what we do is:
             //
@@ -404,39 +406,32 @@ namespace Microsoft.CodeAnalysis.CSharp
             //    inference path leading to this call.  This includes any
             //    already-inferred type parameters as well as any unifications
             //    made during concept witness inference earlier in the chain.
-            // 2) Try to fix all associated types using the current set of
-            //    substitutions.  Eliminate all fixed types from the set to
-            //    fix, and create a new substitution from them.
-            // 3) Try to fix all concept witnesses using the substitution from
-            //    2), appending to it any unifications made in any recursive
+            // 2) Try to fix all concept witnesses using the substitution from
+            //    1), appending to it any unifications made in any recursive
             //    call inside the concept witness inference round.
-            // 4) If we made no progress in 3) and there are some unfixed types
+            // 3) If we made no progress in 2) and there are some unfixed types
             //    left, fail.  Otherwise, if no unfixed types remain, succeed.
-            //    Otherwise, return to 2) with the substitution from 3).
-
+            //    Otherwise, return to 1) with the substitution from 2).
             var currentSubstitution = parentSubstitution;
             do
             {
-                // TODO: perf
-
-                if (!associatedIndices.IsEmpty) associatedIndices = TryFixAssociatedTypes(
-                    associatedIndices, allTypeParameters, destination, ref currentSubstitution
-                );
-
                 bool conceptProgress = false;
                 if (!conceptIndices.IsEmpty)
                 {
-                    var newConceptIndices = TryFixConceptWitnesses(conceptIndices, allTypeParameters, destination, parentSubstitution, chain, ref currentSubstitution);
-                    conceptProgress = newConceptIndices.Length < conceptIndices.Length;
+                    var newConceptIndices = TryInferConceptWitnesses(conceptIndices, allTypeParameters, destination, parentSubstitution, chain, ref currentSubstitution);
+                    conceptProgress = conceptProgress || (newConceptIndices.Length < conceptIndices.Length);
                     conceptIndices = newConceptIndices;
                 }
 
-                inferredAll = associatedIndices.IsEmpty && conceptIndices.IsEmpty;
+                inferredAll = conceptIndices.IsEmpty;
 
-                // Stop if we made no progress whatsoever
+                // Stop if we made no progress whatsoever.
                 if (!conceptProgress && !inferredAll) return false;
             } while (!inferredAll);
-            return true;
+
+            // Now try to infer the associated types in one pass.
+            if (associatedIndices.IsEmpty) return true;
+            return TryInferAssociatedTypes(associatedIndices, allTypeParameters, destination, currentSubstitution);
         }
 
         /// <summary>
@@ -474,9 +469,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </param>
         /// <returns>
         /// An array of fixed concept witnesses.  If any are null, then
-        /// inference has failed.
+        /// inference has not succeeded.
         /// </returns>
-        private ImmutableArray<int> TryFixConceptWitnesses(
+        private ImmutableArray<int> TryInferConceptWitnesses(
             ImmutableArray<int> conceptIndices,
             ImmutableArray<TypeParameterSymbol> allTypeParameters,
             TypeSymbol[] destination,
@@ -488,7 +483,7 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             foreach (int i in conceptIndices)
             {
-                resultsBuilder.Add(Infer(allTypeParameters[i], parentSubstitution, chain));
+                resultsBuilder.Add(InferOneWitness(allTypeParameters[i], parentSubstitution, chain));
             }
             var maybeFixed = resultsBuilder.ToImmutableAndFree();
 
@@ -528,20 +523,20 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// <paramref name="associatedIndices"/>, into which fixed type
         /// parameters must be placed.
         /// </param>
-        /// <param name="currentSubstitution">
+        /// <param name="finalSubstitution">
         /// The set of unifications that have been done by this inferrer
-        /// so far, which may fix some of the remaining associated type
-        /// parameters.  This will be cleared and replaced with the
-        /// substitutions arising from this method.
+        /// so far, which is used to inferthe remaining associated type
+        /// parameters.
         /// </param>
         /// <returns>
-        /// The array of remaining, unfixed associated type parameters.
-        /// If empty, there are no more such parameters to fix.
+        /// True if, and only if, all associated types were inferred.
         /// </returns>
-        private static ImmutableArray<int> TryFixAssociatedTypes(ImmutableArray<int> associatedIndices, ImmutableArray<TypeParameterSymbol> allTypeParameters, TypeSymbol[] destination, ref ImmutableTypeMap currentSubstitution)
+        private static bool TryInferAssociatedTypes(
+            ImmutableArray<int> associatedIndices,
+            ImmutableArray<TypeParameterSymbol> allTypeParameters,
+            TypeSymbol[] destination,
+            ImmutableTypeMap finalSubstitution)
         {
-            var newSubstitutions = new MutableTypeMap();
-
             Debug.Assert(associatedIndices.Length <= allTypeParameters.Length,
                 "Should not have more associated types than actual types.");
             Debug.Assert(allTypeParameters.Length == destination.Length,
@@ -549,27 +544,33 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(!associatedIndices.IsEmpty,
                 "Pointless to call TryFixAssociatedTypes on an empty index array.");
 
-            var newAssociatedIndices = ArrayBuilder<int>.GetInstance();
-
             foreach (int i in associatedIndices)
             {
                 Debug.Assert(i < allTypeParameters.Length,
                     $"Associated index {i} out of bounds.");
 
-                // Have we already fixed this?
-                if (destination[i] != null && destination[i] != allTypeParameters[i]) continue;
+                Debug.Assert(destination[i] == null || destination[i] != allTypeParameters[i],
+                    "Was told to infer an associated type that has already been inferred.");
 
                 var associated = allTypeParameters[i];
 
+                // Try see if the current substitution fixes this.
                 // TODO: guarding against inconsistent unifications.
-                var associatedU = currentSubstitution.SubstituteType(associated).AsTypeSymbolOnly();
-                if (associatedU != associated) destination[i] = associatedU;
+                var associatedU = finalSubstitution.SubstituteType(associated).AsTypeSymbolOnly();
+                if (associatedU != associated)
+                {
+                    // Assume that, since the type changed, inference succeeded.
+                    destination[i] = associatedU;
+                    continue;
+                }
 
-                if (destination[i] == null || destination[i] == allTypeParameters[i]) newAssociatedIndices.Add(i);
+                // Otherwise, it didn't.
+                Debug.Assert(destination[i] == null || destination[i] == allTypeParameters[i],
+                    "The destination has been fixed even though fixing failed.");
+                return false;
             }
 
-            currentSubstitution = newSubstitutions.ToUnification();
-            return newAssociatedIndices.ToImmutableAndFree();
+            return true;
         }
 
         /// <summary>
@@ -593,7 +594,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// Null if inference failed; else, the inferred concept instance and
         /// its unification.
         /// </returns>
-        internal Candidate Infer(TypeParameterSymbol typeParam, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
+        internal Candidate InferOneWitness(TypeParameterSymbol typeParam, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
         {
             if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
 
@@ -991,7 +992,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             var newChain = chain.Add(instance);
 
             var inferred = new TypeSymbol[instance.TypeParameters.Length];
-            if (!InferManyInPlace(conceptIndices, associatedIndices, instance.TypeParameters, inferred, fixedMap, newChain)) return default(Candidate);
+            if (!Infer(conceptIndices, associatedIndices, instance.TypeParameters, inferred, fixedMap, newChain)) return default(Candidate);
 
             var recurSubstMap = new MutableTypeMap();
             foreach (int c in conceptIndices) recurSubstMap.Add(instance.TypeParameters[c], new TypeWithModifiers(inferred[c]));
@@ -1258,7 +1259,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             }
 
             var ary = allArgumentsBuilder.ToArrayAndFree();
-            if (!InferManyInPlace(missingIndices.ToImmutableAndFree(), ImmutableArray<int>.Empty, typeParameters, ary, fixedMap.ToUnification()))
+            if (!Infer(missingIndices.ToImmutableAndFree(), ImmutableArray<int>.Empty, typeParameters, ary, fixedMap.ToUnification()))
             {
                 // TODO: more specific error?
                 return ImmutableArray<TypeSymbol>.Empty;
