@@ -583,6 +583,8 @@ namespace System.Concepts.OpPrelude
     /// </summary>
     public instance PreludeInt : Ord<int>, Num<int>
     {
+        public long _ignore;
+
         //
         // Eq (via Ord)
         //
@@ -613,6 +615,8 @@ namespace System.Concepts.OpPrelude
     /// </summary>
     public instance PreludeDouble : Ord<double>, Floating<double>
     {
+        public long _ignore;
+
         //
         // Eq (via Ord)
         //
