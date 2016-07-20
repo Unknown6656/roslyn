@@ -514,12 +514,12 @@ Haskell has a rich numeric hierarchy (think |IArithmetic|)
   class Num a where
     Add: a -> a -> a
     Mult: a -> a -> a
-    Neg: a -> a -> a
+    Neg: a -> a
   
   instance Num Integer where
-    Add(a,b) = a + b
-    Mult(a,b) = a * b
-    Neg(a,b) = -a
+    Add a b = a + b
+    Mult a b = a * b
+    Neg a  = -a
   
   instance Num Float where 
     ...
@@ -582,7 +582,7 @@ Haskell supports (multiple) inheritance of super classes.
   class (Eq a) => Num a where
     Add: a -> a -> a
     Mult: a -> a -> a
-    Neg: a -> a -> a
+    Neg: a -> a
 ```
 
 * Forall types `a`, `Num a` derives from `Eq a`. (Is it just me or is Haskell's `=>` the wrong-way round?).
@@ -719,7 +719,7 @@ C#:
     // Note the type parameter bound in the generic method
 
     public static void qsort<IOrdT, T>(T[] arr, int a, int b)
-      where IOrdT : IOrd<T>  {
+      where IOrdT : struct, IOrd<T>  {
       IOrdT iordt = default(IOrdT); // <- explicit (stack) allocation :-{
       // sort arr[a..b]
       if (a < b) {
