@@ -110,7 +110,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             bool hasBlockBody = syntax.Body != null;
             _isExpressionBodied = !hasBlockBody && syntax.ExpressionBody != null;
 
-            if (hasBlockBody || _isExpressionBodied)
+            // @t-mawind
+            //   If this method is on a concept and has a body, then we pretend
+            //   it isn't there in various parts of this class, as it's meant for
+            //   the default struct.
+            //   First, we don't check modifiers for it here.
+            if (!containingType.IsConcept && (hasBlockBody || _isExpressionBodied))
             {
                 CheckModifiersForBody(location, diagnostics);
             }

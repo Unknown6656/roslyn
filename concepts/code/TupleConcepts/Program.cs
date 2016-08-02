@@ -110,7 +110,7 @@ namespace TupleConcepts
         /// <returns>
         ///     The human-readable string representation of <paramref name="t"/>.
         /// </returns>
-        string Show(T t);
+        string Show(T t) => t.ToString();
     }
 
     /// <summary>

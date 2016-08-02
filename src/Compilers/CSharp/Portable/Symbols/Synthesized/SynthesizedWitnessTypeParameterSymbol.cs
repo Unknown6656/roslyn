@@ -360,6 +360,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </remarks>
         internal void SetOwner(NamedTypeSymbol owner)
         {
+            // @t-mawind
+            //   This exists to break a cyclic dependency between the
+            //   witness parameter and the default struct, when this is
+            //   being used in one.
+
             var oldOwner = Interlocked.CompareExchange(ref _owner, owner, null);
             Debug.Assert(oldOwner == null, "Can only set owner if previously left unset.");
         }

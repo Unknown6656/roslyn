@@ -847,6 +847,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             internal readonly ImmutableArray<ImmutableArray<FieldOrPropertyInitializer>> StaticInitializers;
             internal readonly ImmutableArray<ImmutableArray<FieldOrPropertyInitializer>> InstanceInitializers;
             internal readonly ImmutableArray<SyntaxReference> IndexerDeclarations;
+            // @t-mawind  Better way of doing this?
+            internal readonly ImmutableArray<SyntaxReference> ConceptDefaultBodies;
+
             internal readonly int StaticInitializersSyntaxLength;
             internal readonly int InstanceInitializersSyntaxLength;
 
@@ -855,6 +858,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 ImmutableArray<ImmutableArray<FieldOrPropertyInitializer>> staticInitializers,
                 ImmutableArray<ImmutableArray<FieldOrPropertyInitializer>> instanceInitializers,
                 ImmutableArray<SyntaxReference> indexerDeclarations,
+                ImmutableArray<SyntaxReference> conceptDefaultBodies,
                 int staticInitializersSyntaxLength,
                 int instanceInitializersSyntaxLength)
             {
@@ -862,6 +866,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 Debug.Assert(!staticInitializers.IsDefault);
                 Debug.Assert(!instanceInitializers.IsDefault);
                 Debug.Assert(!indexerDeclarations.IsDefault);
+                Debug.Assert(!conceptDefaultBodies.IsDefault);
 
                 Debug.Assert(!nonTypeNonIndexerMembers.Any(s => s is TypeSymbol));
                 Debug.Assert(!nonTypeNonIndexerMembers.Any(s => s.IsIndexer()));
@@ -874,6 +879,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 this.StaticInitializers = staticInitializers;
                 this.InstanceInitializers = instanceInitializers;
                 this.IndexerDeclarations = indexerDeclarations;
+                ConceptDefaultBodies = conceptDefaultBodies;
                 this.StaticInitializersSyntaxLength = staticInitializersSyntaxLength;
                 this.InstanceInitializersSyntaxLength = instanceInitializersSyntaxLength;
             }
@@ -1088,7 +1094,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                 if (IsConcept)
                 {
-                    var val = new SynthesizedDefaultStructSymbol(DefaultStructName, this);
+                    Debug.Assert(this is SourceNamedTypeSymbol, "got a non-named-type concept somehow");
+                    var val = new SynthesizedDefaultStructSymbol(DefaultStructName, this as SourceNamedTypeSymbol);
                     symbols.Add(val);
                 }
 
@@ -1244,6 +1251,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
                 var membersByName = membersAndInitializers.NonTypeNonIndexerMembers.ToDictionary(s => s.Name);
                 AddNestedTypesToDictionary(membersByName, GetTypeMembersDictionary());
+
+                // @t-mawind this is almost certainly wrong
+                if (IsConcept) ImmutableInterlocked.InterlockedInitialize(ref _conceptDefaultMethods, membersAndInitializers.ConceptDefaultBodies);
 
                 Interlocked.CompareExchange(ref _lazyEarlyAttributeDecodingMembersDictionary, membersByName, null);
             }
@@ -2137,6 +2147,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             // Merge types into the member dictionary
             AddNestedTypesToDictionary(membersByName, GetTypeMembersDictionary());
 
+            // @t-mawind this is almost certainly wrong
+            if (IsConcept) ImmutableInterlocked.InterlockedInitialize(ref _conceptDefaultMethods, membersAndInitializers.ConceptDefaultBodies);
+
             return membersByName;
         }
 
@@ -2211,6 +2224,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             public readonly ArrayBuilder<ImmutableArray<FieldOrPropertyInitializer>> StaticInitializers = ArrayBuilder<ImmutableArray<FieldOrPropertyInitializer>>.GetInstance();
             public readonly ArrayBuilder<ImmutableArray<FieldOrPropertyInitializer>> InstanceInitializers = ArrayBuilder<ImmutableArray<FieldOrPropertyInitializer>>.GetInstance();
             public readonly ArrayBuilder<SyntaxReference> IndexerDeclarations = ArrayBuilder<SyntaxReference>.GetInstance();
+            // @t-mawind  Better way of doing this?
+            public readonly ArrayBuilder<SyntaxReference> ConceptDefaultBodies = ArrayBuilder<SyntaxReference>.GetInstance();
 
             public int StaticSyntaxLength;
             public int InstanceSyntaxLength;
@@ -2222,6 +2237,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     StaticInitializers.ToImmutableAndFree(),
                     InstanceInitializers.ToImmutableAndFree(),
                     IndexerDeclarations.ToImmutableAndFree(),
+                    ConceptDefaultBodies.ToImmutableAndFree(),
                     StaticSyntaxLength,
                     InstanceSyntaxLength);
             }
@@ -2927,6 +2943,17 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                                 diagnostics.Add(ErrorCode.ERR_NamespaceUnexpected,
                                     new SourceLocation(methodSyntax.Identifier));
                             }
+
+                            // @t-mawind
+                            //   Concept methods can have bodies, in which case
+                            //   we forward the syntax to the default struct to
+                            //   build it there.  
+                            bool hasBody = methodSyntax.Body != null || methodSyntax.ExpressionBody != null;
+                            if (hasBody && IsConcept)
+                            {
+                                builder.ConceptDefaultBodies.Add(methodSyntax.GetReference());
+                            }
+
 
                             var method = SourceMemberMethodSymbol.CreateMethodSymbol(this, bodyBinder, methodSyntax, diagnostics);
                             builder.NonTypeNonIndexerMembers.Add(method);

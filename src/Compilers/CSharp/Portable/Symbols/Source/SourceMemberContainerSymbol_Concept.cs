@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp.Symbols;
 
@@ -33,5 +34,25 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         // loops.
 
         #endregion Concept and instance selectors
+
+        /// <summary>
+        /// Syntax references for default methods.
+        /// </summary>
+        private ImmutableArray<SyntaxReference> _conceptDefaultMethods;
+
+        /// <summary>
+        /// Get syntax references for all of the default method implementations
+        /// on this symbol, if it is a concept.
+        /// </summary>
+        /// <returns>
+        /// An array of method syntax references.
+        /// </returns>
+        internal ImmutableArray<SyntaxReference> GetConceptDefaultMethods()
+        {
+            // @t-mawind hack to force _conceptDefaultMethods to be populated.
+            if (_conceptDefaultMethods.IsDefault) GetMembers();
+            Debug.Assert(!_conceptDefaultMethods.IsDefault, "concept default methods should be populated at this stage.");
+            return _conceptDefaultMethods;
+        }
     }
 }
