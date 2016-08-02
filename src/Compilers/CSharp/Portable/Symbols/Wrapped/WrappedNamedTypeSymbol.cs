@@ -240,6 +240,8 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </returns>
         internal override bool IsConcept => _underlyingType.IsConcept; //@t-mawind
 
+        internal override bool IsDefaultStruct => _underlyingType.IsDefaultStruct; // @t-mawind
+
         /// <summary>
         /// Gets whether this symbol represents a concept.
         /// </summary>

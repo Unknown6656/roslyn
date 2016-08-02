@@ -54,7 +54,21 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             _typeMap = typeMap;
         }
 
-        private ImmutableArray<TypeParameterSymbol> CreateTypeParameters(int parameterCount, bool returnsVoid)
+        // @t-mawind This is a hack...
+        protected SynthesizedContainer(string name, Func<SynthesizedContainer, ImmutableArray<TypeParameterSymbol>> typeParametersF, TypeMap typeMap)
+        {
+            Debug.Assert(name != null);
+            Debug.Assert(typeParametersF != null);
+            Debug.Assert(typeMap != null);
+
+            _name = name;
+            _typeParameters = typeParametersF(this);
+            Debug.Assert(!_typeParameters.IsDefault);
+            _typeMap = typeMap;
+        }
+
+        // @t-mawind As is this accessibility change
+        internal ImmutableArray<TypeParameterSymbol> CreateTypeParameters(int parameterCount, bool returnsVoid)
         {
             var typeParameters = ArrayBuilder<TypeParameterSymbol>.GetInstance(parameterCount + (returnsVoid ? 0 : 1));
             for (int i = 0; i < parameterCount; i++)

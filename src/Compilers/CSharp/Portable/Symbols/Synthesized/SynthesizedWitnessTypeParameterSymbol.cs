@@ -349,26 +349,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
         }
 
-        /// <summary>
-        /// Sets the owner of this symbol, if previously left unset.
-        /// </summary>
-        /// <param name="owner">
-        /// The new owner.
-        /// </param>
-        /// <remarks>
-        /// This is a nasty hack, and should be removed if possible.
-        /// </remarks>
-        internal void SetOwner(NamedTypeSymbol owner)
-        {
-            // @t-mawind
-            //   This exists to break a cyclic dependency between the
-            //   witness parameter and the default struct, when this is
-            //   being used in one.
-
-            var oldOwner = Interlocked.CompareExchange(ref _owner, owner, null);
-            Debug.Assert(oldOwner == null, "Can only set owner if previously left unset.");
-        }
-
         public override TypeParameterKind TypeParameterKind => TypeParameterKind.Type;
 
         public override Symbol ContainingSymbol => _owner;

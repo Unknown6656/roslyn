@@ -725,12 +725,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             bool isInterface = this.ContainingType.IsInterface;
             bool isConceptInstance = this.ContainingType.IsInstance;
+            bool isDefault = ContainingType.IsDefaultStruct;
 
             // @t-mawind
             //    Concept instances default to public method access: indeed,
             //    the only thing allowed in a concept instance is a public
             //    method.
-            var defaultAccess = (isInterface || isConceptInstance) ? DeclarationModifiers.Public : DeclarationModifiers.Private;
+            var defaultAccess = (isInterface || isConceptInstance || isDefault) ? DeclarationModifiers.Public : DeclarationModifiers.Private;
 
             // Check that the set of modifiers is allowed
             var allowedModifiers = DeclarationModifiers.Partial | DeclarationModifiers.Unsafe;

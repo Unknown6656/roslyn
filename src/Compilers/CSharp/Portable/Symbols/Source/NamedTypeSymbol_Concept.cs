@@ -124,16 +124,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             Debug.Assert(IsConcept, "Should never get the default struct of a non-concept");
 
-            var lookupResult = LookupResult.GetInstance();
+            foreach (var m in GetTypeMembers())
+            {
+                if (m.IsDefaultStruct) return m;
+            }
 
-            binder.LookupSymbolsSimpleName(lookupResult, null, DefaultStructName, 0, null, LookupOptions.Default, diagnose, ref useSiteDiagnostics);
-
-            // TODO: actually report errors
-            var ds = lookupResult.SingleSymbolOrDefault;
-            lookupResult.Free();
-            Debug.Assert((ds as NamedTypeSymbol)?.IsDefaultStruct ?? true,
-                "If we got a namedtype it should be a default struct");
-            return ds as NamedTypeSymbol;
+            return null;
         }
 
         /// <summary>

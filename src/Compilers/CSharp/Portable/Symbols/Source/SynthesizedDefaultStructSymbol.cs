@@ -35,19 +35,24 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         public SynthesizedDefaultStructSymbol(string name, SourceNamedTypeSymbol concept)
             : base(
                   name,
-                  ImmutableArray.Create(
-                      (TypeParameterSymbol) new SynthesizedWitnessParameterSymbol(
-                          // @t-mawind
-                          //   need to make this not clash with any typar in
-                          //   the parent scopes, hence generated name.
-                          GeneratedNames.MakeAnonymousTypeParameterName("witness"),
-                          Location.None,
-                          0,
-                          null, // @t-mawind cyclic dependency!  Fixed below for now.
-                          _ => ImmutableArray.Create((TypeSymbol) concept),
-                          _ => TypeParameterConstraintKind.ValueType
-                      )
-                  ),
+                  that =>
+                      // We duplicate the type parameters of the concept itself,
+                      // as well as adding one for the calling witness, so the
+                      // default struct can call back into it.
+                      that.CreateTypeParameters(concept.Arity, true)
+                          .Add(
+                          new SynthesizedWitnessParameterSymbol(
+                              // @t-mawind
+                              //   need to make this not clash with any typar in
+                              //   the parent scopes, hence generated name.
+                              GeneratedNames.MakeAnonymousTypeParameterName("witness"),
+                              Location.None,
+                              concept.Arity,
+                              that,
+                              _ => ImmutableArray.Create((TypeSymbol) concept),
+                              _ => TypeParameterConstraintKind.ValueType
+                          )
+                      ),
                   TypeMap.Empty
               )
         {
@@ -55,9 +60,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             _concept = concept;
             // We can't get the default members here: it'll cause an infinite
             // loop...
-
-            // @t-mawind cyclic dependency: as above: this is horrible.
-            (TypeParameters[0] as SynthesizedWitnessParameterSymbol).SetOwner(this);
         }
 
         public override Symbol ContainingSymbol => _concept;
@@ -73,6 +75,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         //   invalid.
         internal sealed override TypeLayout Layout =>
             new TypeLayout(LayoutKind.Sequential, 1, alignment: 0);
+
+
+        // @t-mawind
+        //   Defaults have to be public, else they're useless.
+        public override Accessibility DeclaredAccessibility => Accessibility.Public;
 
         private ImmutableArray<Symbol> _members;
 
@@ -91,6 +98,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 //   This is slightly wrong, but we don't have any syntax to
                 //   cling onto apart from this...
                 var binder = DeclaringCompilation.GetBinder(ContainingType.GetNonNullSyntaxNode());
+
                 var diagnostics = DiagnosticBag.GetInstance();
 
                 var memberSyntax = _concept.GetConceptDefaultMethods();
@@ -108,6 +116,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
             return _members;
         }
+
+        public override ImmutableArray<Symbol> GetMembers(string name)
+        {
+            // @t-mawind TODO: slow and ugly.
+
+            var mb = ArrayBuilder<Symbol>.GetInstance();
+            mb.AddRange(base.GetMembers(name));
+
+            foreach (var m in GetMembers())
+            {
+                if (m.Name == name) mb.Add(m);
+            }
+
+            return mb.ToImmutableAndFree();
+        }
+
+        internal override bool IsDefaultStruct => true;
 
         internal override void AddSynthesizedAttributes(ModuleCompilationState compilationState, ref ArrayBuilder<SynthesizedAttributeData> attributes)
         {

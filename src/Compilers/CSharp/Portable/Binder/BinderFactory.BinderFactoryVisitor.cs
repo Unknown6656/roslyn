@@ -142,7 +142,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     //   must use the symbol's type parameter list...
                     if (usage != NodeUsage.Normal)
                     {
-                        method = GetMethodSymbol(methodDecl, resultBinder);
+                        method = method ?? GetMethodSymbol(methodDecl, resultBinder);
 
                         // @t-mawind ...which we don't get until here.
                         if (!method.TypeParameters.IsEmpty)

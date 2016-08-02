@@ -1605,6 +1605,13 @@ namespace Microsoft.CodeAnalysis.CSharp
                     var arrowExpression = methodSyntax.GetExpressionBodySyntax();
 
                     Binder binder = factory.GetBinder(arrowExpression);
+
+                    // @t-mawind TODO: MASSIVE HACK.
+                    if (method.ContainingType.IsDefaultStruct)
+                    {
+                        binder = new WithWitnessesBinder(method.ContainingType, binder);
+                    }
+
                     binder = new ExecutableCodeBinder(arrowExpression, sourceMethod, binder);
                     importChain = binder.ImportChain;
                     // Add locals
