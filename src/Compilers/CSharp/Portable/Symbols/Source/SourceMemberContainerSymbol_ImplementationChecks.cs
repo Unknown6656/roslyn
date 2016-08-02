@@ -558,6 +558,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                         CheckNewModifier(member, isNewField, diagnostics);
                         break;
                     case SymbolKind.NamedType:
+                        // @t-mawind
+                        //   SynthesizedDefaultStructSymbol gets here,
+                        //   because it's a member of a source symbol, but it
+                        //   isn't actually a source symbol itself.
+                        //   Quickfix: this is horrible.
+                        if (member is SynthesizedDefaultStructSymbol) break;
+
                         CheckNewModifier(member, ((SourceMemberContainerTypeSymbol)member).IsNew, diagnostics);
                         break;
                 }

@@ -528,6 +528,7 @@
     <Compile Include="Symbols\AnonymousTypes\SynthesizedSymbols\AnonymousType.TemplateSymbol.cs" />
     <Compile Include="Symbols\AnonymousTypes\SynthesizedSymbols\AnonymousType.ToStringMethodSymbol.cs" />
     <Compile Include="Symbols\AnonymousTypes\SynthesizedSymbols\AnonymousType.TypeParameterSymbol.cs" />
+    <Compile Include="Symbols\Source\SynthesizedDefaultStructSymbol.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedImplementationForwardingMethod.cs" />
     <Compile Include="Symbols\Synthesized\SynthesizedDefaultStructImplementationMethod.cs" />
     <Compile Include="Symbols\Metadata\PE\TupleTypeDecoder.cs" />

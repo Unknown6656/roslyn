@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Threading;
+using System;
 
 namespace Microsoft.CodeAnalysis.CSharp.Symbols
 {
@@ -285,7 +286,48 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
     /// </summary>
     internal sealed class SynthesizedWitnessParameterSymbol : SynthesizedWitnessParameterSymbolBase
     {
-        private SourceNamedTypeSymbol _owner;
+        private NamedTypeSymbol _owner;
+
+        // The below are Funcs because, if they are coming from _owner,
+        // evaluating them at ctor time triggers an infinite loop.
+
+        private Func<int, ImmutableArray<TypeSymbol>> _constraintTypes;
+        private Func<int, TypeParameterConstraintKind> _constraintKind;
+
+        /// <summary>
+        /// Constructs a new SynthesizedWitnessParameterSymbol with an explicit constraint set.
+        /// </summary>
+        /// <param name="name">
+        /// The name of the type parameter.
+        /// </param>
+        /// <param name="clauseLocation">
+        /// The location of the clause creating this witness.
+        /// </param>
+        /// <param name="ordinal">
+        /// The ordinal of the type parameter.
+        /// </param>
+        /// <param name="owner">
+        /// The symbol containing this type parameter.
+        /// </param>
+        /// <param name="constraintTypes">
+        /// Func taking the ordinal and producing the constraint types constraining this symbol.
+        /// </param>
+        /// <param name="constraintKind">
+        /// Func taking the ordinal and  producing the constraint kind constraining this symbol.
+        /// </param>
+        internal SynthesizedWitnessParameterSymbol(
+            string name,
+            Location clauseLocation,
+            int ordinal,
+            NamedTypeSymbol owner,
+            Func<int, ImmutableArray<TypeSymbol>> constraintTypes,
+            Func<int, TypeParameterConstraintKind> constraintKind)
+            : base(name, clauseLocation, ordinal)
+        {
+            _owner = owner;
+            _constraintTypes = constraintTypes;
+            _constraintKind = constraintKind;
+        }
 
         /// <summary>
         /// Constructs a new SynthesizedWitnessParameterSymbol.
@@ -303,9 +345,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// The symbol containing this type parameter.
         /// </param>
         internal SynthesizedWitnessParameterSymbol(string name, Location clauseLocation, int ordinal, SourceNamedTypeSymbol owner)
-            : base(name, clauseLocation, ordinal)
+            : this(name, clauseLocation, ordinal, owner, owner.GetTypeParameterConstraintTypes, owner.GetTypeParameterConstraints)
         {
-            _owner = owner;
+        }
+
+        /// <summary>
+        /// Sets the owner of this symbol, if previously left unset.
+        /// </summary>
+        /// <param name="owner">
+        /// The new owner.
+        /// </param>
+        /// <remarks>
+        /// This is a nasty hack, and should be removed if possible.
+        /// </remarks>
+        internal void SetOwner(NamedTypeSymbol owner)
+        {
+            var oldOwner = Interlocked.CompareExchange(ref _owner, owner, null);
+            Debug.Assert(oldOwner == null, "Can only set owner if previously left unset.");
         }
 
         public override TypeParameterKind TypeParameterKind => TypeParameterKind.Type;
@@ -330,21 +386,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
-        protected override ImmutableArray<TypeParameterSymbol> ContainerTypeParameters
-        {
-            get { return _owner.TypeParameters; }
-        }
+        protected override ImmutableArray<TypeParameterSymbol> ContainerTypeParameters => _owner.TypeParameters;
 
-        protected override TypeParameterBounds ResolveBounds(ConsList<TypeParameterSymbol> inProgress, DiagnosticBag diagnostics)
-        {
-            var constraintTypes = _owner.GetTypeParameterConstraintTypes(Ordinal);
-            return this.ResolveBounds(ContainingAssembly.CorLibrary, inProgress.Prepend(this), constraintTypes, false, DeclaringCompilation, diagnostics);
-        }
+        protected override TypeParameterBounds ResolveBounds(ConsList<TypeParameterSymbol> inProgress, DiagnosticBag diagnostics) =>
+            this.ResolveBounds(ContainingAssembly.CorLibrary, inProgress.Prepend(this), _constraintTypes(Ordinal), false, DeclaringCompilation, diagnostics);
 
-        private TypeParameterConstraintKind GetDeclaredConstraints()
-        {
-            return _owner.GetTypeParameterConstraints(Ordinal);
-        }
+        private TypeParameterConstraintKind GetDeclaredConstraints() => _constraintKind(Ordinal);
     }
 
     /// <summary>

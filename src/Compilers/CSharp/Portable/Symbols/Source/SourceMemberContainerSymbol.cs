@@ -1086,6 +1086,12 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     }
                 }
 
+                if (IsConcept)
+                {
+                    var val = new SynthesizedDefaultStructSymbol(DefaultStructName, this);
+                    symbols.Add(val);
+                }
+
                 Debug.Assert(s_emptyTypeMembers.Count == 0);
                 return symbols.Count > 0 ?
                     symbols.ToDictionary(s => s.Name, StringOrdinalComparer.Instance) :
