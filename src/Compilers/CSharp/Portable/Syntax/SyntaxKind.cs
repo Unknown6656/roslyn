@@ -542,7 +542,8 @@ namespace Microsoft.CodeAnalysis.CSharp
         ShebangDirectiveTrivia = 8922,
         LoadDirectiveTrivia = 8923,
         // Changes after C# 6
-		// tuples
+
+        // tuples
         TupleType = 8925,
         TupleElement = 8926,
         TupleExpression = 8927,
@@ -556,5 +557,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         // Kinds between 9000 and 9039 are "reserved" for pattern matching.
         // Please start with 9040 if you add more kinds below.
 
+        DeclarationExpression = 9040,
     }
 }

@@ -262,6 +262,8 @@ namespace Microsoft.CodeAnalysis
 
         System_Runtime_CompilerServices_TupleElementNamesAttribute,
 
+        Microsoft_CodeAnalysis_Runtime_Instrumentation,
+
         System_Concepts_ConceptAttribute, //@t-mawind
         System_Concepts_ConceptInstanceAttribute, //@t-mawind
         System_Concepts_ConceptWitnessAttribute, //@t-mawind
@@ -506,6 +508,7 @@ namespace Microsoft.CodeAnalysis
             "System.Environment",
 
             "System.Runtime.GCLatencyMode",
+
             "System.IFormatProvider",
 
             "System.ValueTuple`1",
@@ -521,6 +524,8 @@ namespace Microsoft.CodeAnalysis
             "System.ValueTuple`8",
 
             "System.Runtime.CompilerServices.TupleElementNamesAttribute",
+
+            "Microsoft.CodeAnalysis.Runtime.Instrumentation",
 
             //@t-mawind
             "System.Concepts.ConceptAttribute",
@@ -566,6 +571,9 @@ namespace Microsoft.CodeAnalysis
                         break;
                     case WellKnownType.ExtSentinel:
                         typeIdName = "";
+                        continue;
+                    case (WellKnownType.NextAvailable - 1):
+                        typeIdName = "Microsoft.CodeAnalysis.Runtime.Instrumentation";
                         continue;
                     default:
                         typeIdName = typeId.ToString().Replace("__", "+").Replace('_', '.');

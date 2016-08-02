@@ -1,12 +1,9 @@
 // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Diagnostics.AddImport;
-using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.CSharp.Diagnostics
 {
@@ -55,7 +52,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Diagnostics
             {
                 for (int i = 0; i < constructor.Parameters.Length; i++)
                 {
-                    var typeInfo = model.GetTypeInfo(args[i].Expression ?? args[i].Declaration.Type);
+                    var typeInfo = model.GetTypeInfo(args[i].Expression);
                     if (!constructor.Parameters[i].Type.Equals(typeInfo.ConvertedType))
                     {
                         return false;
