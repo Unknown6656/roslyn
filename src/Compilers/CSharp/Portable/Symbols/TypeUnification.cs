@@ -306,8 +306,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                 case SymbolKind.ErrorType:
                     {
                         NamedTypeSymbol namedType = (NamedTypeSymbol)type;
+
                         while ((object)namedType != null)
                         {
+                            // @t-mawind Make occurs check work properly for tuples (quickfix).
+                            namedType = namedType.TupleUnderlyingType ?? namedType;
+
                             foreach (TypeSymbol typeArg in namedType.TypeArgumentsNoUseSiteDiagnostics)
                             {
                                 if (Contains(typeArg, typeParam))
