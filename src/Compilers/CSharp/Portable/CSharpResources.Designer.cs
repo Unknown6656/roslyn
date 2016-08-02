@@ -2384,6 +2384,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos;: cannot change tuple element names when overriding inherited member &apos;{1}&apos;.
+        /// </summary>
+        internal static string ERR_CantChangeTupleNamesOnOverride {
+            get {
+                return ResourceManager.GetString("ERR_CantChangeTupleNamesOnOverride", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &apos;{0}&apos;: type must be &apos;{2}&apos; to match overridden member &apos;{1}&apos;.
         /// </summary>
         internal static string ERR_CantChangeTypeOnOverride {
@@ -3541,6 +3550,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string ERR_DuplicateInterfaceInBaseList {
             get {
                 return ResourceManager.GetString("ERR_DuplicateInterfaceInBaseList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to &apos;{0}&apos; is already listed in the interface list on type &apos;{2}&apos; with different tuple element names, as &apos;{1}&apos;..
+        /// </summary>
+        internal static string ERR_DuplicateInterfaceWithTupleNamesInBaseList {
+            get {
+                return ResourceManager.GetString("ERR_DuplicateInterfaceWithTupleNamesInBaseList", resourceCulture);
             }
         }
         
@@ -4891,6 +4909,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string ERR_ImplBadConstraints {
             get {
                 return ResourceManager.GetString("ERR_ImplBadConstraints", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The tuple element names in the signature of method &apos;{0}&apos; must match the tuple element names of interface method &apos;{1}&apos; (including on the return type)..
+        /// </summary>
+        internal static string ERR_ImplBadTupleNames {
+            get {
+                return ResourceManager.GetString("ERR_ImplBadTupleNames", resourceCulture);
             }
         }
         
@@ -7186,6 +7213,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string ERR_PartialMethodInconsistentConstraints {
             get {
                 return ResourceManager.GetString("ERR_PartialMethodInconsistentConstraints", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Both partial method declarations, &apos;{0}&apos; and &apos;{1}&apos;, must use the same tuple element names..
+        /// </summary>
+        internal static string ERR_PartialMethodInconsistentTupleNames {
+            get {
+                return ResourceManager.GetString("ERR_PartialMethodInconsistentTupleNames", resourceCulture);
             }
         }
         
