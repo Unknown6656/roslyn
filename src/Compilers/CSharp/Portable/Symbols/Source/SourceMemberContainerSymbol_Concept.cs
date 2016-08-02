@@ -49,7 +49,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </returns>
         internal ImmutableArray<SyntaxReference> GetConceptDefaultMethods()
         {
-            // @t-mawind hack to force _conceptDefaultMethods to be populated.
+            // @t-mawind
+            //   hack to force _conceptDefaultMethods to be populated.
+            //   TODO: do this properly.
             if (_conceptDefaultMethods.IsDefault) GetMembers();
             Debug.Assert(!_conceptDefaultMethods.IsDefault, "concept default methods should be populated at this stage.");
             return _conceptDefaultMethods;

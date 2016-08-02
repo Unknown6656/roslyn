@@ -108,5 +108,13 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
             return _members;
         }
+
+        internal override void AddSynthesizedAttributes(ModuleCompilationState compilationState, ref ArrayBuilder<SynthesizedAttributeData> attributes)
+        {
+            base.AddSynthesizedAttributes(compilationState, ref attributes);
+
+            CSharpCompilation compilation = DeclaringCompilation;
+            AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.System_Concepts_ConceptDefaultAttribute__ctor));
+        }
     }
 }
