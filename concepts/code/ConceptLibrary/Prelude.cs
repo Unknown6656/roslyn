@@ -16,10 +16,14 @@ namespace System.Concepts.Prelude
     /// <typeparam name="A">
     ///     The type for which equality is being defined.
     /// </typeparam>
+    /// <remarks>
+    ///     Minimal complete definition is either
+    ///     <see cref="Equals"/> or <see cref="NotEquals"/>.
+    /// </remarks>
     public concept Eq<A>
     {
         /// <summary>
-        ///     Returns true if <paramref name="x"/> equals
+        ///     Returns true iff <paramref name="x"/> equals
         ///     <paramref name="y"/>.
         /// </summary>
         /// <param name="x">
@@ -29,13 +33,34 @@ namespace System.Concepts.Prelude
         ///     The second item to compare for equality.
         /// </param>
         /// <returns>
-        ///     True if <paramref name="a"/> equals
+        ///     True iff <paramref name="a"/> equals
         ///     <paramref name="y"/>: <c>x == y</c>.
         /// </returns>
-        bool Equals(A x, A y);
+        /// <remarks>
+        ///     If this is not defined, the default is
+        ///     to take the negation of <see cref="NotEquals"/>.
+        /// </remarks>
+        bool Equals(A x, A y) => !NotEquals(x, y);
 
-        // In Haskell, one can define Eq either using == or !=; we only
-        // supply == for now.
+        /// <summary>
+        ///     Returns false iff <paramref name="x"/> equals
+        ///     <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">
+        ///     The first item to compare for disequality.
+        /// </param>
+        /// <param name="y">
+        ///     The second item to compare for disequality.
+        /// </param>
+        /// <returns>
+        ///     False iff <paramref name="a"/> equals
+        ///     <paramref name="y"/>: <c>x != y</c>.
+        /// </returns>
+        /// <remarks>
+        ///     If this is not defined, the default is
+        ///     to take the negation of <see cref="Equals"/>.
+        /// </remarks>
+        bool NotEquals(A x, A y) => !Equals(x, y);
     }
 
     // Subconcept implementations of Eq:
@@ -72,8 +97,13 @@ namespace System.Concepts.Prelude
     /// <typeparam name="A">
     ///     The type for which ordering is being defined.
     /// </typeparam>
+    /// <remarks>
+    ///    Minimal complete definition is <see cref="Leq"/>.
+    /// </remarks>
     public concept Ord<A> : Eq<A>
     {
+        // TODO: compare
+
         /// <summary>
         ///     Returns true if <paramref name="x"/> is less than or
         ///     equal to <paramref name="y"/>.
@@ -90,9 +120,22 @@ namespace System.Concepts.Prelude
         /// </returns>
         bool Leq(A x, A y);
 
-        // The Haskell equivalent of this defines <=, <, >, and >=,
-        // and allows either to be defined.  Currently we just define
-        // <=.
+        /// <summary>
+        ///     Returns true if <paramref name="x"/> is less than
+        ///     <paramref name="y"/>.
+        /// </summary>
+        /// <param name="x">
+        ///     The first item to compare.
+        /// </param>
+        /// <param name="y">
+        ///     The second item to compare.
+        /// </param>
+        /// <returns>
+        ///     True if <paramref name="x"/> is less than
+        ///     <paramref name="y"/>: <c>x < y</c>.
+        /// </returns>
+        bool Lt(A x, A y) => Leq(x, y) && !NotEquals(x, y);
+
     }
 
     // Subconcept implementations of Ord:
@@ -110,6 +153,10 @@ namespace System.Concepts.Prelude
     /// <typeparam name="A">
     ///     The type for which numeric operations are being defined.
     /// </typeparam>
+    /// <remarks>
+    ///     Minimal complete definition is all except either
+    ///     <see cref="Sub"/> or <see cref="Neg"/>.
+    /// </remarks>
     public concept Num<A>
     {
         /// <summary>
@@ -142,7 +189,23 @@ namespace System.Concepts.Prelude
         ///     The result of subtracting <paramref name="y"/> from
         ///     <paramref name="x"/>: <c>x - y</c>.
         /// </returns>
-        A Sub(A x, A y);
+        A Sub(A x, A y) => Add(x, Neg(y));
+
+
+        /// <summary>
+        ///     Negates <paramref name="x"/>.
+        /// </summary>
+        /// <param name="x">
+        ///     The quantity to negate.
+        /// </param>
+        /// <returns>
+        ///     The result of negating <paramref name="x"/>: <c>-x</c>.
+        /// </returns>
+        /// <remarks>
+        ///     If not defined, the default is to subtract
+        ///     <paramref name="x"/> from zero.
+        /// </remarks>
+        A Neg(A x) => Sub(FromInteger(0), x);
 
         // Haskell here allows either (-) or negate to be defined: we
         // currently just define Sub.
@@ -240,6 +303,11 @@ namespace System.Concepts.Prelude
     /// <typeparam name="A">
     ///     The type for which fractional operations are being defined.
     /// </typeparam>
+    /// <remarks>
+    ///     Minimum complete definition:
+    ///     <see cref="FromRational"/> and either <see cref="Recip"/> or
+    ///     <see cref="Div"/>.
+    /// </remarks>
     public concept Fractional<A> : Num<A>
     {
         /// <summary>
@@ -256,7 +324,26 @@ namespace System.Concepts.Prelude
         ///     The result of fractionally dividing <paramref name="x"/>
         ///     by <paramref name="y"/>: <c>x / y</c>.
         /// </returns>
-        A Div(A x, A y);
+        /// <remarks>
+        ///     If not defined, the default is to take the multiplication of
+        ///     <paramref name="x"/> by the reciprocal of <paramref name="y"/>.
+        /// </remarks>
+        A Div(A x, A y) => Mul(x, Recip(y));
+
+        /// <summary>
+        ///     Takes the reciprocal of <paramref name="x"/>.
+        /// </summary>
+        /// <param name="x">
+        ///     The value to be reciprocated.
+        /// </param>
+        /// <returns>
+        ///     The reciprocal of <paramref name="x"/>.
+        /// </returns>
+        /// <remarks>
+        ///     If not defined, the default is to divide 1 by
+        ///     <paramref name="x"/>.
+        /// </remarks>
+        A Recip(A x) => Div(FromInteger(1), x);
 
         // Haskell also allows the reciprocal to be defined, but, for
         // now, we don't.
@@ -291,6 +378,23 @@ namespace System.Concepts.Prelude
     /// <typeparam name="A">
     ///     The type for which floating operations are being defined.
     /// </typeparam>
+    /// <remarks>
+    ///     The minimum complete definition is
+    ///     <see cref="pi"/>,
+    ///     <see cref="exp"/>,
+    ///     <see cref="log"/>,
+    ///     <see cref="sin"/>,
+    ///     <see cref="cos"/>,
+    ///     <see cref="sinh"/>,
+    ///     <see cref="sinh"/>,
+    ///     <see cref="cosh"/>,
+    ///     <see cref="asin"/>,
+    ///     <see cref="acos"/>,
+    ///     <see cref="atan"/>,
+    ///     <see cref="asinh"/>,
+    ///     <see cref="acosh"/>, and
+    ///     <see cref="atanh"/>.
+    ///  </remarks>
     public concept Floating<A> : Fractional<A>
     {
         /// <summary>
@@ -349,7 +453,11 @@ namespace System.Concepts.Prelude
         /// <returns>
         ///     The value of <c>x^y</c>.
         /// </returns>
-        A Pow(A x, A y);
+        /// <remarks>
+        ///     If not defined, the default is defined in terms of the natural
+        ///     logarithm and exponential function.
+        /// </remarks>
+        A Pow(A x, A y) => Exp(Mul(Log(x), y));
 
         /// <summary>
         ///     Calculates the logarithm of a value with respect to an
@@ -365,10 +473,11 @@ namespace System.Concepts.Prelude
         /// <returns>
         ///     The value of <c>log b (x)</c>.
         /// </returns>
-        A LogBase(A b, A x);
-
-        // Both of these can be defined in terms of Exp/Log in Haskell.
-        // We're not quite there yet!
+        /// <remarks>
+        ///     If not defined, the default is defined in terms of the natural
+        ///     logarithm.
+        /// </remarks>
+        A LogBase(A b, A x) => Div(Log(x), Log(b));
 
         /// <summary>
         ///     Calculates the sine of an angle.
@@ -401,7 +510,10 @@ namespace System.Concepts.Prelude
         /// <returns>
         ///     The value of <c>tan(x)</c>.
         /// </returns>
-        A Tan(A x);
+        /// <remarks>
+        ///     If left undefined, the default is sine over cosine.
+        /// </remarks>
+        A Tan(A x) => Div(Sin(x), Cos(x));
 
         /// <summary>
         ///     Calculates an arcsine.
@@ -470,7 +582,10 @@ namespace System.Concepts.Prelude
         /// <returns>
         ///     The value of <c>tanh(x)</c>.
         /// </returns>
-        A Tanh(A x);
+        /// <remarks>
+        ///     If left undefined, the default is sinh over cosh.
+        /// </remarks>
+        A Tanh(A x) => Div(Sinh(x), Cosh(x));
 
         /// <summary>
         ///     Calculates an area hyperbolic sine.
