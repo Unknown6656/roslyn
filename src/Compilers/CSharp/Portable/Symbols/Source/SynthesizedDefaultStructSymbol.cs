@@ -19,11 +19,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         private readonly SourceNamedTypeSymbol _concept;
 
         /// <summary>
-        /// Syntax references for the default bodies to synthesise here.
-        /// </summary>
-        private readonly ImmutableArray<SyntaxReference> _methodSyntax;
-
-        /// <summary>
         /// Constructs a new SynthesizedDefaultStructSymbol.
         /// </summary>
         /// <param name="name">
