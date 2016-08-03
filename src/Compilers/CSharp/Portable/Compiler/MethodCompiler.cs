@@ -1565,6 +1565,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                     var inMethodBinder = factory.GetBinder(blockSyntax);
 
                     // @t-mawind TODO: MASSIVE HACK.
+                    //   This and the corresponding one below for expression
+                    //   bodied methods exist to correct the fact that default
+                    //   struct methods take their syntax from their definition
+                    //   in the _concept_, not their synthesis in the struct.
+                    //   Thus, we have to bring the struct's witnesses (ie the
+                    //   instance using the default struct) into scope.
                     if (method.ContainingType.IsDefaultStruct)
                     {
                         inMethodBinder = new WithWitnessesBinder(method.ContainingType, inMethodBinder);
@@ -1613,6 +1619,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     Binder binder = factory.GetBinder(arrowExpression);
 
                     // @t-mawind TODO: MASSIVE HACK.
+                    //   See above for why.
                     if (method.ContainingType.IsDefaultStruct)
                     {
                         binder = new WithWitnessesBinder(method.ContainingType, binder);
