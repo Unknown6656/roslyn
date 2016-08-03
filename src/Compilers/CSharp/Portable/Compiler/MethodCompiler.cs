@@ -1564,6 +1564,12 @@ namespace Microsoft.CodeAnalysis.CSharp
                 {
                     var inMethodBinder = factory.GetBinder(blockSyntax);
 
+                    // @t-mawind TODO: MASSIVE HACK.
+                    if (method.ContainingType.IsDefaultStruct)
+                    {
+                        inMethodBinder = new WithWitnessesBinder(method.ContainingType, inMethodBinder);
+                    }
+
                     var binder = new ExecutableCodeBinder(blockSyntax, sourceMethod, inMethodBinder);
                     body = (BoundBlock)binder.BindEmbeddedBlock(blockSyntax, diagnostics);
                     importChain = binder.ImportChain;

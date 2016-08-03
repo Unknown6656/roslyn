@@ -8,7 +8,7 @@ namespace DefaultsTestbed
         concept Eq<A>
         {
             bool Eq(A a, A b) => !Neq(a, b);
-            bool Neq(A a, A b) => !Eq(a, b);
+            bool Neq(A a, A b) { return !Eq(a, b); }
         }
 
         concept Show<A>
