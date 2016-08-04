@@ -73,13 +73,13 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Exp(HoD<A> x) => HoD<A>.Chain(Exp, this.Exp)(x);
 
         // d(ln x) = 1/x
-        HoD<A> Log(HoD<A> x) => HoD<A>.Chain(Log, Recip)(x);
+        HoD<A> Log(HoD<A> x) => HoD<A>.Chain(Log, this.Recip)(x);
 
         // d(sqrt x) = 1/(2 sqrt x)
         HoD<A> Sqrt(HoD<A> x)
             => HoD<A>.Chain(
                    Sqrt,
-                   Recip(FloatF<HoD<A>, HoD<A>>.Mul(Two<Func<HoD<A>, HoD<A>>>(), this.Sqrt))
+                   FloatF<HoD<A>, HoD<A>>.Recip(FloatF<HoD<A>, HoD<A>>.Mul(Two<Func<HoD<A>, HoD<A>>>(), this.Sqrt))
                )(x);
 
         // d(x^y) rewrites to D(e^(ln x * y))
@@ -93,7 +93,7 @@ namespace BeautifulDifferentiation.HoMark2
 
         // d(sin x) = -sin x
         HoD<A> Cos(HoD<A> x)
-            => HoD<A>.Chain(Cos, Neg<Func<HoD<A>, HoD<A>>>(this.Sin))(x);
+            => HoD<A>.Chain(Cos, FloatF<HoD<A>, HoD<A>>.Neg(this.Sin))(x);
 
         // d(tan x) = 1 + tan^2 x
         HoD<A> Tan(HoD<A> x)
@@ -108,7 +108,7 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Asin(HoD<A> x)
             => HoD<A>.Chain(
                    Asin,
-                   Recip(
+                   FloatF<HoD<A>, HoD<A>>.Recip(
                        FloatF<HoD<A>, HoD<A>>.Sqrt(
                            NumF<HoD<A>, HoD<A>>.Sub(One<Func<HoD<A>, HoD<A>>>(), Square)
                        )
@@ -119,8 +119,8 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Acos(HoD<A> x)
             => HoD<A>.Chain(
                    Acos,
-                   Recip(
-                       Neg(
+                   FloatF<HoD<A>, HoD<A>>.Recip(
+                        FloatF<HoD<A>, HoD<A>>.Neg(
                            FloatF<HoD<A>, HoD<A>>.Sqrt(
                                NumF<HoD<A>, HoD<A>>.Sub(One<Func<HoD<A>, HoD<A>>>(), Square)
                            )
@@ -132,7 +132,7 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Atan(HoD<A> x)
             => HoD<A>.Chain(
                    Atan,
-                   Recip(NumF<HoD<A>, HoD<A>>.Add(One<Func<HoD<A>, HoD<A>>>(), Square))
+                   FloatF<HoD<A>, HoD<A>>.Recip(NumF<HoD<A>, HoD<A>>.Add(One<Func<HoD<A>, HoD<A>>>(), Square))
                )(x);
 
         // d(sinh x) = cosh x
@@ -143,13 +143,13 @@ namespace BeautifulDifferentiation.HoMark2
 
         // d(tanh x) = 1/(cosh^2 x)
         HoD<A> Tanh(HoD<A> x)
-            => HoD<A>.Chain(Tanh, Recip(Square<Func<HoD<A>, HoD<A>>>(this.Cosh)))(x);
+            => HoD<A>.Chain(Tanh, FloatF<HoD<A>, HoD<A>>.Recip(Square<Func<HoD<A>, HoD<A>>>(this.Cosh)))(x);
 
         // d(asinh x) = 1 / sqrt(x^2 + 1)
         HoD<A> Asinh(HoD<A> x)
             => HoD<A>.Chain(
                    Asinh,
-                   Recip(
+                   FloatF<HoD<A>, HoD<A>>.Recip(
                        FloatF<HoD<A>, HoD<A>>.Sqrt(
                            NumF<HoD<A>, HoD<A>>.Add(Square, One<Func<HoD<A>, HoD<A>>>())
                        )
@@ -160,7 +160,7 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Acosh(HoD<A> x)
             => HoD<A>.Chain(
                    Acosh,
-                   Recip(
+                   FloatF<HoD<A>, HoD<A>>.Recip(
                        FloatF<HoD<A>, HoD<A>>.Sqrt(
                            NumF<HoD<A>, HoD<A>>.Sub(Square, One<Func<HoD<A>, HoD<A>>>())
                        )
@@ -171,7 +171,7 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Atanh(HoD<A> x)
             => HoD<A>.Chain(
                    Atanh,
-                   Recip(NumF<HoD<A>, HoD<A>>.Sub(One<Func<HoD<A>, HoD<A>>>(), Square))
+                   FloatF<HoD<A>, HoD<A>>.Recip(NumF<HoD<A>, HoD<A>>.Sub(One<Func<HoD<A>, HoD<A>>>(), Square))
                )(x);
     }
 }

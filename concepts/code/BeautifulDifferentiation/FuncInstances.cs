@@ -22,6 +22,8 @@ namespace BeautifulDifferentiation.FuncInstances
             => (x) => Add(f(x), g(x));
         Func<A, B> Sub(Func<A, B> f, Func<A, B> g)
             => (x) => Sub(f(x), g(x));
+        Func<A, B> Neg(Func<A, B> f)
+            => (x) => Neg(f(x));
         Func<A, B> Mul(Func<A, B> f, Func<A, B> g)
             => (x) => Mul(f(x), g(x));
         Func<A, B> Abs(Func<A, B> f)
@@ -45,6 +47,7 @@ namespace BeautifulDifferentiation.FuncInstances
         where FracB : Fractional<B>
     {
         Func<A, B> Add(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Add(f, g);
+        Func<A, B> Neg(Func<A, B> f) => NumF<A, B, FracB>.Neg(f);
         Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Sub(f, g);
         Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Mul(f, g);
         Func<A, B> Abs(Func<A, B> f) => NumF<A, B, FracB>.Abs(f);
@@ -55,6 +58,8 @@ namespace BeautifulDifferentiation.FuncInstances
             => (x) => FromRational(k);
         Func<A, B> Div(Func<A, B> f, Func<A, B> g)
             => (x) => Div(f(x), g(x));
+        Func<A, B> Recip(Func<A, B> f)
+            => (x) => Recip(f(x));
     }
 
     /// <summary>
@@ -71,12 +76,14 @@ namespace BeautifulDifferentiation.FuncInstances
     {
         Func<A, B> Add(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Add(f, g);
         Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Sub(f, g);
+        Func<A, B> Neg(Func<A, B> f) => FracF<A, B, FloatB>.Neg(f);
         Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Mul(f, g);
         Func<A, B> Abs(Func<A, B> f) => FracF<A, B, FloatB>.Abs(f);
         Func<A, B> Signum(Func<A, B> f) => FracF<A, B, FloatB>.Signum(f);
         Func<A, B> FromInteger(int k) => FracF<A, B, FloatB>.FromInteger(k);
         Func<A, B> FromRational(Ratio<int> k) => FracF<A, B, FloatB>.FromRational(k);
         Func<A, B> Div(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Div(f, g);
+        Func<A, B> Recip(Func<A, B> f) => FracF<A, B, FloatB>.Recip(f);
 
         Func<A, B> Pi() => (x) => Pi();
         Func<A, B> Sqrt(Func<A, B> f) => (x) => Sqrt(f(x));

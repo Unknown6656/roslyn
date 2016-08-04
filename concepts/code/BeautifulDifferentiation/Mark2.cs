@@ -79,7 +79,7 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Sqrt(D<A> x)
             => D<A>.Chain(
                    Sqrt,
-                   Recip(FloatF<A, A>.Mul(Two<Func<A, A>>(), Sqrt))
+                   FloatF<A, A>.Recip(FloatF<A, A>.Mul(Two<Func<A, A>>(), Sqrt))
                )(x);
 
         // d(x^y) rewrites to D(e^(ln x * y))
@@ -93,7 +93,7 @@ namespace BeautifulDifferentiation.Mark2
 
         // d(sin x) = -sin x
         D<A> Cos(D<A> x)
-            => D<A>.Chain(Cos, Neg<Func<A, A>>(Sin))(x);
+            => D<A>.Chain(Cos, FloatF<A, A>.Neg(Sin))(x);
 
         // d(tan x) = 1 + tan^2 x
         D<A> Tan(D<A> x)
@@ -108,7 +108,7 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Asin(D<A> x)
             => D<A>.Chain(
                    Asin,
-                   Recip(
+                   FloatF<A, A>.Recip(
                        FloatF<A, A>.Sqrt(
                            NumF<A, A>.Sub(One<Func<A, A>>(), Square)
                        )
@@ -119,8 +119,8 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Acos(D<A> x)
             => D<A>.Chain(
                    Acos,
-                   Recip(
-                       Neg(
+                   FloatF<A, A>.Recip(
+                       FloatF<A, A>.Neg(
                            FloatF<A, A>.Sqrt(
                                NumF<A, A>.Sub(One<Func<A, A>>(), Square)
                            )
@@ -132,7 +132,7 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Atan(D<A> x)
             => D<A>.Chain(
                    Atan,
-                   Recip(NumF<A, A>.Add(One<Func<A, A>>(), Square))
+                   FloatF<A, A>.Recip(NumF<A, A>.Add(One<Func<A, A>>(), Square))
                )(x);
 
         // d(sinh x) = cosh x
@@ -143,13 +143,13 @@ namespace BeautifulDifferentiation.Mark2
 
         // d(tanh x) = 1/(cosh^2 x)
         D<A> Tanh(D<A> x)
-            => D<A>.Chain(Tanh, Recip(Square<Func<A, A>>(Cosh)))(x);
+            => D<A>.Chain(Tanh, FloatF<A, A>.Recip(Square<Func<A, A>>(Cosh)))(x);
 
         // d(asinh x) = 1 / sqrt(x^2 + 1)
         D<A> Asinh(D<A> x)
             => D<A>.Chain(
                    Asinh,
-                   Recip(
+                   FloatF<A, A>.Recip(
                        FloatF<A, A>.Sqrt(
                            NumF<A, A>.Add(Square, One<Func<A, A>>())
                        )
@@ -160,7 +160,7 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Acosh(D<A> x)
             => D<A>.Chain(
                    Acosh,
-                   Recip(
+                   FloatF<A, A>.Recip(
                        FloatF<A, A>.Sqrt(
                            NumF<A, A>.Sub(Square, One<Func<A, A>>())
                        )
@@ -171,7 +171,7 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Atanh(D<A> x)
             => D<A>.Chain(
                    Atanh,
-                   Recip(NumF<A, A>.Sub(One<Func<A, A>>(), Square))
+                   FloatF<A, A>.Recip(NumF<A, A>.Sub(One<Func<A, A>>(), Square))
                )(x);
     }
 }
