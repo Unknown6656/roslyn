@@ -226,23 +226,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// </summary>
         public override bool HasValueTypeConstraint => true;
 
-        /// <summary>
-        /// Injects synthesized attribute data for this implicit parameter.
-        ///
-        /// <para>
-        /// This is overridden to return
-        /// <see cref="AttributeDescription.ConceptWitnessAttribute"/> as an
-        /// attribute.  Implicit parameters have no other attributes.
-        /// </para>
-        /// </summary>
-        internal override void AddSynthesizedAttributes(ModuleCompilationState compilationState, ref ArrayBuilder<SynthesizedAttributeData> attributes)
-        {
-            base.AddSynthesizedAttributes(compilationState, ref attributes);
-
-            CSharpCompilation compilation = DeclaringCompilation;
-            AddSynthesizedAttribute(ref attributes, compilation.TrySynthesizeAttribute(WellKnownMember.System_Concepts_ConceptWitnessAttribute__ctor));
-        }
-
         // As the name suggests, these are implicitly declared.
         // @t-mawind Is this correct?
         public override bool IsImplicitlyDeclared => true;

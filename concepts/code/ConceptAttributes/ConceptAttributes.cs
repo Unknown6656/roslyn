@@ -38,21 +38,6 @@ namespace System.Concepts
     public class ConceptDefaultAttribute : Attribute { }
 
     /// <summary>
-    /// Attribute marking type parameters as concept witnesses.
-    /// <para>
-    /// Generated witnesses are given this attribute in the emitted code.
-    /// Also, type parameters with this attribute are treated as concept
-    /// witnesses by the compiler.
-    /// </para>
-    /// <para>
-    /// Concept witnesses are handled specially by the type inferrer: if they
-    /// are left unfixed by normal inference, they enter another round of
-    /// inference that tries to find a satisfying instance for the witness.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.GenericParameter, AllowMultiple = false, Inherited = true)]
-    public class ConceptWitnessAttribute : Attribute { }
-
-    /// <summary>
     /// Attribute marking type parameters as associated types.
     /// <para>
     /// Generated associated types are given this attribute in the emitted code.

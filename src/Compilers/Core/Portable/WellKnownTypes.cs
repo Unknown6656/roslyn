@@ -266,7 +266,6 @@ namespace Microsoft.CodeAnalysis
 
         System_Concepts_ConceptAttribute, //@t-mawind
         System_Concepts_ConceptInstanceAttribute, //@t-mawind
-        System_Concepts_ConceptWitnessAttribute, //@t-mawind
         System_Concepts_AssociatedTypeAttribute, //@t-mawind
         System_Concepts_ConceptDefaultAttribute, //@t-mawind
 
@@ -530,7 +529,6 @@ namespace Microsoft.CodeAnalysis
             //@t-mawind
             "System.Concepts.ConceptAttribute",
             "System.Concepts.ConceptInstanceAttribute",
-            "System.Concepts.ConceptWitnessAttribute",
             "System.Concepts.AssociatedTypeAttribute",
             "System.Concepts.ConceptDefaultAttribute"
         };

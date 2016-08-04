@@ -176,12 +176,46 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         /// <summary>
+        /// Counts the number of witness parameters in a type declaration node.
+        /// </summary>
+        /// <param name="syntax">
+        /// The syntax node to check.
+        /// </param>
+        /// <returns>
+        /// The number of witnesses found.
+        /// </returns>
+        private static int CountPossibleWitnesses(TypeDeclarationSyntax syntax)
+        {
+            var names = new string[syntax.Arity];
+            for (int j = 0; j < syntax.Arity; j++)
+            {
+                names[j] = syntax.TypeParameterList.Parameters[j].Identifier.ValueText;
+            }
+
+            int i = 0;
+            foreach (var possibleWitness in syntax.ConstraintClauses)
+            {
+                if (SourceNamedTypeSymbol.IsPossibleWitness(possibleWitness, names, syntax.Arity)) i++;
+            }
+
+            Debug.Assert(0 <= i, "Witness count should not be negative.");
+            return i;
+        }
+
+        /// <summary>
         /// Get a source type symbol for the given declaration syntax.
         /// </summary>
         /// <returns>Null if there is no matching declaration.</returns>
         internal SourceNamedTypeSymbol GetSourceTypeMember(TypeDeclarationSyntax syntax)
         {
-            return GetSourceTypeMember(syntax.Identifier.ValueText, syntax.Arity, syntax.Kind(), syntax);
+            // @t-mawind
+            //   The 'arity' of this syntax ignores any implicit type
+            //   parameters, as it counts only the explicit parameters in the
+            //   angle brackets.  Thus, we have to add in the count of concept
+            //   constraints, which at time of writing is quite slow.
+            var arity = syntax.Arity + CountPossibleWitnesses(syntax);
+
+            return GetSourceTypeMember(syntax.Identifier.ValueText, arity, syntax.Kind(), syntax);
         }
 
         /// <summary>

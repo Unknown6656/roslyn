@@ -149,8 +149,11 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// <param name="typeParameterNames">The array of known type parameter names.</param>
         /// <param name="typeParameterCount">The number of explicit type parameters.</param>
         /// <returns></returns>
-        internal bool IsPossibleWitness(TypeParameterConstraintClauseSyntax clause, string[] typeParameterNames, int typeParameterCount)
+        internal static bool IsPossibleWitness(TypeParameterConstraintClauseSyntax clause, string[] typeParameterNames, int typeParameterCount)
         {
+            // @t-mawind TODO: move this somewhere else?
+            //   It's used in NamespaceOrTypeSymbol, too.
+
             for (int j = 0; j < typeParameterCount; j++)
             {
                 if (typeParameterNames[j] == clause.Name.Identifier.ValueText) return false;

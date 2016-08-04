@@ -395,7 +395,6 @@ namespace Microsoft.CodeAnalysis
         //@t-mawind
         private static readonly byte[][] s_signaturesOfConceptAttribute = { s_signature_HasThis_Void };
         private static readonly byte[][] s_signaturesOfConceptInstanceAttribute = { s_signature_HasThis_Void };
-        private static readonly byte[][] s_signaturesOfConceptWitnessAttribute = { s_signature_HasThis_Void };
         private static readonly byte[][] s_signaturesOfAssociatedTypeAttribute = { s_signature_HasThis_Void };
         private static readonly byte[][] s_signaturesOfConceptDefaultAttribute = { s_signature_HasThis_Void };
 
@@ -508,7 +507,6 @@ namespace Microsoft.CodeAnalysis
         //@t-mawind
         internal static readonly AttributeDescription ConceptAttribute = new AttributeDescription("System.Concepts", "ConceptAttribute", s_signaturesOfConceptAttribute);
         internal static readonly AttributeDescription ConceptInstanceAttribute = new AttributeDescription("System.Concepts", "ConceptInstanceAttribute", s_signaturesOfConceptInstanceAttribute);
-        internal static readonly AttributeDescription ConceptWitnessAttribute = new AttributeDescription("System.Concepts", "ConceptWitnessAttribute", s_signaturesOfConceptWitnessAttribute);
         internal static readonly AttributeDescription AssociatedTypeAttribute = new AttributeDescription("System.Concepts", "AssociatedTypeAttribute", s_signaturesOfAssociatedTypeAttribute);
         internal static readonly AttributeDescription ConceptDefaultAttribute = new AttributeDescription("System.Concepts", "ConceptDefaultAttribute", s_signaturesOfConceptDefaultAttribute);
     }

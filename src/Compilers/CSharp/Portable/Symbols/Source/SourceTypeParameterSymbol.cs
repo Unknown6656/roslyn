@@ -297,26 +297,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             }
         }
 
-        // This is currently causing a stack overflow:
-        // to get the attribute bag, we have to check the concept witnesses.
-        // Ideally we want to fix this for consistency!
-        internal sealed override bool IsConceptWitness
-        {
-            get
-            {
-                /*
-                // Usually, types are concept witnesses if they have
-                // [ConceptWitness]. @t-mawind
-                foreach (var attribute in GetAttributes())
-                {
-                    if (attribute.IsTargetAttribute(this, AttributeDescription.ConceptWitnessAttribute)) return true;
-                }
-                */
-
-                return false;
-            }
-        }
-
         internal sealed override bool IsAssociatedType
         {
             get

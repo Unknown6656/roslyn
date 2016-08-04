@@ -2899,12 +2899,6 @@ namespace Microsoft.CodeAnalysis
                 0,                                                                                                          // Arity
                     0,                                                                                                      // Method Signature
                     (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void,
-                // System_Concepts_ConceptInstanceAttribute__ctor @t-mawind
-                (byte)MemberFlags.Constructor,                                                                              // Flags
-                (byte)WellKnownType.ExtSentinel, (byte)(WellKnownType.System_Concepts_ConceptWitnessAttribute - WellKnownType.ExtSentinel), // DeclaringTypeId
-                0,                                                                                                          // Arity
-                    0,                                                                                                      // Method Signature
-                    (byte)SignatureTypeCode.TypeHandle, (byte)SpecialType.System_Void,
                 // System_Concepts_AssociatedTypeAttribute__ctor @t-mawind
                 (byte)MemberFlags.Constructor,                                                                              // Flags
                 (byte)WellKnownType.ExtSentinel, (byte)(WellKnownType.System_Concepts_AssociatedTypeAttribute - WellKnownType.ExtSentinel), // DeclaringTypeId
@@ -3279,7 +3273,6 @@ namespace Microsoft.CodeAnalysis
 
                 ".ctor",                                    // System_Concepts_ConceptAttribute @t-mawind
                 ".ctor",                                    // System_Concepts_ConceptInstanceAttribute_ctor @t-mawind
-                ".ctor",                                    // System_Concepts_ConceptWitnessAttribute_ctor @t-mawind
                 ".ctor",                                    // System_Concepts_AssociatedTypeAttribute_ctor @t-mawind
                 ".ctor",                                    // System_Concepts_ConceptDefaultAttribute_ctor @t-mawind
             };
