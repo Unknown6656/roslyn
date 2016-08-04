@@ -596,10 +596,42 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         internal Candidate InferOneWitness(TypeParameterSymbol typeParam, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
         {
-            if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
-
             Debug.Assert(typeParam.IsConceptWitness,
                 "Tried to do concept witness inference on a non-concept-witness type parameter");
+
+            var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
+            return InferOneWitnessFromRequiredConcepts(requiredConcepts, fixedMap, chain);
+        }
+
+        /// <summary>
+        /// Tries to infer a suitable instance for the given set of required
+        /// concepts.
+        /// <para>
+        /// This is useful when we are trying to find a suitable witness in a
+        /// situation where there is no actual type parameter to be inferred.
+        /// </para>
+        /// </summary>
+        /// <param name="requiredConcepts">
+        /// The list of concepts the candidate must implement.
+        /// </param>
+        /// <param name="fixedMap">
+        /// The map from all of the fixed, non-witness type parameters in the
+        /// current context to their arguments.
+        /// </param>
+        /// <param name="chain">
+        /// The set of instances we've passed through recursively to get here,
+        /// used to abort recursive calls if they will create cycles.
+        /// </param>
+        /// <returns>
+        /// Null if inference failed; else, the inferred concept instance and
+        /// its unification.
+        /// </returns>
+        internal Candidate InferOneWitnessFromRequiredConcepts(ImmutableArray<TypeSymbol> requiredConcepts, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
+        {
+            Debug.Assert(!requiredConcepts.IsEmpty,
+                "We should never be able to infer a witness when there are no required concepts");
+
+            if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
 
             // From here, we can only decrease the number of considered
             // instances, so we can't assign an instance to a witness
@@ -628,13 +660,6 @@ namespace Microsoft.CodeAnalysis.CSharp
             // instances.  If so, we narrow to that specific instance.
             //
             // If we have multiple satisfying instances, or zero, we fail.
-
-            var requiredConcepts = GetRequiredConceptsFor(typeParam, fixedMap);
-            // This might happen if, for example, someone explicitly annotates
-            // a parameter as [ConceptWitness] but doesn't put any constraints
-            // on it.  We don't infer in this case, because any and every
-            // possible instance will match.
-            if (requiredConcepts.IsEmpty) return default(Candidate);
 
             var firstPassInstances = AllInstancesSatisfyingGoal(requiredConcepts);
             Debug.Assert(firstPassInstances.Length <= _allInstances.Length,

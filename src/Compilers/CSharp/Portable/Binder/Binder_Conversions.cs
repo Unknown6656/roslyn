@@ -332,6 +332,28 @@ namespace Microsoft.CodeAnalysis.CSharp
                     receiverOpt, //only change
                     group.ResultKind);
             }
+            // @t-mawind
+            //   Else, if the receiver is a concept type and this is not
+            //   static, then we're expected to infer a witness here.
+            if (receiverOpt != null && receiverOpt.Kind == BoundKind.TypeExpression && receiverOpt.Type.IsConceptType() && !conversion.Method.IsStatic)
+            {
+                var requiredConcepts = ImmutableArray.Create(receiverOpt.Type);
+                var instance = ConceptWitnessInferrer.ForBinder(this).InferOneWitnessFromRequiredConcepts(requiredConcepts, new ImmutableTypeMap()).Instance;
+                if (instance != null)
+                {
+                    receiverOpt = new BoundTypeExpression(syntax, null, true, instance);
+
+                    group = group.Update(
+                        group.TypeArgumentsOpt,
+                        group.Name,
+                        group.Methods,
+                        group.LookupSymbolOpt,
+                        group.LookupError,
+                        group.Flags,
+                        receiverOpt, //only change
+                        group.ResultKind);
+                }
+            }
 
             group = FixMethodGroupWithTypeOrValue(group, conversion, diagnostics);
             receiverOpt = group.ReceiverOpt;

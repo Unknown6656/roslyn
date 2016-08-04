@@ -883,9 +883,23 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   Witness invocations, which manifest as null receiver and
             //   witness-method symbol, turn for now into invocations on the
             //   witness itself, and are lowered later.
+            //   (TODO: Remove these in favour of the below?)
             if (receiver == null && method is SynthesizedWitnessMethodSymbol)
             {
                 receiver = new BoundTypeExpression(node, null, (method as SynthesizedWitnessMethodSymbol).Parent) { WasCompilerGenerated = true };
+            }
+            // @t-mawind
+            //   Otherwise, if we have a receiver, but it's an instance method
+            //   being called on a _concept type_ (not a witness), then we try
+            //   to infer the witness here.
+            if (receiver != null && receiver.Kind == BoundKind.TypeExpression && receiver.Type.IsConceptType() && !method.IsStatic)
+            {
+                var requiredConcepts = ImmutableArray.Create(receiver.Type);
+                var fixedMap = new ImmutableTypeMap();
+                var newReceiver = ConceptWitnessInferrer.ForBinder(this).InferOneWitnessFromRequiredConcepts(requiredConcepts, fixedMap);
+
+                // TODO: error
+                if (newReceiver.Instance != null) receiver = new BoundTypeExpression(receiver.Syntax, null, true, newReceiver.Instance);
             }
 
             // Note: we specifically want to do final validation (7.6.5.1) without checking delegate compatibility (15.2),
