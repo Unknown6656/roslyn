@@ -4,7 +4,8 @@ using System.Concepts;
 
 /// <summary>
 ///     Wrapper instances for tuples.
-///     (Probably not that useful, but still a fairly cute example.)
+///     (Probably not that useful, but still a fairly cute example,
+///     and exercises our nascent associated types support.)
 /// </summary>
 namespace TupleConcepts
 {
@@ -15,10 +16,10 @@ namespace TupleConcepts
     ///     The tuple itself.
     /// </typeparam>
     /// <typeparam name="T1">
-    ///     The type of the first item.
+    ///     The type of the first item; associated.
     /// </typeparam>
     /// <typeparam name="T2">
-    ///     The type of the second item.
+    ///     The type of the second item; associated.
     /// </typeparam>
     public concept Tuple2<I, [AssociatedType] T1, [AssociatedType] T2>
     {
@@ -43,6 +44,20 @@ namespace TupleConcepts
         ///     The second item of the tuple.
         /// </returns>
         T2 Get2(I from);
+
+        /// <summary>
+        ///     Constructs a tuple from two items.
+        /// </summary>
+        /// <param name="one">
+        ///     The first item.
+        /// </param>
+        /// <param name="two">
+        ///     The second item.
+        /// </param>
+        /// <returns>
+        ///     A 2-tuple ontaining the given two items.
+        /// </returns>
+        I Make(T1 one, T2 two);
     }
 
     /// <summary>
@@ -59,6 +74,7 @@ namespace TupleConcepts
     {
         T1 Get1(Tuple<T1, T2> from) => from.Item1;
         T2 Get2(Tuple<T1, T2> from) => from.Item2;
+        Tuple<T1, T2> Make(T1 one, T2 two) => Tuple.Create(one, two);
     }
 
     /// <summary>
@@ -75,6 +91,7 @@ namespace TupleConcepts
     {
         T1 Get1((T1, T2) from) => from.Item1;
         T2 Get2((T1, T2) from) => from.Item2;
+        (T1, T2) Make(T1 one, T2 two) => (one, two);
     }
 
     /// <summary>
@@ -91,6 +108,7 @@ namespace TupleConcepts
     {
         T1 Get1(KeyValuePair<T1, T2> from) => from.Key;
         T2 Get2(KeyValuePair<T1, T2> from) => from.Value;
+        KeyValuePair<T1, T2> Make(T1 one, T2 two) => new KeyValuePair<T1, T2>(one, two);
     }
 
     /// <summary>
@@ -141,11 +159,7 @@ namespace TupleConcepts
 
         static void Main(string[] args)
         {
-            // We can't easily do full type inference here, because nothing is
-            // constraining T1 and T2 based on I.  Perhaps associated types
-            // might help here.
-
-            var tuple = Tuple.Create(66, 99);
+            var tuple = Tuple2<Tuple<int, int>>.Make(66, 99);
             Console.Out.WriteLine($"Tuple: {Show(tuple)}");
 
             var valueTuple = (27, 53);

@@ -491,11 +491,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   It may be that we get here with a mismatch between the type
             //   argument count and type parameter count, even if none have
             //   been supplied.  This can only happen if there are as many gaps
-            //   in the arguments as there are concept witnesses, and we assume
-            //   each does correspond to a witness.
+            //   in the arguments as there are implicit parameters, and we assume
+            //   each does correspond to one.
             Debug.Assert(typeArguments.Count == 0 ||
                 typeArguments.Count == member.GetMemberArity() ||
-                (member is MethodSymbol && (typeArguments.Count == member.GetMemberArity() - ((member as MethodSymbol).ConceptWitnesses.Count()))));
+                (member is MethodSymbol && (typeArguments.Count == member.GetMemberArity() - ((member as MethodSymbol).ImplicitTypeParameterCount))));
 
             // Second, we need to determine if the method is applicable in its normal form or its expanded form.
 
@@ -2731,7 +2731,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                         {
                             Debug.Assert(0 < method.Arity, "A 0-arity method should not have concept witnesses.");
 
-                            typeArguments = PartInferConceptWitnesses(typeArgumentsBuilder, method);
+                            typeArguments = PartInferImplicitTypeParameters(typeArgumentsBuilder, method);
                             if (typeArguments.IsEmpty) return new MemberResolutionResult<TMember>(member, leastOverriddenMember, MemberAnalysisResult.TypeInferenceFailed());
                             // Fall through to below.
                         }
@@ -2817,14 +2817,14 @@ namespace Microsoft.CodeAnalysis.CSharp
         }
 
         /// <summary>
-        /// Given a method whose type arguments appear to be missing concept
-        /// witnesses, try to infer them.
+        /// Given a method whose type arguments appear to be missing implicit
+        /// type parameters, try to infer them.
         /// </summary>
         /// <param name="typeArgumentsBuilder">
         /// The builder containing the current set of type arguments.
         /// </param>
         /// <param name="method">
-        /// The method for which we are inferring concept witnesses.
+        /// The method for which we are inferring implicit type parameters.
         /// </param>
         /// <returns>
         /// The set of all type arguments post-inference on success;
@@ -2832,13 +2832,13 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// one resulting type argument, and thus the two cases are
         /// distinguishable.)
         /// </returns>
-        private ImmutableArray<TypeSymbol> PartInferConceptWitnesses(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
+        private ImmutableArray<TypeSymbol> PartInferImplicitTypeParameters(ArrayBuilder<TypeSymbol> typeArgumentsBuilder, MethodSymbol method)
         {
             Debug.Assert(typeArgumentsBuilder.Count + method.ImplicitTypeParameterCount == method.Arity,
-                $"Started {nameof(PartInferConceptWitnesses)} with incorrect number of missing arguments");
+                $"Started {nameof(PartInferImplicitTypeParameters)} with incorrect number of missing arguments");
 
-            // Pointless to part-infer without concept witnesses.
-            if (method.ConceptWitnesses.IsEmpty) return ImmutableArray<TypeSymbol>.Empty;
+            // Pointless to part-infer without implicit type parameters.
+            if (method.ImplicitTypeParameterCount == 0) return ImmutableArray<TypeSymbol>.Empty;
             
             var allArguments = ConceptWitnessInferrer.ForBinder(_binder).PartInfer(typeArgumentsBuilder.ToImmutable(), method.TypeParameters);
 

@@ -875,13 +875,13 @@ namespace Microsoft.CodeAnalysis.CSharp
 
         /// <summary>
         /// Given an invocation of a named type whose type arguments appear to
-        /// be missing concept witnesses, try to infer them.
+        /// be missing implicit type parameters, try to infer them.
         /// </summary>
         /// <param name="typeArguments">
         /// The given set of type arguments.
         /// </param>
         /// <param name="namedType">
-        /// The named type for which we are inferring concept witnesses.
+        /// The named type for which we are inferring implicit type parameters.
         /// </param>
         /// <returns>
         /// The set of all type arguments post-inference on success;
@@ -889,15 +889,15 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// one resulting type argument, and thus the two cases are
         /// distinguishable.)
         /// </returns>
-        private ImmutableArray<TypeSymbol> PartInferTypeConceptWitnesses(ImmutableArray<TypeSymbol> typeArguments, NamedTypeSymbol namedType)
+        private ImmutableArray<TypeSymbol> PartInferImplicitTypeParameters(ImmutableArray<TypeSymbol> typeArguments, NamedTypeSymbol namedType)
         {
             Debug.Assert(typeArguments.Length + namedType.ImplicitTypeParameterCount == namedType.Arity,
-                $"Started {nameof(PartInferTypeConceptWitnesses)} with incorrect number of missing arguments");
+                $"Started {nameof(PartInferImplicitTypeParameters)} with incorrect number of missing arguments");
 
-            // Pointless to part-infer without concept witnesses.
-            if (namedType.ConceptWitnesses.IsEmpty) return ImmutableArray<TypeSymbol>.Empty;
+            // Pointless to part-infer without implicit type parameters.
+            if (namedType.ImplicitTypeParameterCount == 0) return ImmutableArray<TypeSymbol>.Empty;
 
-            var allArguments = ConceptWitnessInferrer.ForBinder(this).PartInfer(typeArguments, namedType.TypeParameters);
+            var allArguments = ConceptWitnessInferrer.ForBinder(this).PartInfer(typeArguments, namedType.TypeParameters, expandAssociatedIfFailed: namedType.IsConcept);
 
             Debug.Assert(allArguments.IsEmpty || allArguments.Length == typeArguments.Length + namedType.ImplicitTypeParameterCount,
                 "Part-inference did not add in the expected number of new arguments");
@@ -1126,7 +1126,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // TODO: does this belong here?
             if (typeArguments.Length < type.Arity)
             {
-                typeArguments = PartInferTypeConceptWitnesses(typeArguments, type);
+                typeArguments = PartInferImplicitTypeParameters(typeArguments, type);
                 if (typeArguments.IsEmpty)
                 {
                     diagnostics.Add(ErrorCode.ERR_BadArity, typeSyntax.Location, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity);

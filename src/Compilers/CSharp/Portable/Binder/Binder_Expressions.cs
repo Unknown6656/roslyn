@@ -4877,8 +4877,37 @@ namespace Microsoft.CodeAnalysis.CSharp
             Debug.Assert(node != null);
             Debug.Assert(boundLeft != null);
 
-            boundLeft = MakeMemberAccessValue(boundLeft, diagnostics);
+            // @t-mawind
+            //   If we have as our LHS a concept, then we assume the user is
+            //   trying to access a concept witness method using it, without
+            //   having the specific witness itself.
+            //
+            //   We do this so early because we might have associated types
+            //   in our concept.  These can be fixed in this round of inference,
+            //   because the unification used in the inference will note that
+            //   they are not fixed by other means and eagerly match them with
+            //   any potential instance.  (TODO: Should we rely on this?  It
+            //   seems like a bit of a kludge.)
+            //
+            //   Hopefully, we will only get here if 1) the concept is fully
+            //   inferred, or 2) part-inference failed but only failed by
+            //   missing associated types, in which case we told it to continue
+            //   up to this point in the hope that this will fix the missing
+            //   types.
+            //
+            //   TODO: clean this up.
+            if ((object)boundLeft.Type != null && boundLeft.Type.IsConceptType())
+            {
+                var requiredConcepts = ImmutableArray.Create(boundLeft.Type);
+                var instance = ConceptWitnessInferrer.ForBinder(this).InferOneWitnessFromRequiredConcepts(requiredConcepts, new ImmutableTypeMap()).Instance;
+                if (instance != null)
+                {
+                    boundLeft = new BoundTypeExpression(boundLeft.Syntax, null, true, instance);
+                }
+            }
 
+            boundLeft = MakeMemberAccessValue(boundLeft, diagnostics);
+            
             TypeSymbol leftType = boundLeft.Type;
 
             if ((object)leftType != null && leftType.IsDynamic())

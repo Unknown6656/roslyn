@@ -1250,12 +1250,12 @@ namespace Microsoft.CodeAnalysis.CSharp
         // In this case, we use the concept type inferrer to fill in the
         // omitted witnesses.
 
-        public ImmutableArray<TypeSymbol> PartInfer(ImmutableArray<TypeSymbol> typeArguments, ImmutableArray<TypeParameterSymbol> typeParameters)
+        public ImmutableArray<TypeSymbol> PartInfer(ImmutableArray<TypeSymbol> typeArguments, ImmutableArray<TypeParameterSymbol> typeParameters, bool expandAssociatedIfFailed = false)
         {
             Debug.Assert(typeArguments.Length < typeParameters.Length,
                 "Part-inference is pointless if we already have all the type parameters");
 
-            var allArgumentsBuilder = ArrayBuilder<TypeSymbol>.GetInstance();
+            var allArguments = new TypeSymbol[typeParameters.Length];
 
             // Assume that the missing type arguments are concept
             // witnesses, and extend the given type arguments
@@ -1267,33 +1267,41 @@ namespace Microsoft.CodeAnalysis.CSharp
             // same time as extending the arguments by
             // initially supplying placeholders and inferring
             // them later.
-            var missingIndices = ArrayBuilder<int>.GetInstance();
+            var conceptIndicesBuilder = ArrayBuilder<int>.GetInstance();
+            var associatedIndicesBuilder = ArrayBuilder<int>.GetInstance();
             var fixedMap = new MutableTypeMap();
             int j = 0;
             for (int i = 0; i < typeParameters.Length; i++)
             {
-                // TODO: associated types
                 if (typeParameters[i].IsConceptWitness)
                 {
-                    allArgumentsBuilder.Add(null);
-                    missingIndices.Add(i); // Come back to this later.
+                    conceptIndicesBuilder.Add(i); // Come back to this later.
+                }
+                else if (typeParameters[i].IsAssociatedType)
+                {
+                    associatedIndicesBuilder.Add(i); // Come back to this later.
                 }
                 else
                 {
-                    allArgumentsBuilder.Add(typeArguments[j]);
+                    allArguments[i] = typeArguments[j];
                     fixedMap.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
                     j++;
                 }
             }
 
-            var ary = allArgumentsBuilder.ToArrayAndFree();
-            if (!Infer(missingIndices.ToImmutableAndFree(), ImmutableArray<int>.Empty, typeParameters, ary, fixedMap.ToUnification()))
+            var conceptIndices = conceptIndicesBuilder.ToImmutableAndFree();
+            var associatedIndices = associatedIndicesBuilder.ToImmutableAndFree();
+
+            if (!Infer(conceptIndices, associatedIndices, typeParameters, allArguments, fixedMap.ToUnification()))
             {
-                // TODO: more specific error?
-                return ImmutableArray<TypeSymbol>.Empty;
+                if (!expandAssociatedIfFailed || !conceptIndices.IsEmpty) return ImmutableArray<TypeSymbol>.Empty;
+                foreach (var index in associatedIndices)
+                {
+                    allArguments[index] = typeParameters[index];
+                }
             }
 
-            return ary.ToImmutableArray();
+            return allArguments.ToImmutableArray();
         }
 
         #endregion Part-inference

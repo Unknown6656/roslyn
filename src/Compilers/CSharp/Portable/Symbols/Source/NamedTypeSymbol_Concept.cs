@@ -52,26 +52,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 return false;
             }
         }
-
-        //@t-mawind move?
-        private int _implicitTypeParameterCount = -1;
-
-        /// <summary>
-        /// Returns the number of implicit type parameters.
-        /// </summary>
-        internal virtual int ImplicitTypeParameterCount
-        {
-            get
-            {
-                if (-1 == _implicitTypeParameterCount)
-                {
-                    var count = ConceptWitnesses.Length;
-                    Interlocked.CompareExchange(ref _implicitTypeParameterCount, count, -1);
-                }
-                return _implicitTypeParameterCount;
-            }
-        }
-
+        
         /// <summary>
         /// Gets whether this type is a default struct.
         /// </summary>
@@ -132,23 +113,76 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
             return null;
         }
 
+        private ImmutableArray<TypeParameterSymbol> _conceptWitnesses;
+        private ImmutableArray<TypeParameterSymbol> _associatedTypes;
+        private int _implicitTypeParameterCount = -1;
+
         /// <summary>
         /// Returns the type parameters of this type that are concept
         /// witnesses.
         /// </summary>
         internal ImmutableArray<TypeParameterSymbol> ConceptWitnesses
         {
-            // @t-mawind TODO: this is possibly very slow, cache it?
             get
             {
-                var builder = new ArrayBuilder<TypeParameterSymbol>();
-                var allParams = TypeParameters;
-                int numParams = allParams.Length;
-                for (int i = 0; i < numParams; i++)
+                if (_conceptWitnesses.IsDefault)
                 {
-                    if (allParams[i].IsConceptWitness) builder.Add(allParams[i]);
+                    var builder = new ArrayBuilder<TypeParameterSymbol>();
+                    var allParams = TypeParameters;
+                    int numParams = allParams.Length;
+                    for (int i = 0; i < numParams; i++)
+                    {
+                        if (allParams[i].IsConceptWitness) builder.Add(allParams[i]);
+                    }
+                    ImmutableInterlocked.InterlockedInitialize(ref _conceptWitnesses, builder.ToImmutableAndFree());
                 }
-                return builder.ToImmutableAndFree();
+                return _conceptWitnesses;
+            }
+        }
+
+
+        /// <summary>
+        /// Returns the type parameters of this type that are associated
+        /// types.
+        /// </summary>
+        internal ImmutableArray<TypeParameterSymbol> AssociatedTypes
+        {
+            get
+            {
+                if (_associatedTypes.IsDefault)
+                {
+                    var builder = new ArrayBuilder<TypeParameterSymbol>();
+                    var allParams = TypeParameters;
+                    int numParams = allParams.Length;
+                    for (int i = 0; i < numParams; i++)
+                    {
+                        if (allParams[i].IsAssociatedType) builder.Add(allParams[i]);
+                    }
+                    ImmutableInterlocked.InterlockedInitialize(ref _associatedTypes, builder.ToImmutableAndFree());
+                }
+                return _associatedTypes;
+            }
+        }
+
+        /// <summary>
+        /// Returns the number of implicit type parameters.
+        /// <para>
+        /// These are the concept witnesses and associated types.
+        /// </para>
+        /// <para>
+        /// This count is used for part-inference, mainly.
+        /// </para>
+        /// </summary>
+        internal virtual int ImplicitTypeParameterCount
+        {
+            get
+            {
+                if (-1 == _implicitTypeParameterCount)
+                {
+                    var count = ConceptWitnesses.Length + AssociatedTypes.Length;
+                    Interlocked.CompareExchange(ref _implicitTypeParameterCount, count, -1);
+                }
+                return _implicitTypeParameterCount;
             }
         }
     }

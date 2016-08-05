@@ -29,7 +29,7 @@ namespace DefaultsTestbed
 
         static void Main(string[] args)
         {
-            ShowBool.Println(EqInt.Eq(27, 53));
+            Show<bool>.Println(EqInt.Eq(27, 53));
             ShowBool.Println(EqInt.Neq(27, 53));
         }
     }
