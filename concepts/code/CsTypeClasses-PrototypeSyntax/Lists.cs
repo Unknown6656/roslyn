@@ -10,10 +10,10 @@ namespace Lists
     abstract class List<A>
     {
         public abstract List<B> Map<B>(Fun<A, B> f);
-        public abstract bool Mem(A a) where EqA : Eq<A>;
+        public abstract bool Mem<implicit EqA>(A a) where EqA : Eq<A>;
 
         //a contrived version of Mem that recurses on a list of lists, so needing a dynamically constructed dictionary.
-        public abstract bool AltMem(A a) where EqA : Eq<A>;
+        public abstract bool AltMem<implicit EqA>(A a) where EqA : Eq<A>;
     }
 
     class Nil<A> : List<A>
@@ -23,12 +23,12 @@ namespace Lists
             return new Nil<B>();
         }
 
-        public override bool Mem(A a) where EqA : concept
+        public override bool Mem<implicit EqA>(A a)
         {
             return false;
         }
 
-        public override bool AltMem<EqA>(A a)
+        public override bool AltMem<implicit EqA>(A a)
         {
             return false;
         }
@@ -44,13 +44,13 @@ namespace Lists
             return new Cons<B>(f(h), t.Map(f));
         }
 
-        public override bool Mem(A a) where EqA : concept
+        public override bool Mem<implicit EqA>(A a)
         {
             return Overloads.Eq(a, h) || t.Mem(a);
             //return Eq(a, h) || t.Mem(a);
         }
 
-        public override bool AltMem(A a) where EqA : concept
+        public override bool AltMem<implicit EqA>(A a) where EqA : concept
         {
             Fun<A, List<A>> wrap = delegate (A e) { return new Cons<A>(e, new Nil<A>()); };
             return Overloads.Eq(a, h) || t.Map(wrap).Mem(wrap(a));

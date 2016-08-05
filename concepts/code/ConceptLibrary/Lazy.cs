@@ -5,18 +5,18 @@
 /// </summary>
 namespace System.Concepts.Lazy
 {
-    instance LazyEq<T> : Eq<Lazy<T>> where EqT : Eq<T>
+    instance LazyEq<T, implicit EqT> : Eq<Lazy<T>> where EqT : Eq<T>
     {
         bool Equals(Lazy<T> a, Lazy<T> b) => Equals(a.Value, b.Value);
     }
 
-    instance LazyOrd<T> : Ord<Lazy<T>> where OrdT : Ord<T>
+    instance LazyOrd<T, implicit OrdT> : Ord<Lazy<T>> where OrdT : Ord<T>
     {
         bool Equals(Lazy<T> a, Lazy<T> b) => Equals(a.Value, b.Value);
         bool Leq(Lazy<T> a, Lazy<T> b)    => Leq(a.Value, b.Value);
     }
 
-    instance LazyNum<T> : Num<Lazy<T>> where NumT: Num<T>
+    instance LazyNum<T, implicit NumT> : Num<Lazy<T>> where NumT: Num<T>
     {
         Lazy<T> Add(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => Add(a.Value, b.Value));
         Lazy<T> Sub(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => Sub(a.Value, b.Value));
@@ -26,7 +26,7 @@ namespace System.Concepts.Lazy
         Lazy<T> FromInteger(int a)        => new Lazy<T>(() => FromInteger(a));
     }
 
-    instance LazyFractional<T> : Fractional<Lazy<T>> where FractionalT : Fractional<T>
+    instance LazyFractional<T, implicit FractionalT> : Fractional<Lazy<T>> where FractionalT : Fractional<T>
     {
         Lazy<T> Add(Lazy<T> a, Lazy<T> b)  => new Lazy<T>(() => Add(a.Value, b.Value));
         Lazy<T> Sub(Lazy<T> a, Lazy<T> b)  => new Lazy<T>(() => Sub(a.Value, b.Value));
@@ -38,7 +38,7 @@ namespace System.Concepts.Lazy
         Lazy<T> FromRational(Ratio<int> a) => new Lazy<T>(() => FromRational(a));
     }
 
-    instance LazyFloating<T> : Floating<Lazy<T>> where FloatingT : Floating<T>
+    instance LazyFloating<T, implicit FloatingT> : Floating<Lazy<T>> where FloatingT : Floating<T>
     {
         Lazy<T> Add(Lazy<T> a, Lazy<T> b)     => new Lazy<T>(() => Add(a.Value, b.Value));
         Lazy<T> Sub(Lazy<T> a, Lazy<T> b)     => new Lazy<T>(() => Sub(a.Value, b.Value));

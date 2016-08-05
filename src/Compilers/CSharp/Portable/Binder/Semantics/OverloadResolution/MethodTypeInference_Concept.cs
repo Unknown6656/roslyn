@@ -628,15 +628,18 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         internal Candidate InferOneWitnessFromRequiredConcepts(ImmutableArray<TypeSymbol> requiredConcepts, ImmutableTypeMap fixedMap, ImmutableHashSet<NamedTypeSymbol> chain = null)
         {
-            Debug.Assert(!requiredConcepts.IsEmpty,
-                "We should never be able to infer a witness when there are no required concepts");
-
-            if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
+            // Sometimes, required concepts will be empty.  This is usually when
+            // a type parameter being inferred is erroneous, as we try to forbid
+            // parameters with no required concepts at constraint checking level.
+            // These are useless and we don't infer them.
+            if (requiredConcepts.IsEmpty) return default(Candidate);
 
             // From here, we can only decrease the number of considered
             // instances, so we can't assign an instance to a witness
             // parameter if there aren't any to begin with.
             if (_allInstances.IsEmpty) return default(Candidate);
+
+            if (chain == null) chain = ImmutableHashSet<NamedTypeSymbol>.Empty;
 
             // @t-mawind
             // An instance satisfies inference if:

@@ -2664,6 +2664,9 @@
       <Kind Name="InKeyword"/>
       <Kind Name="OutKeyword"/>
     </Field>
+    <Field Name="ImplicitKeyword" Type="SyntaxToken" Optional="true">
+      <Kind Name="ImplicitKeyword"/>
+    </Field>
     <Field Name="Identifier" Type="SyntaxToken">
       <PropertyComment>
         <summary>Gets the identifier.</summary>

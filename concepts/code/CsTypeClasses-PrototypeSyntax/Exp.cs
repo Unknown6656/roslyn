@@ -71,7 +71,7 @@ namespace Exp
         }
     }
 
-    instance ExpNeg<ExpX, X> : Exp<Neg<X>>
+    instance ExpNeg<X, implicit ExpX> : Exp<Neg<X>>
         where ExpX : Exp<X>
     {
     }

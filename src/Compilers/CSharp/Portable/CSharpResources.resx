@@ -4932,6 +4932,15 @@ To remove the warning, you can use /reference instead (set the Embed Interop Typ
   <data name="ERR_DefaultStructNoWitnessParam" xml:space="preserve">
     <value>Default struct for concept '{0}' must take a witness for that concept as its last parameter.</value>
   </data>
+  <data name="ERR_ConceptConstraintOnNonImplicitParam" xml:space="preserve">
+    <value>Type parameter '{0}' is constrained to concept '{1}' but is not marked 'implicit'.</value>
+  </data>
+  <data name="ERR_NonConceptConstraintOnImplicitParam" xml:space="preserve">
+    <value>Type parameter '{0}' is marked 'implicit' but has been constrained to '{1}' which is not a concept.</value>
+  </data>
+  <data name="ERR_NoConstraintsOnImplicitParam" xml:space="preserve">
+    <value>Type parameter '{0}' is marked 'implicit' but has no type constraints.</value>
+  </data>
   <data name="ERR_DeconstructWrongCardinality" xml:space="preserve">
     <value>Cannot deconstruct a tuple of '{0}' elements into '{1}' variables.</value>
   </data>

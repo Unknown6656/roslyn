@@ -879,6 +879,7 @@
     <Compile Include="Syntax\SyntaxTriviaFunctions.cs" />
     <Compile Include="Syntax\SyntaxTriviaListBuilder.cs" />
     <Compile Include="Syntax\TypeDeclarationSyntax.cs" />
+    <Compile Include="Syntax\TypeParameterSyntax.cs" />
     <Compile Include="Syntax\TypeSyntax.cs" />
     <Compile Include="Syntax\VariableDeclarationSyntax.cs" />
     <Compile Include="Syntax\XmlNameAttributeElementKind.cs" />

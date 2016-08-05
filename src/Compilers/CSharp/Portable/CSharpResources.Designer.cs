@@ -2834,6 +2834,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Type parameter &apos;{0}&apos; is constrained to concept &apos;{1}&apos; but is not marked &apos;implicit&apos;..
+        /// </summary>
+        internal static string ERR_ConceptConstraintOnNonImplicitParam {
+            get {
+                return ResourceManager.GetString("ERR_ConceptConstraintOnNonImplicitParam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Constraint &apos;concept&apos; may only be used on overrides of methods with concepts..
         /// </summary>
         internal static string ERR_ConceptConstraintOnNonOverride {
@@ -6461,6 +6470,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Type parameter &apos;{0}&apos; is marked &apos;implicit&apos; but has no type constraints..
+        /// </summary>
+        internal static string ERR_NoConstraintsOnImplicitParam {
+            get {
+                return ResourceManager.GetString("ERR_NoConstraintsOnImplicitParam", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The type &apos;{0}&apos; has no constructors defined.
         /// </summary>
         internal static string ERR_NoConstructors {
@@ -6673,6 +6691,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         internal static string ERR_NoNamespacePrivate {
             get {
                 return ResourceManager.GetString("ERR_NoNamespacePrivate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Type parameter &apos;{0}&apos; is marked &apos;implicit&apos; but has been constrained to &apos;{1}&apos; which is not a concept..
+        /// </summary>
+        internal static string ERR_NonConceptConstraintOnImplicitParam {
+            get {
+                return ResourceManager.GetString("ERR_NonConceptConstraintOnImplicitParam", resourceCulture);
             }
         }
         

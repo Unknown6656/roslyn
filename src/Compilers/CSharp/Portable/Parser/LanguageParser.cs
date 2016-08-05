@@ -5522,6 +5522,7 @@ tryAgain:
                 return _syntaxFactory.TypeParameter(
                     default(SyntaxList<AttributeListSyntax>),
                     default(SyntaxToken),
+                    default(SyntaxToken),
                     this.AddError(CreateMissingIdentifierToken(), ErrorCode.ERR_IdentifierExpected));
             }
 
@@ -5551,7 +5552,18 @@ tryAgain:
                     }
                 }
 
-                return _syntaxFactory.TypeParameter(attrs, varianceToken, this.ParseIdentifierToken());
+                // @t-mawind
+                //   This is how we find out whether the type parameter is implicit.
+                SyntaxToken implicitToken = null;
+                if (this.CurrentToken.Kind == SyntaxKind.ImplicitKeyword)
+                {
+                    // TODO: error when not appropriate?
+                    // TODO: feature flag?
+
+                    implicitToken = this.EatToken();
+                }
+
+                return _syntaxFactory.TypeParameter(attrs, varianceToken, implicitToken, this.ParseIdentifierToken());
             }
             finally
             {

@@ -71,7 +71,7 @@ namespace System.Concepts.Prelude
     /// <summary>
     ///     Implementation of <see cref="Eq{A}"/> for arrays.
     /// </summary>
-    public instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
+    public instance EqArray<A, implicit EqA> : Eq<A[]> where EqA: Eq<A>
     {
         bool Equals(A[] x, A[] y)
         {

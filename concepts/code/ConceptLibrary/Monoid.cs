@@ -87,7 +87,7 @@ namespace System.Concepts.Monoid
     /// <typeparam name="A">
     ///     The type of the ordered values.
     /// </typeparam>
-    public instance Min<A> : Semigroup<A> where OrdA : Ord<A>
+    public instance Min<A, implicit OrdA> : Semigroup<A> where OrdA : Ord<A>
     {
         // Is this actually associative?
         A Append(A x, A y) => Leq(x, y) ? x : y;
@@ -99,7 +99,7 @@ namespace System.Concepts.Monoid
     /// <typeparam name="A">
     ///     The type of the ordered values.
     /// </typeparam>
-    public instance Max<A> : Semigroup<A> where OrdA : Ord<A>
+    public instance Max<A, implicit OrdA> : Semigroup<A> where OrdA : Ord<A>
     {
         // Is this actually associative?
         A Append(A x, A y) => Leq(x, y) ? y : x;
@@ -111,7 +111,7 @@ namespace System.Concepts.Monoid
     /// <typeparam name="A">
     ///     The type of the number being added.
     /// </typeparam>
-    public instance Sum<A> : Monoid<A> where NumA : Num<A>
+    public instance Sum<A, implicit NumA> : Monoid<A> where NumA : Num<A>
     {
         A Empty() => FromInteger(0);
         A Append(A x, A y) => Add(x, y);
@@ -123,7 +123,7 @@ namespace System.Concepts.Monoid
     /// <typeparam name="A">
     ///     The type of the number being multiplied.
     /// </typeparam>
-    public instance Product<A> : Monoid<A> where NumA : Num<A>
+    public instance Product<A, implicit NumA> : Monoid<A> where NumA : Num<A>
     {
         A Empty() => FromInteger(1);
         A Append(A x, A y) => Mul(x, y);
@@ -150,7 +150,7 @@ namespace System.Concepts.Monoid
         /// <typeparam name="A">
         ///     The semigroup on which this function is being defined.
         /// </typeparam>
-        public static A ConcatNonEmpty<A>(IEnumerable<A> xs)
+        public static A ConcatNonEmpty<A, implicit SA>(IEnumerable<A> xs)
             where SA : Semigroup<A>
         {
             var en = xs.GetEnumerator();
@@ -186,7 +186,7 @@ namespace System.Concepts.Monoid
         /// <typeparam name="B">
         ///     The domain of the function <paramref name="f" />.
         /// </typeparam>
-        public static A ConcatMapNonEmpty<A, B>(IEnumerable<B> xs, Func<B, A> f)
+        public static A ConcatMapNonEmpty<A, B, implicit SA>(IEnumerable<B> xs, Func<B, A> f)
             where SA : Semigroup<A>
         {
             var en = xs.GetEnumerator();
@@ -215,7 +215,7 @@ namespace System.Concepts.Monoid
         /// <returns>
         ///     The result of folding.
         /// </returns>
-        public static A Concat<A>(IEnumerable<A> xs)
+        public static A Concat<A, implicit MA>(IEnumerable<A> xs)
             where MA : Monoid<A>
         {
             A result = Empty();
@@ -245,7 +245,7 @@ namespace System.Concepts.Monoid
         /// <typeparam name="B">
         ///     The domain of the function <paramref name="f" />.
         /// </typeparam>
-        public static A ConcatMap<A, B>(IEnumerable<B> xs, Func<B, A> f)
+        public static A ConcatMap<A, B, implicit MA>(IEnumerable<B> xs, Func<B, A> f)
             where MA : Monoid<A>
         {
             A result = Empty();

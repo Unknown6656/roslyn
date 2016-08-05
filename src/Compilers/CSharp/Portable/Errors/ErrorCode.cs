@@ -1445,6 +1445,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         ERR_ConceptMethodNotImplementedAndNoDefault = 8950,
         ERR_DefaultStructBadArity = 8951,
         ERR_DefaultStructNoWitnessParam = 8952,
+        ERR_ConceptConstraintOnNonImplicitParam = 8953,
+        ERR_NonConceptConstraintOnImplicitParam = 8954,
+        ERR_NoConstraintsOnImplicitParam = 8955
 
         #endregion diagnostics for concepts
     }
