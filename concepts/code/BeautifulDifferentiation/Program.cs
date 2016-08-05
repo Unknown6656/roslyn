@@ -9,13 +9,13 @@ namespace BeautifulDifferentiation
 {
     public class Program
     {
-        public static A F<A>(A z) where FloatA : Floating<A>
+        public static A F<A, implicit FloatA>(A z) where FloatA : Floating<A>
             => Sqrt(Mul(FromInteger(3), Sin(z)));
 
-        public static A G<A>(A z) where FloatA : Floating<A>
+        public static A G<A, implicit FloatA>(A z) where FloatA : Floating<A>
             => Mul(Mul(FromInteger(3), Asinh(z)), Log(z));
 
-        public static void Test() where FDA : Floating<D<double>>
+        public static void Test<implicit FDA>() where FDA : Floating<D<double>>
         {
             var d = new D<double>(2.0, 1.0);
 
@@ -27,7 +27,7 @@ namespace BeautifulDifferentiation
             Console.Out.WriteLine($"D {d3.X} {d3.DX}");
         }
 
-        public static void TestHigherOrder() where FHDA : Floating<HoD<double>>
+        public static void TestHigherOrder<implicit FHDA>() where FHDA : Floating<HoD<double>>
         {
             var d = HoD<double>.Id(2.0);
 

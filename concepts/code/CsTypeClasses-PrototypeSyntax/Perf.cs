@@ -156,7 +156,7 @@ namespace Perf {
   }
 
   public static class Overloads {
-    public static int Compare<T>(T v1, T v2) where IOrdT : IOrd<T> {
+    public static int Compare<T, implicit IOrdT>(T v1, T v2) where IOrdT : IOrd<T> {
       return Compare(v1, v2);
     }
   }
@@ -176,7 +176,7 @@ namespace Perf {
     // Polymorphic OO-style quicksort: general, typesafe
     // Note the type parameter bound in the generic method
 
-    public static void qsort<T>(T[] arr, int a, int b)
+    public static void qsort<T, implicit IOrdT>(T[] arr, int a, int b)
       where IOrdT : IOrd<T> {
       // sort arr[a..b]
       if (a < b) {
@@ -195,12 +195,12 @@ namespace Perf {
       }
     }
 
-    public static void Quicksort<T>(T[] arr) where IOrdT : IOrd<T> {
+    public static void Quicksort<T, implicit IOrdT>(T[] arr) where IOrdT : IOrd<T> {
       qsort(arr, 0, arr.Length - 1);
     }
   }
 
-  public class PolyDictSort<T> where IOrdT : IOrd<T> {
+  public class PolyDictSort<T, implicit IOrdT> where IOrdT : IOrd<T> {
     private static void swap/*<T>*/(T[] arr, int s, int t) {
       T tmp = arr[s]; arr[s] = arr[t]; arr[t] = tmp;
     }
@@ -1091,7 +1091,7 @@ namespace Perf {
     }
   }
 
-  public instance IOrdTuple<A, B> : IOrd<Tuple<A, B>>
+  public instance IOrdTuple<A, B, implicit IOrdA, implicit IOrdB> : IOrd<Tuple<A, B>>
     where IOrdA : IOrd<A>
     where IOrdB : IOrd<B> {
     

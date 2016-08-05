@@ -11,11 +11,11 @@ namespace ListsEq
     abstract class List<A>
     {
         public abstract List<B> Map<B>(Fun<A, B> f);
-        public abstract bool Mem(A a) where EqA : Eq<A>;
+        public abstract bool Mem<implicit EqA>(A a) where EqA : Eq<A>;
 
         //a contrived version of Mem that recurses on a list of lists, so needing a dynamically constructed dictionary.
-        public abstract bool AltMem(A a) where EqA : Eq<A>;
-        public abstract bool Eq(List<A> a) where EqA : Eq<A>;
+        public abstract bool AltMem<implicit EqA>(A a) where EqA : Eq<A>;
+        public abstract bool Eq<implicit EqA>(List<A> a) where EqA : Eq<A>;
     }
 
     class Nil<A> : List<A>
@@ -77,7 +77,7 @@ namespace ListsEq
 
     }
 
-    instance EqList<A> : Eq<List<A>> where EqA : Eq<A>
+    instance EqList<A, implicit EqA> : Eq<List<A>> where EqA : Eq<A>
     {
         bool Equals(List<A> a, List<A> b)
         {

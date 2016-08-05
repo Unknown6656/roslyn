@@ -53,7 +53,7 @@ namespace Existentials
 
     interface ExistsShowableClient
     {
-        void Continue<A>(A a) where ShowableA : Showable<A>;
+        void Continue<A, implicit ShowableA>(A a) where ShowableA : Showable<A>;
     }
 
     interface ExistsShowable
@@ -64,7 +64,7 @@ namespace Existentials
         void UnboxedUnpack<E>(ref E c) where E : struct, ExistsShowableClient;
     }
 
-    struct ExistsShowable<A> : ExistsShowable
+    struct ExistsShowable<A, implicit ShowableA> : ExistsShowable
       where ShowableA : Showable<A>
     {
         private A a;

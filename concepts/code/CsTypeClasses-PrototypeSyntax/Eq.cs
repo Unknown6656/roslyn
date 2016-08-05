@@ -32,7 +32,7 @@ namespace Eq
 
     static class Overloads
     {
-        public static bool Eq<A>(A a, A b) where EqA : Eq<A> => Equals(a, b);
+        public static bool Eq<A, implicit EqA>(A a, A b) where EqA : Eq<A> => Equals(a, b);
     }
 
 
@@ -72,7 +72,7 @@ namespace Eq
     Substituting, for simplicity, arrays for lists in CS we can write:
     */
 
-    instance EqArray<A> : Eq<A[]> where EqA : Eq<A>
+    instance EqArray<A, implicit EqA> : Eq<A[]> where EqA : Eq<A>
     {
         bool Equals(A[] a, A[] b)
         {
@@ -102,7 +102,7 @@ namespace Eq
     public class Test
     {
 
-        static bool Elem<A>(A x, A[] ys) where EqA : Eq<A>
+        static bool Elem<A, implicit EqA>(A x, A[] ys) where EqA : Eq<A>
         {
             for (int i = 0; i < ys.Length; i++)
             {

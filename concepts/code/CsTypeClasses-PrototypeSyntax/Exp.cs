@@ -33,7 +33,7 @@ namespace Exp
     {
     }
 
-    instance ExpAdd<X, Y> : Exp<Add<X, Y>>
+    instance ExpAdd<X, Y, implicit ExpX, implicit ExpY> : Exp<Add<X, Y>>
         where ExpX : Exp<X>
         where ExpY : Exp<Y>
     {
@@ -46,7 +46,7 @@ namespace Exp
 
     static partial class Overloads
     {
-        public static int eval<X>(X e) where EvalX : Eval<X> => eval(e);
+        public static int eval<X, implicit EvalX>(X e) where EvalX : Eval<X> => eval(e);
     }
 
     instance EvalLit : Eval<Lit>
@@ -54,7 +54,7 @@ namespace Exp
         int eval(Lit x) => x.i;
     }
 
-    instance EvalAdd<X, Y> : Eval<Add<X, Y>>
+    instance EvalAdd<X, Y, implicit EvalX, implicit EvalY> : Eval<Add<X, Y>>
         where EvalX : Eval<X>
         where EvalY : Eval<Y>
     {
@@ -76,7 +76,7 @@ namespace Exp
     {
     }
 
-    instance EvalNeg<X> : Eval<Neg<X>>
+    instance EvalNeg<X, implicit EvalX> : Eval<Neg<X>>
         where EvalX : Eval<X>
     {
         int eval(Neg<X> n) => -Overloads.eval(n.x);
@@ -89,7 +89,7 @@ namespace Exp
 
     static partial class Overloads
     {
-        public static void Print<X>(X e) where PrintX : Print<X>
+        public static void Print<X, implicit PrintX>(X e) where PrintX : Print<X>
         {
             print(e);
         }
@@ -103,7 +103,7 @@ namespace Exp
         }
     }
 
-    instance PrintAdd<X, Y> : Print<Add<X, Y>>
+    instance PrintAdd<X, Y, implicit PrintX, implicit PrintY> : Print<Add<X, Y>>
         where PrintX : Print<X>
         where PrintY : Print<Y>
     {
@@ -118,7 +118,7 @@ namespace Exp
 
     class Test
     {
-        public static int Eval<X>(X x) where EvalX : Eval<X> => eval(x);
+        public static int Eval<X, implicit EvalX>(X x) where EvalX : Eval<X> => eval(x);
 
         public static void Run()
         {

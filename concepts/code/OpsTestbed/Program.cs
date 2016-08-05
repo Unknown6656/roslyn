@@ -7,8 +7,8 @@ namespace OpsTestbed
 {
     class Program
     {
-        static A M<A>(A x) where NumA : Num<A> => FromInteger(666) * x * x * x + FromInteger(777) * x * x + FromInteger(888);
-        static A N<A>(A x) where NumA : Num<A>
+        static A M<A, implicit NumA>(A x) where NumA : Num<A> => FromInteger(666) * x * x * x + FromInteger(777) * x * x + FromInteger(888);
+        static A N<A, implicit NumA>(A x) where NumA : Num<A>
         {
             var y = FromInteger(0);
             for (int i = 0; i < 100; ++i)

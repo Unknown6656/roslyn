@@ -15,7 +15,7 @@ namespace BeautifulDifferentiation.FuncInstances
     /// <typeparam name="B">
     ///     The range of the function; must be <c>Num</c>.
     /// </typeparam>
-    instance NumF<A, B> : Num<Func<A, B>>
+    instance NumF<A, B, implicit NumB> : Num<Func<A, B>>
         where NumB : Num<B>
     {
         Func<A, B> Add(Func<A, B> f, Func<A, B> g)
@@ -43,16 +43,16 @@ namespace BeautifulDifferentiation.FuncInstances
     /// <typeparam name="B">
     ///     The range of the function; must be <c>Fractional</c>.
     /// </typeparam>
-    instance FracF<A, B> : Fractional<Func<A, B>>
+    instance FracF<A, B, implicit FracB> : Fractional<Func<A, B>>
         where FracB : Fractional<B>
     {
-        Func<A, B> Add(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Add(f, g);
-        Func<A, B> Neg(Func<A, B> f) => NumF<A, B, FracB>.Neg(f);
-        Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Sub(f, g);
-        Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => NumF<A, B, FracB>.Mul(f, g);
-        Func<A, B> Abs(Func<A, B> f) => NumF<A, B, FracB>.Abs(f);
-        Func<A, B> Signum(Func<A, B> f) => NumF<A, B, FracB>.Signum(f);
-        Func<A, B> FromInteger(int k) => NumF<A, B, FracB>.FromInteger(k);
+        Func<A, B> Add(Func<A, B> f, Func<A, B> g) => NumF<A, B>.Add(f, g);
+        Func<A, B> Neg(Func<A, B> f) => NumF<A, B>.Neg(f);
+        Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => NumF<A, B>.Sub(f, g);
+        Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => NumF<A, B>.Mul(f, g);
+        Func<A, B> Abs(Func<A, B> f) => NumF<A, B>.Abs(f);
+        Func<A, B> Signum(Func<A, B> f) => NumF<A, B>.Signum(f);
+        Func<A, B> FromInteger(int k) => NumF<A, B>.FromInteger(k);
 
         Func<A, B> FromRational(Ratio<int> k)
             => (x) => FromRational(k);
@@ -71,15 +71,15 @@ namespace BeautifulDifferentiation.FuncInstances
     /// <typeparam name="B">
     ///     The range of the function; must be <c>Floating</c>.
     /// </typeparam>
-    instance FloatF<A, B> : Floating<Func<A, B>>
+    instance FloatF<A, B, implicit FloatB> : Floating<Func<A, B>>
         where FloatB : Floating<B>
     {
         Func<A, B> Add(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Add(f, g);
         Func<A, B> Sub(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Sub(f, g);
         Func<A, B> Neg(Func<A, B> f) => FracF<A, B, FloatB>.Neg(f);
         Func<A, B> Mul(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Mul(f, g);
-        Func<A, B> Abs(Func<A, B> f) => FracF<A, B, FloatB>.Abs(f);
-        Func<A, B> Signum(Func<A, B> f) => FracF<A, B, FloatB>.Signum(f);
+        Func<A, B> Abs(Func<A, B> f) => FracF<A, B>.Abs(f);
+        Func<A, B> Signum(Func<A, B> f) => FracF<A, B>.Signum(f);
         Func<A, B> FromInteger(int k) => FracF<A, B, FloatB>.FromInteger(k);
         Func<A, B> FromRational(Ratio<int> k) => FracF<A, B, FloatB>.FromRational(k);
         Func<A, B> Div(Func<A, B> f, Func<A, B> g) => FracF<A, B, FloatB>.Div(f, g);

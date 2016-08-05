@@ -12,11 +12,11 @@ namespace Num
 
     static class Overloads
     {
-        public static A Add<A>(A a, A b) where NumA : Num<A> => Add(a, a);
+        public static A Add<A, implicit NumA>(A a, A b) where NumA : Num<A> => Add(a, a);
 
-        public static A Mult<A>(A a, A b) where NumA : Num<A> => Mult(a, a);
+        public static A Mult<A, implicit NumA>(A a, A b) where NumA : Num<A> => Mult(a, a);
 
-        public static A Neg<A>(A a) where NumA : Num<A> => Neg(a);
+        public static A Neg<A, implicit NumA>(A a) where NumA : Num<A> => Neg(a);
     }
 
     instance NumInt : Num<int>
@@ -29,12 +29,12 @@ namespace Num
     class Test
     {
 
-        static A Square<A>(A a) where NumA : Num<A>
+        static A Square<A, implicit NumA>(A a) where NumA : Num<A>
         {
             return Overloads.Mult(a, a);
         }
 
-        static bool MemSq<A>(A[] a_s, A a)
+        static bool MemSq<A, implicit NumA, implicit EqA>(A[] a_s, A a)
           where NumA : Num<A>
           where EqA : Eq<A>
         {

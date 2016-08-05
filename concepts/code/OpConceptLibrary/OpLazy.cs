@@ -5,13 +5,13 @@
 /// </summary>
 namespace System.Concepts.OpLazy
 {
-    instance LazyEq<T> : Eq<Lazy<T>> where EqT : Eq<T>
+    instance LazyEq<T, implicit EqT> : Eq<Lazy<T>> where EqT : Eq<T>
     {
         bool operator ==(Lazy<T> a, Lazy<T> b) => a.Value == b.Value;
         bool operator !=(Lazy<T> a, Lazy<T> b) => a.Value != b.Value;
     }
 
-    instance LazyOrd<T> : Ord<Lazy<T>> where OrdT : Ord<T>
+    instance LazyOrd<T, implicit OrdT> : Ord<Lazy<T>> where OrdT : Ord<T>
     {
         bool operator ==(Lazy<T> a, Lazy<T> b) => a.Value == b.Value;
         bool operator !=(Lazy<T> a, Lazy<T> b) => a.Value != b.Value;
@@ -19,7 +19,7 @@ namespace System.Concepts.OpLazy
         bool operator <=(Lazy<T> a, Lazy<T> b) => a.Value <= b.Value;
     }
 
-    instance LazyNum<T> : Num<Lazy<T>> where NumT: Num<T>
+    instance LazyNum<T, implicit NumT> : Num<Lazy<T>> where NumT: Num<T>
     {
         Lazy<T> operator +(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => a.Value + b.Value);
         Lazy<T> operator -(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => a.Value - b.Value);
@@ -29,7 +29,7 @@ namespace System.Concepts.OpLazy
         Lazy<T> FromInteger(int a)               => new Lazy<T>(() => FromInteger(a));
     }
 
-    instance LazyFractional<T> : Fractional<Lazy<T>> where FractionalT : Fractional<T>
+    instance LazyFractional<T, implicit FractionalT> : Fractional<Lazy<T>> where FractionalT : Fractional<T>
     {
         Lazy<T> operator +(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => a.Value + b.Value);
         Lazy<T> operator -(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => a.Value - b.Value);
@@ -41,7 +41,7 @@ namespace System.Concepts.OpLazy
         Lazy<T> FromRational(Ratio<int> a)       => new Lazy<T>(() => FromRational(a));
     }
 
-    instance LazyFloating<T> : Floating<Lazy<T>> where FloatingT : Floating<T>
+    instance LazyFloating<T, implicit FloatingT> : Floating<Lazy<T>> where FloatingT : Floating<T>
     {
         Lazy<T> operator +(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => a.Value + b.Value);
         Lazy<T> operator -(Lazy<T> a, Lazy<T> b) => new Lazy<T>(() => a.Value - b.Value);

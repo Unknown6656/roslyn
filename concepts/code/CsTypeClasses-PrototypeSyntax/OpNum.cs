@@ -23,12 +23,12 @@ namespace OpNum
     class Test
     {
 
-        static A Square<A>(A a) where NumA : Num<A>
+        static A Square<A, implicit NumA>(A a) where NumA : Num<A>
         {
             return a * a;
         }
 
-        static bool MemSq<A>(A[] a_s, A a)
+        static bool MemSq<A, implicit NumA, implicit EqA>(A[] a_s, A a)
           where NumA : Num<A>
           where EqA : Eq<A>
         {
@@ -42,7 +42,7 @@ namespace OpNum
             return false;
         }
 
-        static A SumNegOdd<A>(A[] a_s)
+        static A SumNegOdd<A, implicit NumA>(A[] a_s)
           where NumA : Num<A>
         {
             A sum = FromInteger(0);

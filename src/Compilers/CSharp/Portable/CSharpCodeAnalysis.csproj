@@ -681,7 +681,6 @@
     <Compile Include="Symbols\Source\SourceNamedTypeSymbol.cs" />
     <Compile Include="Symbols\Source\SourceNamedTypeSymbol_Bases.cs" />
     <Compile Include="Symbols\Source\SourceMemberContainerSymbol_Concept.cs" />
-    <Compile Include="Symbols\Source\SourceNamedTypeSymbol_Concept.cs" />
     <Compile Include="Symbols\Source\SourceNamedTypeSymbol_Enum.cs" />
     <Compile Include="Symbols\Source\SourceNamespaceSymbol.cs" />
     <Compile Include="Symbols\Source\SourceNamespaceSymbol_Completion.cs" />

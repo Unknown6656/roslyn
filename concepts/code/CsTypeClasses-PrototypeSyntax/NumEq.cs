@@ -24,17 +24,17 @@ namespace NumEq
     class Test
     {
 
-        static bool Equals<A>(A a, A b) where EqA : Eq<A>
+        static bool Equals<A, implicit EqA>(A a, A b) where EqA : Eq<A>
         {
             return Equals(a, b);
         }
 
-        static A Square<A>(A a) where NumA : Num<A>
+        static A Square<A, implicit NumA>(A a) where NumA : Num<A>
         {
             return Mult(a, a);
         }
 
-        static bool MemSq<A>(A[] a_s, A a)
+        static bool MemSq<A, implicit NumA>(A[] a_s, A a)
              where NumA : Num<A>
         {
             for (int i = 0; i < a_s.Length; i++)

@@ -9,7 +9,7 @@ namespace BeautifulDifferentiation.HoMark2
     using FuncInstances;
     using static NumUtils;
 
-    instance NumDA<A> : Num<HoD<A>>
+    instance NumDA<A, implicit NumA> : Num<HoD<A>>
         where NumA : Num<A>
     {
         HoD<A> FromInteger(int x) => HoD<A>.Const(FromInteger(x));
@@ -30,7 +30,7 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Abs(HoD<A> x) => HoD<A>.Chain(Abs, this.Signum)(x);
     }
 
-    instance FractionalDA<A> : Fractional<HoD<A>>
+    instance FractionalDA<A, implicit FracA> : Fractional<HoD<A>>
         where FracA : Fractional<A>
     {
         // Implementation of Num
@@ -52,7 +52,7 @@ namespace BeautifulDifferentiation.HoMark2
                );
     }
 
-    instance FloatingDA<A> : Floating<HoD<A>>
+    instance FloatingDA<A, implicit FloatA> : Floating<HoD<A>>
         where FloatA : Floating<A>
     {
         // Implementation of Num
@@ -160,9 +160,9 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Acosh(HoD<A> x)
             => HoD<A>.Chain(
                    Acosh,
-                   FloatF<HoD<A>, HoD<A>>.Recip(
-                       FloatF<HoD<A>, HoD<A>>.Sqrt(
-                           NumF<HoD<A>, HoD<A>>.Sub(Square, One<Func<HoD<A>, HoD<A>>>())
+                   Fractional<Func<HoD<A>, HoD<A>>>.Recip(
+                       Floating<Func<HoD<A>, HoD<A>>>.Sqrt(
+                           Num<Func<HoD<A>, HoD<A>>>.Sub(Square, One<Func<HoD<A>, HoD<A>>>())
                        )
                    )
                )(x);
@@ -171,7 +171,7 @@ namespace BeautifulDifferentiation.HoMark2
         HoD<A> Atanh(HoD<A> x)
             => HoD<A>.Chain(
                    Atanh,
-                   FloatF<HoD<A>, HoD<A>>.Recip(NumF<HoD<A>, HoD<A>>.Sub(One<Func<HoD<A>, HoD<A>>>(), Square))
+                   Floating<Func<HoD<A>, HoD<A>>>.Recip(NumF<HoD<A>, HoD<A>>.Sub(One<Func<HoD<A>, HoD<A>>>(), Square))
                )(x);
     }
 }

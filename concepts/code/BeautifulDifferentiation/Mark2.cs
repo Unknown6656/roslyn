@@ -9,7 +9,7 @@ namespace BeautifulDifferentiation.Mark2
     using FuncInstances;
     using static NumUtils;
 
-    instance NumDA<A> : Num<D<A>>
+    instance NumDA<A, implicit NumA> : Num<D<A>>
         where NumA : Num<A>
     {
         D<A> FromInteger(int x) => D<A>.Const(FromInteger(x));
@@ -30,7 +30,7 @@ namespace BeautifulDifferentiation.Mark2
         D<A> Abs(D<A> x) => D<A>.Chain(Abs, Signum)(x);
     }
 
-    instance FractionalDA<A> : Fractional<D<A>>
+    instance FractionalDA<A, implicit FracA> : Fractional<D<A>>
         where FracA : Fractional<A>
     {
         // Implementation of Num
@@ -52,7 +52,7 @@ namespace BeautifulDifferentiation.Mark2
                );
     }
 
-    instance FloatingDA<A> : Floating<D<A>>
+    instance FloatingDA<A, implicit FloatA> : Floating<D<A>>
         where FloatA : Floating<A>
     {
         // Implementation of Num

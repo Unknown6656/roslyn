@@ -34,8 +34,8 @@ namespace BeautifulDifferentiation
         /// </param>
         public D(A x, A dx)
         {
-            this.X = x;
-            this.DX = dx;
+            X = x;
+            DX = dx;
         }
 
         /// <summary>
@@ -52,9 +52,9 @@ namespace BeautifulDifferentiation
         ///     A <see cref="D{A}"/> with the value
         ///     <paramref name="k"/> and first derivative <c>0</c>.
         /// </returns>
-        public static D<A> Const(A k) where NumA : Num<A>
+        public static D<A> Const<implicit NumA>(A k) where NumA : Num<A>
         {
-            return new D<A>(k, Zero<A, NumA>());
+            return new D<A>(k, Zero<A>());
         }
 
         /// <summary>
@@ -71,9 +71,9 @@ namespace BeautifulDifferentiation
         ///     A <see cref="D{A}"/> with the value
         ///     <paramref name="t"/> and first derivative <c>1</c>.
         /// </returns>
-        public static D<A> Id(A t) where NumA : Num<A>
+        public static D<A> Id<implicit NumA>(A t) where NumA : Num<A>
         {
-            return new D<A>(t, One<A, NumA>());
+            return new D<A>(t, One<A>());
         }
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace BeautifulDifferentiation
         ///     A function over automatic derivatives applying the
         ///     function and its derivative.
         /// </returns>
-        public static Func<D<A>, D<A>> Chain(Func<A, A> f, Func<A, A> df)
+        public static Func<D<A>, D<A>> Chain<implicit NumA>(Func<A, A> f, Func<A, A> df)
             where NumA : Num<A>
             => (d) => new D<A>(f(d.X), Mul(d.DX, df(d.X)));
     }

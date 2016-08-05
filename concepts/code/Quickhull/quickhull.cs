@@ -118,7 +118,7 @@ public struct Line<A>
     ///     True if the point is on the right of this line, including
     ///     points on the line.
     /// </returns>
-    public bool OnRight(Point<A> point)
+    public bool OnRight<implicit OrdA, implicit NumA>(Point<A> point)
         where OrdA : Ord<A>
         where NumA : Num<A>
     {
@@ -149,7 +149,7 @@ public struct Line<A>
     /// <returns>
     ///     The distance from the point to this line.
     /// </returns>
-    public A PointDistance(Point<A> point)
+    public A PointDistance<implicit OrdA, implicit FloatA>(Point<A> point)
         where OrdA : Ord<A>
         where FloatA : Floating<A>
     {
@@ -179,7 +179,7 @@ public struct Line<A>
 /// <summary>
 ///     Ordering of points based on their X co-ordinate.
 /// </summary>
-instance OrdPointX<A> : Ord<Point<A>> where OrdA : Ord<A>
+instance OrdPointX<A, implicit OrdA> : Ord<Point<A>> where OrdA : Ord<A>
 {
     bool Equals(Point<A> x, Point<A> y) => Equals(x.X, y.X);
     bool Leq(Point<A> x, Point<A> y)    => Leq(x.X, y.X);
@@ -188,7 +188,7 @@ instance OrdPointX<A> : Ord<Point<A>> where OrdA : Ord<A>
 /// <summary>
 ///     Ordering of points based on their Y co-ordinate.
 /// </summary>
-instance OrdPointY<A> : Ord<Point<A>> where OrdA : Ord<A>
+instance OrdPointY<A, implicit OrdA> : Ord<Point<A>> where OrdA : Ord<A>
 {
     bool Equals(Point<A> x, Point<A> y) => Equals(x.Y, y.Y);
     bool Leq(Point<A> x, Point<A> y)    => Leq(x.Y, y.Y);
@@ -220,7 +220,7 @@ public concept Drawable<A>
 /// <summary>
 ///     Drawable instance for points.
 /// </summary>
-public instance DrawPoint<A> : Drawable<Point<A>>
+public instance DrawPoint<A, implicit TA> : Drawable<Point<A>>
     where TA : ToSingle<A>
 {
     void Draw(Point<A> item, Color colour, Graphics gfx)
@@ -236,7 +236,7 @@ public instance DrawPoint<A> : Drawable<Point<A>>
 /// <summary>
 ///     Drawable instance for lines.
 /// </summary>
-public instance DrawLine<A> : Drawable<Line<A>>
+public instance DrawLine<A, implicit TA> : Drawable<Line<A>>
     where TA : ToSingle<A>
 {
     void Draw(Line<A> item, Color colour, Graphics gfx)
@@ -254,7 +254,7 @@ public instance DrawLine<A> : Drawable<Line<A>>
 /// <summary>
 ///     Composition of enumerations of drawables.
 /// </summary>
-public instance DrawEnum<A> : Drawable<IEnumerable<A>>
+public instance DrawEnum<A, implicit DA> : Drawable<IEnumerable<A>>
     where DA : Drawable<A>
 {
     void Draw(IEnumerable<A> items, Color colour, Graphics gfx)
@@ -269,7 +269,7 @@ public instance DrawEnum<A> : Drawable<IEnumerable<A>>
 /// <summary>
 ///     Allows 2-tuples to be ordered by their first item.
 /// </summary>
-public instance Ord21<A, B> : Ord<Tuple<A, B>>
+public instance Ord21<A, B, implicit OrdA> : Ord<Tuple<A, B>>
     where OrdA : Ord<A>
 {
     bool Equals(Tuple<A, B> a, Tuple<A, B> b) => Equals(a.Item1, b.Item1);
@@ -290,7 +290,7 @@ static class Utils
     /// <typeparam name="A">
     ///     The type of the ordered elements.
     /// </typeparam>
-    public static A Maximum<A>(IEnumerable<A> xs) where OrdA : Ord<A>
+    public static A Maximum<A, implicit OrdA>(IEnumerable<A> xs) where OrdA : Ord<A>
         => ConcatNonEmpty<A, Max<A>>(xs);
 
     /// <summary>
@@ -314,7 +314,7 @@ static class Utils
     /// <typeparam name="B">
     ///     The type of the initial list.
     /// </typeparam>
-    public static B MaximumBy<A, B>(IEnumerable<B> xs, Func<B, A> f)
+    public static B MaximumBy<A, B, implicit OrdA>(IEnumerable<B> xs, Func<B, A> f)
         where OrdA : Ord<A>
         => ConcatMapNonEmpty<Tuple<A, B>, B, Max<Tuple<A, B>, Ord21<A, B>>>(
                xs, (x) => Tuple.Create(f(x), x)
@@ -332,7 +332,7 @@ static class Utils
     /// <typeparam name="A">
     ///     The type of the ordered elements.
     /// </typeparam>
-    public static A Minimum<A>(IEnumerable<A> xs) where OrdA : Ord<A>
+    public static A Minimum<A, implicit OrdA>(IEnumerable<A> xs) where OrdA : Ord<A>
         => ConcatNonEmpty<A, Min<A>>(xs);
 
     /// <summary>
@@ -356,7 +356,7 @@ static class Utils
     /// <typeparam name="B">
     ///     The type of the initial list.
     /// </typeparam>
-    public static B MinimumBy<A, B>(IEnumerable<B> xs, Func<B, A> f)
+    public static B MinimumBy<A, B, implicit OrdA>(IEnumerable<B> xs, Func<B, A> f)
         where OrdA : Ord<A>
         => ConcatMapNonEmpty<Tuple<A, B>, B, Min<Tuple<A, B>, Ord21<A, B>>>(
                xs, (x) => Tuple.Create(f(x), x)
@@ -380,7 +380,7 @@ public class Quickhull<A>
         _hull   = new HashSet<Point<A>>();
     }
 
-    public void Recur(Line<A> line, List<Point<A>> points)
+    public void Recur<implicit OrdA, implicit FloatA>(Line<A> line, List<Point<A>> points)
         where OrdA : Ord<A>
         where FloatA : Floating<A>
     {
@@ -414,7 +414,7 @@ public class Quickhull<A>
         Recur(cb, pastcb);
     }
 
-    public void Run()
+    public void Run<implicit OrdA, implicit FloatA>()
         where OrdA : Ord<A>
         where FloatA : Floating<A>
     {
@@ -492,7 +492,7 @@ public class QuickhullDriver
         return bmp;
     }
 
-    private void Draw<A>(A item, Color colour)
+    private void Draw<A, implicit DA>(A item, Color colour)
         where DA : Drawable<A>
     {
         Draw(item, colour, gfx);

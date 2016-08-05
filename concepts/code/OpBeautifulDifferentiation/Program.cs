@@ -10,13 +10,13 @@ namespace OpBeautifulDifferentiation
 {
     public class Program
     {
-        public static A F<A>(A z) where FloatA : Floating<A>
+        public static A F<A, implicit FloatA>(A z) where FloatA : Floating<A>
             => Sqrt(Mul(FromInteger(3), Sin(z)));
 
-        public static A G<A>(A z) where FloatA : Floating<A>
+        public static A G<A, implicit FloatA>(A z) where FloatA : Floating<A>
             => Mul(Mul(FromInteger(3), Asinh(z)), Log(z));
 
-        public static void Test() where FDA : Floating<D<double>>
+        public static void Test<implicit FDA>() where FDA : Floating<D<double>>
         {
             var d = new D<double>(2.0, 1.0);
 

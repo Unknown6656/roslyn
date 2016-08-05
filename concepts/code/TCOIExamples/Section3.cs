@@ -25,7 +25,7 @@ namespace MonoidExamples
 
     static class Monoid
     {
-        public static A Acc<A>(List<A> l) where M : Monoid<A>
+        public static A Acc<A, implicit M>(List<A> l) where M : Monoid<A>
         {
             // We don't have left folds!
             A result = M.Identity();

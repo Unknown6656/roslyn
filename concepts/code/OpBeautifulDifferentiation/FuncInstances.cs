@@ -16,7 +16,7 @@ namespace OpBeautifulDifferentiation.FuncInstances
     /// <typeparam name="B">
     ///     The range of the function; must be <c>Num</c>.
     /// </typeparam>
-    instance NumF<A, B> : Num<Func<A, B>>
+    instance NumF<A, B, implicit NumB> : Num<Func<A, B>>
         where NumB : Num<B>
     {
         Func<A, B> operator +(Func<A, B> f, Func<A, B> g)
@@ -42,16 +42,16 @@ namespace OpBeautifulDifferentiation.FuncInstances
     /// <typeparam name="B">
     ///     The range of the function; must be <c>Fractional</c>.
     /// </typeparam>
-    instance FracF<A, B> : Fractional<Func<A, B>>
+    instance FracF<A, B, implicit FracB> : Fractional<Func<A, B>>
         where FracB : Fractional<B>
     {
         Func<A, B> operator +(Func<A, B> f, Func<A, B> g) => Add<Func<A, B>, NumF<A, B>>(f, g);
         Func<A, B> operator -(Func<A, B> f, Func<A, B> g) => Sub<Func<A, B>, NumF<A, B>>(f, g);
         Func<A, B> operator *(Func<A, B> f, Func<A, B> g) => Mul<Func<A, B>, NumF<A, B>>(f, g);
 
-        Func<A, B> Abs(Func<A, B> f) => NumF<A, B, FracB>.Abs(f);
-        Func<A, B> Signum(Func<A, B> f) => NumF<A, B, FracB>.Signum(f);
-        Func<A, B> FromInteger(int k) => NumF<A, B, FracB>.FromInteger(k);
+        Func<A, B> Abs(Func<A, B> f) => NumF<A, B>.Abs(f);
+        Func<A, B> Signum(Func<A, B> f) => NumF<A, B>.Signum(f);
+        Func<A, B> FromInteger(int k) => NumF<A, B>.FromInteger(k);
 
         Func<A, B> FromRational(Ratio<int> k)
             => (x) => FromRational(k);
@@ -68,16 +68,16 @@ namespace OpBeautifulDifferentiation.FuncInstances
     /// <typeparam name="B">
     ///     The range of the function; must be <c>Floating</c>.
     /// </typeparam>
-    instance FloatF<A, B> : Floating<Func<A, B>>
+    instance FloatF<A, B, implicit FloatB> : Floating<Func<A, B>>
         where FloatB : Floating<B>
     {
         Func<A, B> operator +(Func<A, B> f, Func<A, B> g) => Add<Func<A, B>, NumF<A, B>>(f, g);
         Func<A, B> operator -(Func<A, B> f, Func<A, B> g) => Sub<Func<A, B>, NumF<A, B>>(f, g);
         Func<A, B> operator *(Func<A, B> f, Func<A, B> g) => Mul<Func<A, B>, NumF<A, B>>(f, g);
-        Func<A, B> Abs(Func<A, B> f) => FracF<A, B, FloatB>.Abs(f);
-        Func<A, B> Signum(Func<A, B> f) => FracF<A, B, FloatB>.Signum(f);
-        Func<A, B> FromInteger(int k) => FracF<A, B, FloatB>.FromInteger(k);
-        Func<A, B> FromRational(Ratio<int> k) => FracF<A, B, FloatB>.FromRational(k);
+        Func<A, B> Abs(Func<A, B> f) => FracF<A, B>.Abs(f);
+        Func<A, B> Signum(Func<A, B> f) => FracF<A, B>.Signum(f);
+        Func<A, B> FromInteger(int k) => FracF<A, B>.FromInteger(k);
+        Func<A, B> FromRational(Ratio<int> k) => FracF<A, B>.FromRational(k);
         Func<A, B> operator /(Func<A, B> f, Func<A, B> g) => Div<Func<A, B>, FracF<A, B>>(f, g);
 
         Func<A, B> Pi() => (x) => Pi();

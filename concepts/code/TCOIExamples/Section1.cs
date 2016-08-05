@@ -8,7 +8,7 @@ namespace TCOIExamples
 {
     static class Section1
     {
-        public static List<T> Sort<T>(List<T> xs) where OrdT : Ord<T>
+        public static List<T> Sort<T, implicit OrdT>(List<T> xs) where OrdT : Ord<T>
         {
             // Unlike the paper, we give an implementation of Sort.
 
@@ -25,7 +25,7 @@ namespace TCOIExamples
 
         #region Implementation details not in the paper
 
-        private static void Qsort<T>(T[] xs, int lo, int hi) where OrdT : Ord<T>
+        private static void Qsort<T, implicit OrdT>(T[] xs, int lo, int hi) where OrdT : Ord<T>
         {
             if (lo < hi)
             {
@@ -35,26 +35,26 @@ namespace TCOIExamples
             }
         }
 
-        private static int Partition<T>(T[] xs, int lo, int hi) where OrdT : Ord<T>
+        private static int Partition<T, implicit OrdT>(T[] xs, int lo, int hi) where OrdT : Ord<T>
         {
             var pivot = xs[hi];
-            var i = lo - 1;
+            var i = lo;
             for (int j = lo; j < hi; j++)
             {
                 if (Compare(xs[j], pivot))
                 {
-                    i++;
                     var tmp1 = xs[i];
                     xs[i] = xs[j];
                     xs[j] = tmp1;
+                    i++;
                 }
             }
 
-            var tmp2 = xs[i + 1];
-            xs[i + 1] = xs[hi];
+            var tmp2 = xs[i];
+            xs[i] = xs[hi];
             xs[hi] = tmp2;
 
-            return i + 1;
+            return i;
         }
 
         #endregion Implementation details not in the paper

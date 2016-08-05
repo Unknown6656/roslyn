@@ -120,19 +120,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private ImmutableArray<TypeParameterSymbol> MakeTypeParameters(DiagnosticBag diagnostics)
         {
-            // @t-mawind We have to factor in the number of
-            // possible incoming witnesses, which cannot exceed the
-            // number of constraints.
-            var tpnCount = declaration.Arity + this.MaxWitnesses();
-            if (tpnCount == 0)
+            if (declaration.Arity == 0)
             {
                 return ImmutableArray<TypeParameterSymbol>.Empty;
             }
 
             var typeParameterMismatchReported = false;
-            var typeParameterNames = new string[tpnCount];
-            var typeParameterVarianceKeywords = new string[tpnCount];
-            var parameterBuilders1 = new List<List<AbstractTypeParameterBuilder>>();
+            var typeParameterNames = new string[declaration.Arity];
+            var typeParameterVarianceKeywords = new string[declaration.Arity];
+            var parameterBuilders1 = new List<List<TypeParameterBuilder>>();
 
             foreach (var syntaxRef in this.SyntaxReferences)
             {
@@ -147,33 +143,19 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     case SyntaxKind.ClassDeclaration:
                     case SyntaxKind.StructDeclaration:
                     case SyntaxKind.InterfaceDeclaration:
-                        if (declaration.Arity == 0)
-                        {
-                            tpl = SyntaxFactory.TypeParameterList();
-                        }
-                        else
-                        {
-                            tpl = ((TypeDeclarationSyntax)typeDecl).TypeParameterList;
-                        }
+                        tpl = ((TypeDeclarationSyntax)typeDecl).TypeParameterList;
                         break;
                     case SyntaxKind.DelegateDeclaration:
-                        if (declaration.Arity == 0)
-                        {
-                            tpl = SyntaxFactory.TypeParameterList();
-                        }
-                        else
-                        {
-                            tpl = ((DelegateDeclarationSyntax)typeDecl).TypeParameterList;
-                        }
+                        tpl = ((DelegateDeclarationSyntax)typeDecl).TypeParameterList;
                         break;
 
                     case SyntaxKind.EnumDeclaration:
                     default:
-                        // there is no such thing as a generic enum, so code should never reach here.
-                        throw ExceptionUtilities.UnexpectedValue(typeDecl.Kind());
+                    // there is no such thing as a generic enum, so code should never reach here.
+                    throw ExceptionUtilities.UnexpectedValue(typeDecl.Kind());
                 }
 
-                var parameterBuilder = new List<AbstractTypeParameterBuilder>();
+                var parameterBuilder = new List<TypeParameterBuilder>();
                 parameterBuilders1.Add(parameterBuilder);
                 int i = 0;
                 foreach (var tp in tpl.Parameters)
@@ -233,27 +215,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                     parameterBuilder.Add(new TypeParameterBuilder(syntaxTree.GetReference(tp), this, location));
                     i++;
                 }
-
-                // @t-mawind We can elide some type parameters if they
-                // are a) concept witnesses, and b) mentioned on the left-hand
-                // side of a constraint.  We need to find these and add them here.
-                var constraints = new SyntaxList<TypeParameterConstraintClauseSyntax>();
-                switch (typeDecl.Kind())
-                {
-                    case SyntaxKind.InstanceDeclaration:
-                    case SyntaxKind.ConceptDeclaration:
-                    case SyntaxKind.ClassDeclaration:
-                    case SyntaxKind.StructDeclaration:
-                    case SyntaxKind.InterfaceDeclaration:
-                    constraints = ((TypeDeclarationSyntax)typeDecl).ConstraintClauses;
-                    break;
-                    case SyntaxKind.DelegateDeclaration:
-                    constraints = ((DelegateDeclarationSyntax)typeDecl).ConstraintClauses;
-                    break;
-                    default:
-                    break;
-                }
-                if (!constraints.IsEmpty()) ResolveWitnessParams(diagnostics, constraints, ref parameterBuilder, ref typeParameterNames, ref typeParameterVarianceKeywords, ref typeParameterMismatchReported, i);
             }
 
             var parameterBuilders2 = parameterBuilders1.Transpose(); // type arguments are positional

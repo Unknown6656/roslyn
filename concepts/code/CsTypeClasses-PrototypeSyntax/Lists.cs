@@ -66,7 +66,7 @@ namespace Lists
 
 
     }
-    instance EqList<A> : Eq<List<A>> where EqA : Eq<A>
+    instance EqList<A, implicit EqA> : Eq<List<A>> where EqA : Eq<A>
     {
         bool Equals(List<A> a, List<A> b)
         {

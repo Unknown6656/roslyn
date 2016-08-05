@@ -26,7 +26,7 @@ namespace TCOIExamples
         //     def compare (a1: Apple, a2: Apple) = a1.x <= a2.x
         //   }
 
-        public static T Pick<T>(T a1, T a2) where OrdA : Ord<T> => OrdA.Compare(a1, a2) ? a2 : a1;
+        public static T Pick<T, implicit OrdA>(T a1, T a2) where OrdA : Ord<T> => OrdA.Compare(a1, a2) ? a2 : a1;
 
         // Scala (without implicits):
         //   def pick[T] (a1: T, a2: T) (ordA : Ord[T]) =

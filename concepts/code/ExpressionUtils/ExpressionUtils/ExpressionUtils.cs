@@ -273,7 +273,7 @@ namespace ExpressionUtils
         A Reflect(Exp<A> ea);
     }
 
-    public instance NbeFunc<A, B> : Nbe<Func<A, B>>
+    public instance NbeFunc<A, B, implicit NbeA, implicit NbeB> : Nbe<Func<A, B>>
         where NbeA : Nbe<A>
         where NbeB : Nbe<B>
     {
@@ -283,7 +283,7 @@ namespace ExpressionUtils
 
     public static class NbeUtils
     {
-        static Exp<A> Nbe<A>(Exp<A> a) where NbeA : Nbe<A> => Reify(a.Run());
+        static Exp<A> Nbe<A, implicit NbeA>(Exp<A> a) where NbeA : Nbe<A> => Reify(a.Run());
     }
 
     public instance NbeExp<T> : Nbe<Exp<T>>

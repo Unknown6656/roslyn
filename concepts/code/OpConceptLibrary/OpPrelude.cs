@@ -13,14 +13,14 @@ namespace System.Concepts.OpPrelude
     /// </summary>
     public struct Verbose
     {
-        public static bool Eq<A>(A x, A y)  where W : Eq<A>         => x == y;
-        public static bool Neq<A>(A x, A y) where W : Eq<A>         => x != y;
-        public static bool Leq<A>(A x, A y) where W : Ord<A>        => x <= y;
-        public static bool Geq<A>(A x, A y) where W : Ord<A>        => x >= y;
-        public static A    Add<A>(A x, A y) where W : Num<A>        => x + y;
-        public static A    Sub<A>(A x, A y) where W : Num<A>        => x - y;
-        public static A    Mul<A>(A x, A y) where W : Num<A>        => x * y;
-        public static A    Div<A>(A x, A y) where W : Fractional<A> => x / y;
+        public static bool Eq<A, implicit W>(A x, A y)  where W : Eq<A>         => x == y;
+        public static bool Neq<A, implicit W>(A x, A y) where W : Eq<A>         => x != y;
+        public static bool Leq<A, implicit W>(A x, A y) where W : Ord<A>        => x <= y;
+        public static bool Geq<A, implicit W>(A x, A y) where W : Ord<A>        => x >= y;
+        public static A    Add<A, implicit W>(A x, A y) where W : Num<A>        => x + y;
+        public static A    Sub<A, implicit W>(A x, A y) where W : Num<A>        => x - y;
+        public static A    Mul<A, implicit W>(A x, A y) where W : Num<A>        => x * y;
+        public static A    Div<A, implicit W>(A x, A y) where W : Fractional<A> => x / y;
     }
 
     #region Eq
@@ -74,7 +74,7 @@ namespace System.Concepts.OpPrelude
     /// <summary>
     ///     Implementation of <see cref="Eq{A}"/> for arrays.
     /// </summary>
-    public instance EqArray<A> : Eq<A[]> where EqA: Eq<A>
+    public instance EqArray<A, implicit EqA> : Eq<A[]> where EqA: Eq<A>
     {
         bool operator ==(A[] x, A[] y)
         {

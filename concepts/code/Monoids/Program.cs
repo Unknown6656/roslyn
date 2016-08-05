@@ -33,7 +33,7 @@ class NumMonoidTest<A>
         _xs = xs;
     }
 
-    public void Run() where NumA : Num<A>
+    public void Run<implicit NumA>() where NumA : Num<A>
     {
         var xss = ShowArray(_xs);
 
@@ -55,7 +55,7 @@ class OrdSemiTest<A>
     }
 
 
-    public void Run() where OrdA : Ord<A>
+    public void Run<implicit OrdA>() where OrdA : Ord<A>
     {
         var xss = ShowArray(_xs);
 
@@ -69,7 +69,7 @@ class OrdSemiTest<A>
 
 static class MonoidExamples
 {
-    static void RunNumOrd<A>(A[] xs)
+    static void RunNumOrd<A, implicit NumA, implicit OrdA>(A[] xs)
         where NumA : Num<A>
         where OrdA : Ord<A>
     {

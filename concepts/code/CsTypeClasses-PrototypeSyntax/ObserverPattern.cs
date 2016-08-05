@@ -17,28 +17,28 @@ namespace ObserverPattern {
   }
 
   static class Overloads {
-    public static List<Observer> GetObservers<Subject, Observer>(Subject s) where OP : ObserverPattern<Subject, Observer> {
+    public static List<Observer> GetObservers<Subject, Observer, implicit OP>(Subject s) where OP : ObserverPattern<Subject, Observer> {
       return GetObservers(s);
     }
 
-    public static void Register<Subject, Observer>(Subject s, Observer o) where OP : ObserverPattern<Subject, Observer> {
+    public static void Register<Subject, Observer, implicit OP>(Subject s, Observer o) where OP : ObserverPattern<Subject, Observer> {
       Register(s, o);
     }
 
-    public static void Notify<Subject, Observer>(Subject s) where OP : ObserverPattern<Subject, Observer> {
+    public static void Notify<Subject, Observer, implicit OP>(Subject s) where OP : ObserverPattern<Subject, Observer> {
       Notify(s);
     }
 
-    public static void DefaultRegister<Subject, Observer>(Subject s, Observer o) where OP : ObserverPattern<Subject, Observer> {
+    public static void DefaultRegister<Subject, Observer, implicit OP>(Subject s, Observer o) where OP : ObserverPattern<Subject, Observer> {
       GetObservers<Subject, Observer, OP>(s).Add(o);
     }
 
-    public static void DefaultNotify<Subject, Observer>(Subject s) where OP : ObserverPattern<Subject, Observer> {
+    public static void DefaultNotify<Subject, Observer, implicit OP>(Subject s) where OP : ObserverPattern<Subject, Observer> {
       foreach (Observer o in GetObservers<Subject, Observer, OP>(s))
         Overloads.Update(o, s);
     }
 
-    public static void Update<Subject, Observer>(Observer o, Subject s) where OP : ObserverPattern<Subject, Observer> {
+    public static void Update<Subject, Observer, implicit OP>(Observer o, Subject s) where OP : ObserverPattern<Subject, Observer> {
       Update(o, s);
     }
   }

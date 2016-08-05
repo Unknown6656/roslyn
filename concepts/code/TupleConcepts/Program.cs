@@ -124,10 +124,10 @@ namespace TupleConcepts
     /// <summary>
     ///     Instance of <see cref="Showable{T}"/> for 2-tuples.
     /// </summary>
-    public instance ShowT2<I, [AssociatedType] T1, [AssociatedType] T2> : Showable<I>
+    public instance ShowT2<I, [AssociatedType] T1, [AssociatedType] T2, implicit T2I, implicit ST1, implicit ST2> : Showable<I>
         where T2I : Tuple2<I, T1, T2>
-        where ShowT1 : Showable<T1>
-        where ShowT2 : Showable<T2>
+        where ST1 : Showable<T1>
+        where ST2 : Showable<T2>
     {
         string Show(I t) => $"({Show(Get1(t))}, {Show(Get2(t))})";
     }
@@ -137,7 +137,7 @@ namespace TupleConcepts
     /// </summary>
     class Program
     {
-        static string Show<A>(A a) where SA : Showable<A> => Show(a);
+        static string Show<A, implicit SA>(A a) where SA : Showable<A> => Show(a);
 
         static void Main(string[] args)
         {

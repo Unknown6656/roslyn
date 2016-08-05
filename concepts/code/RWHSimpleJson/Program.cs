@@ -175,7 +175,7 @@ namespace RWHSimpleJson
         }
     }
 
-    instance CJsonArray<A> : CJson<A[]> where CJsonA : CJson<A>
+    instance CJsonArray<A, implicit CJsonA> : CJson<A[]> where CJsonA : CJson<A>
     {
         IJValue ToJValue(A[] a)
         {
@@ -212,7 +212,7 @@ namespace RWHSimpleJson
         }
     }
 
-    instance CJsonDict<A> : CJson<IDictionary<string, A>> where CJsonA : CJson<A>
+    instance CJsonDict<A, implicit CJsonA> : CJson<IDictionary<string, A>> where CJsonA : CJson<A>
     {
         IJValue ToJValue(IDictionary<string, A> adict)
         {
@@ -251,7 +251,7 @@ namespace RWHSimpleJson
 
     // Toy instance for tuples, to show how you might do general object structures.
 
-    instance CJsonTup2<T1, T2> : CJson<((string, T1), (string, T2))>
+    instance CJsonTup2<T1, T2, implicit CT1, implicit CT2> : CJson<((string, T1), (string, T2))>
         where CT1 : CJson<T1>
         where CT2 : CJson<T2>
     {
@@ -321,7 +321,7 @@ namespace RWHSimpleJson
 
     class Program
     {
-        static IJValue Jsonify<A>(A a) where JA : CJson<A> => ToJValue(a);
+        static IJValue Jsonify<A, implicit JA>(A a) where JA : CJson<A> => ToJValue(a);
 
         static void Main(string[] args)
         {

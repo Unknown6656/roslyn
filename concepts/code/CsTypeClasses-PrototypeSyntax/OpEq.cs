@@ -69,7 +69,7 @@ namespace OpEq
     Substituting, for simplicity, arrays for lists in CS we can write:
     */
 
-    instance EqArray<A> : Eq<A[]> where EqA : Eq<A>
+    instance EqArray<A, implicit EqA> : Eq<A[]> where EqA : Eq<A>
     {
         bool operator ==(A[] a, A[] b)
         {
@@ -108,7 +108,7 @@ namespace OpEq
     public class Test
     {
 
-        static bool Elem<A>(A x, A[] ys) where EqA : Eq<A>
+        static bool Elem<A, implicit EqA>(A x, A[] ys) where EqA : Eq<A>
         {
             for (int i = 0; i < ys.Length; i++)
             {
@@ -117,7 +117,7 @@ namespace OpEq
             return false;
         }
 
-        static bool Eq<A>(A x, A y) where EqA : Eq<A>
+        static bool Eq<A, implicit EqA>(A x, A y) where EqA : Eq<A>
         {
             return x == y;
         }

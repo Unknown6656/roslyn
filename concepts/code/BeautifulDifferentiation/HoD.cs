@@ -52,7 +52,7 @@ namespace BeautifulDifferentiation
         ///     A <see cref="HoD{A}"/> with the value
         ///     <paramref name="k"/> and first derivative <c>0</c>.
         /// </returns>
-        public static HoD<A> Const(A k) where NumA : Num<A>
+        public static HoD<A> Const<implicit NumA>(A k) where NumA : Num<A>
         {
             return new HoD<A>(k, () => Const(Zero<A>()));
         }
@@ -71,7 +71,7 @@ namespace BeautifulDifferentiation
         ///     A <see cref="HoD{A}"/> with the value
         ///     <paramref name="t"/> and first derivative <c>1</c>.
         /// </returns>
-        public static HoD<A> Id(A t) where NumA : Num<A>
+        public static HoD<A> Id<implicit NumA>(A t) where NumA : Num<A>
         {
             return new HoD<A>(t, () => Const(One<A, NumA>()));
         }
@@ -92,7 +92,7 @@ namespace BeautifulDifferentiation
         ///     A function over automatic derivatives applying the
         ///     function and its derivative.
         /// </returns>
-        public static Func<HoD<A>, HoD<A>> Chain(Func<A, A> f, Func<HoD<A>, HoD<A>> df)
+        public static Func<HoD<A>, HoD<A>> Chain<implicit NumHoDA>(Func<A, A> f, Func<HoD<A>, HoD<A>> df)
             where NumHoDA : Num<HoD<A>>
             => (d) => new HoD<A>(f(d.X), () => Mul(d.DX.Value, df(d)));
     }

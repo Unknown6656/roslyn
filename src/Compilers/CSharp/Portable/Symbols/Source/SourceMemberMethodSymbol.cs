@@ -95,15 +95,9 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
             this.MakeFlags(methodKind, declarationModifiers, returnsVoid, isExtensionMethod, isMetadataVirtualIgnoringModifiers);
 
-            // @t-mawind
-            //   We have to make type parameters when we have constraints,
-            //   even if the syntactic arity is 0.  This is because the
-            //   constraints could induce concept witnesses.
-            var noTypeParameters =
-                syntax.Arity == 0 && syntax.ConstraintClauses.IsEmpty();
             // We, of course, have to deal with the possibility of the
             // type parameter list being null in MakeTypeParameters now.
-            _typeParameters = noTypeParameters ?
+            _typeParameters = (syntax.Arity == 0) ?
                 ImmutableArray<TypeParameterSymbol>.Empty :
                 MakeTypeParameters(syntax, diagnostics);
 
@@ -783,10 +777,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         private ImmutableArray<TypeParameterSymbol> MakeTypeParameters(MethodDeclarationSyntax syntax, DiagnosticBag diagnostics)
         {
-            // @t-mawind If the type parameter list is null, then we must have
-            //   at least one constraint.  All of those constraints must name
-            //   concepts, but we check that later.
-            Debug.Assert(syntax.TypeParameterList != null || !syntax.ConstraintClauses.IsEmpty());
+            Debug.Assert(syntax.TypeParameterList != null);
 
             OverriddenMethodTypeParameterMapBase typeMap = null;
             if (this.IsOverride)
@@ -798,11 +789,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                 typeMap = new ExplicitInterfaceMethodTypeParameterMap(this);
             }
 
-            // @t-mawind Deal with the possibility of empty parameter list but
-            //   non-empty constraint list, by mocking up an empty list.
-            var typeParameters =
-                syntax.TypeParameterList?.Parameters
-                    ?? SyntaxFactory.TypeParameterList().Parameters;
+            var typeParameters = syntax.TypeParameterList.Parameters;
 
             var result = ArrayBuilder<TypeParameterSymbol>.GetInstance();
 
@@ -848,58 +835,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                         syntaxRefs);
 
                 result.Add(typeParameter);
-            }
-
-            //@t-mawind
-            // Note similarity to SourceNamedTypeSymbol's ResolveWitnessParams.
-            var witnessOrdinal = typeParameters.Count;
-            foreach (var clause in syntax.ConstraintClauses)
-            {
-                var name = clause.Name.Identifier.ValueText;
-                var location = clause.Name.Location;
-
-                // Check to see if this clause already names an existing type parameter.
-                var isWitness = true;
-                foreach (var tp in typeParameters)
-                {
-                    if (name == tp.Identifier.ValueText)
-                    {
-                        isWitness = false;
-                        break;
-                    }
-                }
-
-                if (!isWitness) continue;
-
-                for (int i = 0; i < result.Count; i++)
-                {
-                    if (name == result[i].Name)
-                    {
-                        diagnostics.Add(ErrorCode.ERR_DuplicateTypeParameter, location, name);
-                        break;
-                    }
-                }
-
-                var tpEnclosing = ContainingType.FindEnclosingTypeParameter(name);
-                if ((object)tpEnclosing != null)
-                {
-                    // Type parameter '{0}' has the same name as the type parameter from outer type '{1}'
-                    diagnostics.Add(ErrorCode.WRN_TypeParameterSameAsOuterTypeParameter, location, name, tpEnclosing.ContainingType);
-                }
-
-                // @t-mawind TODO: overriding
-
-                var typeParameter = (typeMap != null) ?
-                    (TypeParameterSymbol)new SynthesizedWitnessOverridingMethodTypeParameterSymbol(
-                        typeMap,
-                        name,
-                        location,
-                        witnessOrdinal) :
-                    new SynthesizedWitnessMethodParameterSymbol(name, location, witnessOrdinal, this);
-
-                result.Add(typeParameter);
-
-                witnessOrdinal++;
             }
 
             return result.ToImmutableAndFree();
