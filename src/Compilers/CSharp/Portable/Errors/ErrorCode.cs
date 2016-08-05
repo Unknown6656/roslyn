@@ -1438,7 +1438,6 @@ namespace Microsoft.CodeAnalysis.CSharp
         // @t-mawind
         #region diagnostics for concepts
 
-        ERR_ConceptConstraintOnNonOverride = 8946,
         ERR_ConceptOperatorsMustBeNonStatic = 8947,
         ERR_BadConceptUnaryOperatorSignature = 8948,
         ERR_BadConceptBinaryOperatorSignature = 8949,

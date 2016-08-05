@@ -25,17 +25,17 @@ namespace ListsEq
             return new Nil<B>();
         }
 
-        public override bool Mem(A a) where EqA : concept
+        public override bool Mem<implicit EqA>(A a)
         {
             return false;
         }
 
-        public override bool AltMem(A a) where EqA : concept
+        public override bool AltMem<implicit EqA>(A a)
         {
             return false;
         }
 
-        public override bool Eq(List<A> a) where EqA : concept
+        public override bool Eq<implicit EqA>(List<A> a)
         {
             return (a != null) && (a as Nil<A> != null);
         }
@@ -51,20 +51,20 @@ namespace ListsEq
             return new Cons<B>(f(h), t.Map(f));
         }
 
-        public override bool Mem(A a) where EqA : concept
+        public override bool Mem<implicit EqA>(A a)
         {
             return Overloads.Eq(a, h) || t.Mem(a);
             //return Eq(a, h) || t.Mem(a);
         }
 
-        public override bool AltMem(A a) where EqA : concept
+        public override bool AltMem<implicit EqA>(A a)
         {
             Fun<A, List<A>> wrap = delegate (A e) { return new Cons<A>(e, new Nil<A>()); };
             return Overloads.Eq(a, h) || t.Map(wrap).Mem(wrap(a));
             //return Eq(a,h) || t.Map(wrap).Mem(wrap(a));
         }
 
-        public override bool Eq(List<A> a) where EqA : concept
+        public override bool Eq<implicit EqA>(List<A> a)
         {
             Cons<A> ca = a as Cons<A>;
             return (a != null) && ca != null && Overloads.Eq(h, ca.h) && t.Eq(ca.t);

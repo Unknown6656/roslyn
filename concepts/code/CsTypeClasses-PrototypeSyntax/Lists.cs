@@ -50,7 +50,7 @@ namespace Lists
             //return Eq(a, h) || t.Mem(a);
         }
 
-        public override bool AltMem<implicit EqA>(A a) where EqA : concept
+        public override bool AltMem<implicit EqA>(A a)
         {
             Fun<A, List<A>> wrap = delegate (A e) { return new Cons<A>(e, new Nil<A>()); };
             return Overloads.Eq(a, h) || t.Map(wrap).Mem(wrap(a));

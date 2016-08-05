@@ -1618,7 +1618,6 @@ tryAgain:
                 {
                     constraints = _pool.Allocate<TypeParameterConstraintClauseSyntax>();
                     this.ParseTypeParameterConstraintClauses(hasTypeParams, constraints);
-                    this.RejectConceptConstraints(constraints);
                 }
 
                 var openBrace = this.EatToken(SyntaxKind.OpenBraceToken);
@@ -1952,19 +1951,11 @@ tryAgain:
             while (this.CurrentToken.ContextualKind == SyntaxKind.WhereKeyword)
             {
                 var constraint = this.ParseTypeParameterConstraintClause();
-                // @t-mawind
-                //   isAllowed seemingly only ever means we've parsed a type
-                //   parameter list.  With concepts, we're allowed to pretend
-                //   we have one if our constraint is a concept.
-                //
-                //   Alas, we don't know if this _is_ a concept until we've
-                //   done symbolic analysis.  Thus, for now, we kill this.
-                //
-                //if (!isAllowed)
-                //{
-                //    constraint = this.AddErrorToFirstToken(constraint, ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl);
-                //    isAllowed = true; // silence any further errors
-                //}
+                if (!isAllowed)
+                {
+                    constraint = this.AddErrorToFirstToken(constraint, ErrorCode.ERR_ConstraintOnlyAllowedOnGenericDecl);
+                    isAllowed = true; // silence any further errors
+                }
 
                 list.Add(constraint);
             }
@@ -2037,7 +2028,6 @@ tryAgain:
                 case SyntaxKind.NewKeyword:
                 case SyntaxKind.ClassKeyword:
                 case SyntaxKind.StructKeyword:
-                case SyntaxKind.ConceptKeyword: //@t-mawind
                     return true;
                 case SyntaxKind.IdentifierToken:
                     return this.IsTrueIdentifier();
@@ -2065,13 +2055,6 @@ tryAgain:
                     }
 
                     return _syntaxFactory.ConstructorConstraint(newToken, open, close);
-                case SyntaxKind.ConceptKeyword: //@t-mawind
-                    var ctoken = this.EatToken();
-                    if (!isFirst)
-                    {
-                        ctoken = this.AddError(ctoken, ErrorCode.ERR_RefValBoundMustBeFirst); // @t-mawind not correct error!
-                    }
-                    return _syntaxFactory.ConceptConstraint(ctoken);
                 case SyntaxKind.StructKeyword:
                     isStruct = true;
                     goto case SyntaxKind.ClassKeyword;
@@ -2967,48 +2950,6 @@ parse_member_name:;
             return this.CurrentToken.Kind == SyntaxKind.DotToken || this.CurrentToken.Kind == SyntaxKind.ColonColonToken;
         }
 
-        /// <summary>
-        /// Attach errors to any of the constraints in <paramref name="constraints"/> that contain the
-        /// <c>concept</c> constraint.
-        /// </summary>
-        /// <param name="constraints">
-        /// The set of constraints to populate with errors if a <c>concept</c> constraint is found.
-        /// </param>
-        private void RejectConceptConstraints(SyntaxListBuilder<TypeParameterConstraintClauseSyntax> constraints)
-        {
-            for (int i = 0; i < constraints.Count; i++)
-            {
-                 var clause = constraints[i];
-                for (int j = 0; j < clause.Constraints.Count; j++)
-                {
-                    var constraint = clause.Constraints[j];
-                    if (constraint.Kind == SyntaxKind.ConceptConstraint)
-                    {
-                        // @t-mawind this is revolting.  Is there any easier way to assemble this?
-                        // @t-mawind at least consider batching up errors outside the j loop?
-                        var newConstraintArray = new TypeParameterConstraintSyntax[clause.Constraints.Count];
-                        for (int k = 0; k < clause.Constraints.Count; k++)
-                        {
-                            if (k == j)
-                            {
-                                newConstraintArray[k] = this.AddErrorToFirstToken(constraint, ErrorCode.ERR_ConceptConstraintOnNonOverride);
-                            }
-                            else
-                            {
-                                newConstraintArray[k] = clause.Constraints[k];
-                            }
-                        }
-
-                        var newConstraints = SyntaxFactory.SeparatedList<TypeParameterConstraintSyntax>(newConstraintArray);
-                        constraints[i] = clause.Update(clause.WhereKeyword,
-                            clause.name,
-                            clause.colonToken,
-                            newConstraints);
-                    }
-                }
-            }
-        }
-
         private MethodDeclarationSyntax ParseMethodDeclaration(
             SyntaxListBuilder<AttributeListSyntax> attributes,
             SyntaxListBuilder modifiers,
@@ -3047,38 +2988,15 @@ parse_member_name:;
                     // our context again (perhaps an open brace).
                 }
 
-                var isOverride = modifiers != null && modifiers.Any(SyntaxKind.OverrideKeyword);
-
                 // When a generic method overrides a generic method declared in a base
                 // class, or is an explicit interface member implementation of a method in
                 // a base interface, the method shall not specify any type-parameter-
                 // constraints-clauses. In these cases, the type parameters of the method
                 // inherit constraints from the method being overridden or implemented
                 if (!constraints.IsNull && constraints.Count > 0 &&
-                    ((explicitInterfaceOpt != null) || isOverride))
+                    ((explicitInterfaceOpt != null) || (modifiers != null && modifiers.Any(SyntaxKind.OverrideKeyword))))
                 {
-                    //@t-mawind Cheekily allow constraints in this case if
-                    // every constraint is of the form 'Foo : concept'.
-                    // This is a horrible hack.
-                    var permitted = true;
-                    for (int i = 0; i < constraints.Count; i++)
-                    {
-                        var clause = constraints[i];
-                        if (clause.Constraints.Count == 1)
-                        {
-                            var constraint = clause.Constraints[0];
-                            if (constraint.Kind == SyntaxKind.ConceptConstraint) continue;
-                        }
-                        permitted = false;
-                        break;
-                    }
-
-                    if (!permitted) constraints[0] = AddErrorToFirstToken(constraints[0], ErrorCode.ERR_OverrideWithConstraints);
-                }
-                // @t-mawind We don't allow concept constraints on anything else.
-                else if (!constraints.IsNull)
-                {
-                    RejectConceptConstraints(constraints);
+                    constraints[0] = AddErrorToFirstToken(constraints[0], ErrorCode.ERR_OverrideWithConstraints);
                 }
 
                 _termState = saveTerm;

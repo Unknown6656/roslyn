@@ -868,20 +868,6 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
                         break;
                     }
                 }
-                // If this is an override, the constraint must be 'concept'.
-                // This is to avoid needing to have to check that the concept
-                // definitions equate, and also to minimise the syntax changes
-                // from normal C#.  @t-mawind
-                if (this.IsOverride)
-                {
-                    var cs = clause.Constraints;
-                    var isConceptConstraint = cs.Count == 1 && (cs[0] is ConceptConstraintSyntax);
-                    if (!isConceptConstraint)
-                    {
-                        // For now, adopt the usual C# error here.
-                        isWitness = false;
-                    }
-                }
 
                 if (!isWitness) continue;
 

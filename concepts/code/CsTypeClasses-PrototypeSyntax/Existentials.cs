@@ -85,7 +85,7 @@ namespace Existentials
         private class CallShowable : ExistsShowableClient
         {
             internal string res;
-            void ExistsShowableClient.Continue<A>(A a) where ShowableA : concept
+            void ExistsShowableClient.Continue<A, implicit ShowableA>(A a)
             {
                 res += Show(a);
                 res += ",";
@@ -115,7 +115,7 @@ namespace Existentials
         private struct UnboxedCallShowable : ExistsShowableClient
         {
             internal string res;
-            void ExistsShowableClient.Continue<A>(A a) where ShowableA : concept
+            void ExistsShowableClient.Continue<A, implicit ShowableA>(A a)
             {
                 res += Show(a);
                 res += ",";

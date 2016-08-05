@@ -3097,18 +3097,6 @@
       <Kind Name="StructKeyword"/>
     </Field>
   </Node>
-  <Node Name="ConceptConstraintSyntax" Base="TypeParameterConstraintSyntax">
-    <TypeComment>
-      <summary>Base type for concept constraint syntax.</summary>
-    </TypeComment>
-    <Kind Name="ConceptConstraint"/>
-    <Field Name="ConceptKeyword" Type="SyntaxToken">
-      <PropertyComment>
-        <summary>Gets the constraint keyword ("concept").</summary>
-      </PropertyComment>
-      <Kind Name="ConceptKeyword"/>
-    </Field>
-  </Node>
   <Node Name="TypeConstraintSyntax" Base="TypeParameterConstraintSyntax">
     <TypeComment>
       <summary>Type constraint syntax.</summary>
