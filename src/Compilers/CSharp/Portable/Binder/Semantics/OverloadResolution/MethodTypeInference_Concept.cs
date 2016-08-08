@@ -308,8 +308,8 @@ namespace Microsoft.CodeAnalysis.CSharp
                 // I think(!).
                 if (typeArguments[i] == null ||
                     (treatEqualAsUnfixed
-                     && typeArguments[i] == typeParameters[i]
-                     && !(_boundParams.Contains(typeParameters[i]))))
+                     && typeArguments[i].Kind == SymbolKind.TypeParameter
+                     && !(_boundParams.Contains(typeArguments[i] as TypeParameterSymbol))))
                 {
                     if (typeParameters[i].IsConceptWitness)
                     {
@@ -555,7 +555,6 @@ namespace Microsoft.CodeAnalysis.CSharp
                 var associated = allTypeParameters[i];
 
                 // Try see if the current substitution fixes this.
-                // TODO: guarding against inconsistent unifications.
                 var associatedU = finalSubstitution.SubstituteType(associated).AsTypeSymbolOnly();
                 if (associatedU != associated)
                 {
@@ -1023,10 +1022,21 @@ namespace Microsoft.CodeAnalysis.CSharp
             if (!Infer(conceptIndices, associatedIndices, instance.TypeParameters, inferred, fixedMap, newChain)) return default(Candidate);
 
             var recurSubstMap = new MutableTypeMap();
-            foreach (int c in conceptIndices) recurSubstMap.Add(instance.TypeParameters[c], new TypeWithModifiers(inferred[c]));
-            foreach (int a in associatedIndices) recurSubstMap.Add(instance.TypeParameters[a], new TypeWithModifiers(inferred[a]));
 
-            return new Candidate(recurSubstMap.SubstituteType(instance).AsTypeSymbolOnly(), fixedMap);
+            foreach (int c in conceptIndices) recurSubstMap.Add(instance.TypeParameters[c], new TypeWithModifiers(inferred[c]));
+
+            // During chains of associated-type-aware recursive inference, the
+            // associated type parameters may be fixed to other associated type
+            // parameters that are not accounted for in recurSubstMap.  Thus,
+            // we check to see if instance.TypeArguments is itself a type
+            // parameter, and, if it is, we substitute over that instead, as
+            // it may have fallen victim to this. 
+            foreach (int a in associatedIndices) recurSubstMap.Add((instance.TypeArguments[a] as TypeParameterSymbol) ?? instance.TypeParameters[a], new TypeWithModifiers(inferred[a]));
+
+            var unification = recurSubstMap.ToUnification().Merge(fixedMap);
+            if (unification == null) return default(Candidate);
+
+            return new Candidate(unification.SubstituteType(instance).AsTypeSymbolOnly(), unification);
         }
 
         #endregion Second pass
@@ -1048,6 +1058,9 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// </returns>
         private static ImmutableArray<Candidate> TieBreakInstances(ImmutableArray<Candidate> candidateInstances)
         {
+            // TODO: better tie-breaking.
+            // TODO: formally specify this--it is quite ad-hoc at the moment.
+
             Debug.Assert(1 < candidateInstances.Length,
                 "Tie-breaking is pointless if we have zero or one instances");
 
@@ -1244,12 +1257,37 @@ namespace Microsoft.CodeAnalysis.CSharp
         #endregion Third pass
         #region Part-inference
 
-        // Part-inference is when we are given a set of type arguments for a
-        // generic named type or method with more than one concept witness,
-        // but the type argument list is seemingly missing those witnesses.
-        // In this case, we use the concept type inferrer to fill in the
-        // omitted witnesses.
-
+        /// <summary>
+        /// Perform part-inference on the given set of type arguments.
+        /// <para>
+        /// This is when we are given a set of type arguments for a
+        /// generic named type or method with implicit type parameters,
+        /// but the type argument list is seemingly missing those parameters.
+        /// In this case, we use the concept type inferrer to fill in the
+        /// omitted witnesses.
+        /// </para>
+        /// </summary>
+        /// <param name="typeArguments">
+        /// The set of present type arguments, which must be lesser than
+        /// <paramref name="typeParameters"/> by the number of implicit
+        /// type parameters in the latter.
+        /// </param>
+        /// <param name="typeParameters">
+        /// The set of all type parameters, including implicits.
+        /// </param>
+        /// <param name="expandAssociatedIfFailed">
+        /// If true, and there are only associated types missing from
+        /// <paramref name="typeArguments"/>, then a failure of
+        /// part-inference will return a set of type arguments substituting
+        /// the associated type parameters for themselves, instead of an
+        /// empty type argument set.  Use for when we are inferring a
+        /// concept that is going to be re-inferred for its instance.
+        /// </param>
+        /// <returns>
+        /// The empty array, upon failure; otherwise, a full array of
+        /// type arguments that is parallel to <paramref name="typeParameters"/>
+        /// and contains the missing arguments.
+        /// </returns>
         public ImmutableArray<TypeSymbol> PartInfer(ImmutableArray<TypeSymbol> typeArguments, ImmutableArray<TypeParameterSymbol> typeParameters, bool expandAssociatedIfFailed = false)
         {
             Debug.Assert(typeArguments.Length < typeParameters.Length,
@@ -1257,16 +1295,12 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             var allArguments = new TypeSymbol[typeParameters.Length];
 
-            // Assume that the missing type arguments are concept
-            // witnesses, and extend the given type arguments
-            // with them.
+            // Assume that the missing type arguments are concept witnesses and
+            // associated types, and extend the given type arguments with them.
             //
-            // To infer the missing arguments, we need a full
-            // map from non-concept type parameters to the type
-            // arguments we _do_ have.  We can do this at the
-            // same time as extending the arguments by
-            // initially supplying placeholders and inferring
-            // them later.
+            // To infer the missing arguments, we need a full map from present
+            // type parameters to the type arguments we _do_ have.  We can do
+            // this at the same time as extending the arguments.
             var conceptIndicesBuilder = ArrayBuilder<int>.GetInstance();
             var associatedIndicesBuilder = ArrayBuilder<int>.GetInstance();
             var fixedMap = new MutableTypeMap();
@@ -1275,11 +1309,11 @@ namespace Microsoft.CodeAnalysis.CSharp
             {
                 if (typeParameters[i].IsConceptWitness)
                 {
-                    conceptIndicesBuilder.Add(i); // Come back to this later.
+                    conceptIndicesBuilder.Add(i);
                 }
                 else if (typeParameters[i].IsAssociatedType)
                 {
-                    associatedIndicesBuilder.Add(i); // Come back to this later.
+                    associatedIndicesBuilder.Add(i);
                 }
                 else
                 {
@@ -1294,6 +1328,20 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             if (!Infer(conceptIndices, associatedIndices, typeParameters, allArguments, fixedMap.ToUnification()))
             {
+                // In certain cases, we allow part-inference to return a result
+                // if it was only trying to infer associated types, but failed.
+                // In this pseudo-result, associated types are left as unfixed
+                // type parameters.
+                //
+                // This is mainly because, in places where we're part-inferring
+                // concept with associated types, we might go on to do full
+                // inference to replace the concept with one of its instances.
+                // In such a case we will, if successful, unify the unfixed
+                // associated parameters with something concrete anyway.
+                //
+                // TODO: ensure that this is sound---there might be places
+                // where we claim this is ok, but then don't go on to infer the
+                // concept and the result is a spurious type error or crash. 
                 if (!expandAssociatedIfFailed || !conceptIndices.IsEmpty) return ImmutableArray<TypeSymbol>.Empty;
                 foreach (var index in associatedIndices)
                 {

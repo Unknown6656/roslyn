@@ -78,19 +78,35 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         internal ImmutableTypeMap MergeDict(SmallDictionary<TypeParameterSymbol, TypeWithModifiers> dict)
         {
-            var result = new ImmutableTypeMap(Mapping);
+            var result = new ImmutableTypeMap();
 
-            foreach (var ok in dict.Keys)
+            // Used for transitivity later.
+            var dictM = new ImmutableTypeMap(dict);
+
+            // We have to merge the dictionaries in a way such that transitivity
+            // is respected.  We assume that previous merges have handled this,
+            // so all we need to do is ensure each entry from each dictionary is
+            // substituted using the other dictionary first.
+            //
+            // If at any point we try to add an existing key with a different
+            // value, bail.  (TODO: handle properly.)
+            foreach (var theirKey in dict.Keys)
             {
-                // Only allow duplicate keys when they map to the same value.
-                // TODO: handle error properly.
-                if (Mapping.ContainsKey(ok))
+                if (result.Mapping.ContainsKey(theirKey))
                 {
-                    if (result.Mapping[ok] == dict[ok]) continue;
+                    if (result.Mapping[theirKey] == dict[theirKey]) continue;
                     return null;
                 }
-
-                result.Mapping.Add(ok, dict[ok]);
+                result.Mapping.Add(theirKey, dict[theirKey].CustomModifiers.IsEmpty ? SubstituteType(dict[theirKey].AsTypeSymbolOnly()) : dict[theirKey]);
+            }
+            foreach (var ourKey in Mapping.Keys)
+            {
+                if (result.Mapping.ContainsKey(ourKey))
+                {
+                    if (result.Mapping[ourKey] == Mapping[ourKey]) continue;
+                    return null;
+                }
+                result.Mapping.Add(ourKey, Mapping[ourKey].CustomModifiers.IsEmpty ? dictM.SubstituteType(Mapping[ourKey].AsTypeSymbolOnly()) : Mapping[ourKey]);
             }
 
             return result;
