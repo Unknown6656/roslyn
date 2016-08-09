@@ -2465,6 +2465,15 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot infer a valid witness for concept &apos;{0}&apos; at this location..
+        /// </summary>
+        internal static string ERR_CantInferConceptInstance {
+            get {
+                return ResourceManager.GetString("ERR_CantInferConceptInstance", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The type arguments for method &apos;{0}&apos; cannot be inferred from the usage. Try specifying the type arguments explicitly..
         /// </summary>
         internal static string ERR_CantInferMethTypeArgs {

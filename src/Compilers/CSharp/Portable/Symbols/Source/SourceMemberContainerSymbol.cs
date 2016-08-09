@@ -1028,7 +1028,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         public override ImmutableArray<NamedTypeSymbol> GetTypeMembers(string name, int arity)
         {
-            return GetTypeMembers(name).WhereAsArray(t => t.Arity - t.ConceptWitnesses.Length == arity);
+            return GetTypeMembers(name).WhereAsArray(t => t.Arity == arity);
         }
 
         private Dictionary<string, ImmutableArray<NamedTypeSymbol>> GetTypeMembersDictionary()

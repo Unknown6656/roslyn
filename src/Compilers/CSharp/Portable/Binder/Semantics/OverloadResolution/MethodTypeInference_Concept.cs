@@ -500,7 +500,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                     "Concept witness inference returned something other than a concept instance or witness");
                 destination[conceptIndices[i]] = maybeFixed[i].Instance;
 
-                currentSubstitution = currentSubstitution.Merge(maybeFixed[i].Unification);
+                // TODO: not a graceful way to handle errors from Merge...
+                currentSubstitution = currentSubstitution?.Merge(maybeFixed[i].Unification);
+                if (currentSubstitution == null) return conceptIndices;
             }
             return newConceptIndices.ToImmutableAndFree();
         }

@@ -193,6 +193,21 @@ namespace Microsoft.CodeAnalysis.CSharp
                     CheckFeatureAvailability(syntax.GetLocation(), MessageID.IDS_FeatureImplicitLocal, diagnostics);
                 }
 
+                // @t-mawind
+                //   We are allowed to construct a concept which has
+                //   missing and non-inferrable associated type
+                //   parameters above.  This is specifically intended
+                //   for the case where the concept is on the LHS of a
+                //   member access, so forbid it here.
+                //
+                //   TODO: where should this go?
+                if (symbol != null && symbol.Kind == SymbolKind.NamedType && IsConceptWithFailedPartInference((NamedTypeSymbol)symbol))
+                {
+                    // Using the generic {1} '{0}' requires {2} type arguments
+                    diagnostics.Add(ErrorCode.ERR_BadArity, syntax.Location, (NamedTypeSymbol)symbol, MessageID.IDS_SK_TYPE.Localize(), ((NamedTypeSymbol)symbol).Arity);
+                }
+
+
                 return symbol;
             }
         }
@@ -655,6 +670,32 @@ namespace Microsoft.CodeAnalysis.CSharp
                     {
                         symbols.Add(bindingResult);
                         bindingResult = null;
+                    }
+
+                    // @t-mawind
+                    //   We might have got here by picking up a generic class
+                    //   whose type parameters are all implicit.
+                    if (bindingResult != null && bindingResult.Kind == SymbolKind.NamedType)
+                    {
+                        var nt = bindingResult as NamedTypeSymbol;
+                        if (0 < nt.Arity)
+                        {
+                            Debug.Assert(nt.ImplicitTypeParameterCount == nt.Arity,
+                                "We should only be able to get here if we're expecting part-inference.");
+                            var typeArguments = PartInferImplicitTypeParameters(ImmutableArray<TypeSymbol>.Empty, nt);
+                            if (typeArguments.IsEmpty)
+                            {
+                                diagnostics.Add(ErrorCode.ERR_BadArity, node.Location, nt, MessageID.IDS_SK_TYPE.Localize(), nt.Arity);
+
+                                // TODO: this is probably wrong.
+                                return new ExtendedErrorTypeSymbol(nt,
+                                    LookupResultKind.WrongArity,
+                                    null);
+                            }
+
+                            // TODO: this is probably not robust (constraint checks?)
+                            bindingResult = nt.Construct(typeArguments);
+                        }
                     }
                 }
             }

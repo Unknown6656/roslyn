@@ -1054,6 +1054,9 @@ namespace Microsoft.CodeAnalysis.CSharp
                     if (hasTypeArguments && isNamedType)
                     {
                         symbol = ConstructNamedTypeUnlessTypeArgumentOmitted(node, (NamedTypeSymbol)symbol, typeArgumentList, typeArguments, diagnostics);
+                        // @t-mawind
+                        //   Can't use IsConceptWithFailedPartInference here:
+                        //   this could be part of a color-color access.
                     }
 
                     expression = BindNonMethod(node, symbol, diagnostics, lookupResult.Kind, isError);
@@ -4895,16 +4898,24 @@ namespace Microsoft.CodeAnalysis.CSharp
             //   up to this point in the hope that this will fix the missing
             //   types.
             //
+            //   This is the one place where we don't need to use
+            //   IsConceptWithFailedPartInference.
+            //
             //   TODO: clean this up.
             if ((object)boundLeft.Type != null && boundLeft.Type.IsConceptType())
             {
                 var requiredConcepts = ImmutableArray.Create(boundLeft.Type);
                 var instance = ConceptWitnessInferrer.ForBinder(this).InferOneWitnessFromRequiredConcepts(requiredConcepts, new ImmutableTypeMap()).Instance;
-                if (instance != null)
+                if (instance == null)
                 {
-                    boundLeft = new BoundTypeExpression(boundLeft.Syntax, null, true, instance);
+                    DiagnosticInfo diagnosticInfo = new CSDiagnosticInfo(ErrorCode.ERR_CantInferConceptInstance, boundLeft.Display);
+                    diagnostics.Add(new CSDiagnostic(diagnosticInfo, operatorToken.GetLocation()));
+                    return BadExpression(node);
                 }
+                boundLeft = new BoundTypeExpression(boundLeft.Syntax, null, true, instance);
             }
+            Debug.Assert(boundLeft.Type == null || !boundLeft.Type.IsConceptType(),
+                "Concept inference should have eliminated any possible concepts on the LHS");
 
             boundLeft = MakeMemberAccessValue(boundLeft, diagnostics);
             
@@ -5037,7 +5048,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     case BoundKind.TypeExpression:
                         {
                             Debug.Assert((object)leftType != null);
-                            // @t-mawind Allow type parameter receivers if they are concepts.
+                            // @t-mawind Allow type parameter receivers if they are concept witnesses.
                             //   These are lowered into valid receivers later.
                             if (leftType.TypeKind == TypeKind.TypeParameter && !leftType.IsConceptWitness)
                             {
@@ -5487,6 +5498,18 @@ namespace Microsoft.CodeAnalysis.CSharp
                         if (!typeArguments.IsDefault)
                         {
                             type = ConstructNamedTypeUnlessTypeArgumentOmitted(right, type, typeArgumentsSyntax, typeArguments, diagnostics);
+
+                            // @t-mawind
+                            //   We are allowed to construct a concept which has
+                            //   missing and non-inferrable associated type
+                            //   parameters above.  This is specifically intended
+                            //   for the case where the concept is on the LHS of a
+                            //   member access, so forbid it here.
+                            if (IsConceptWithFailedPartInference(type))
+                            {
+                                // Using the generic {1} '{0}' requires {2} type arguments
+                                diagnostics.Add(ErrorCode.ERR_BadArity, node.Location, type, MessageID.IDS_SK_TYPE.Localize(), type.Arity);
+                            }
                         }
 
                         result = new BoundTypeExpression(

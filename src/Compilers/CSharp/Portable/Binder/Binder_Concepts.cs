@@ -134,5 +134,41 @@ namespace Microsoft.CodeAnalysis.CSharp
                 }
             }
         }
+
+        /// <summary>
+        /// Determines whether this symbol is a concept whose part-inference
+        /// has failed.
+        /// <para>
+        /// This guards against the unsound interactions of the feature
+        /// allowing part-inference to return a 'not quite inferred' concept
+        /// in the situations where the missing type parameters are associated
+        /// types that will be filled in when an instance of that concept is
+        /// substituted for its witness.
+        /// </para>
+        /// </summary>
+        /// <param name="namedType">
+        /// The type to check.
+        /// </param>
+        /// <returns>
+        /// True if this type is a concept, and has at least one unfixed
+        /// type parameter.
+        /// </returns>
+        bool IsConceptWithFailedPartInference(NamedTypeSymbol namedType)
+        {
+            // @t-mawind
+            //   Perhaps the existence of this method is evidence against the
+            //   usefulness of allowing concepts on the left hand side of
+            //   member accesses?
+
+            if (!namedType.IsConcept) return false;
+
+            for (int i = 0; i < namedType.TypeParameters.Length; i++)
+            {
+                if (namedType.TypeParameters[i] == namedType.TypeArguments[i]) return true;
+            }
+
+            // We didn't see any evidence of failed inference at this point.
+            return false;
+        }
     }
 }

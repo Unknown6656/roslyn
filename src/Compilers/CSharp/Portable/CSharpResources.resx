@@ -4941,6 +4941,9 @@ To remove the warning, you can use /reference instead (set the Embed Interop Typ
   <data name="ERR_NoConstraintsOnImplicitParam" xml:space="preserve">
     <value>Type parameter '{0}' is marked 'implicit' but has no type constraints.</value>
   </data>
+  <data name="ERR_CantInferConceptInstance" xml:space="preserve">
+    <value>Cannot infer a valid witness for concept '{0}' at this location.</value>
+  </data>
   <data name="ERR_DeconstructWrongCardinality" xml:space="preserve">
     <value>Cannot deconstruct a tuple of '{0}' elements into '{1}' variables.</value>
   </data>
