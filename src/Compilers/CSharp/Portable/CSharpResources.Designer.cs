@@ -2852,15 +2852,6 @@ namespace Microsoft.CodeAnalysis.CSharp {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Constraint &apos;concept&apos; may only be used on overrides of methods with concepts..
-        /// </summary>
-        internal static string ERR_ConceptConstraintOnNonOverride {
-            get {
-                return ResourceManager.GetString("ERR_ConceptConstraintOnNonOverride", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Instance &apos;{0}&apos; of concept &apos;{1}&apos; does not implement &apos;{2}&apos;, and the concept has no default implementation..
         /// </summary>
         internal static string ERR_ConceptMethodNotImplementedAndNoDefault {

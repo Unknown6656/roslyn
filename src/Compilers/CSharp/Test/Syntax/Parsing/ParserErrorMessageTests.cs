@@ -4107,40 +4107,6 @@ class A<out T>
                 Diagnostic(ErrorCode.ERR_IllegalVarianceSyntax, "out").WithLocation(17, 13));
         }
 
-        // @t-mawind
-        //   Hopefully these errors are temporary, since the concept constraint
-        //   is a messy stopgap.
-
-        [Fact]
-        public void CS4037ERR_ConceptConstraintOnNonOverride()
-        {
-            var test = @"
-class C where EqA : concept  // CS4037
-{
-}
-";
-            CreateCompilationWithMscorlib(test).VerifyDiagnostics(
-                // (2,21): error CS4037: Constraint 'concept' may only be used on overrides of methods with concepts.
-                Diagnostic(ErrorCode.ERR_ConceptConstraintOnNonOverride, "concept").WithLocation(2, 21));
-        }
-
-        [Fact]
-        public void CS4037ERR_ConceptConstraintOnNonOverride_2()
-        {
-            var test = @"
-class C
-{
-    void D() where EqA : concept  // CS4037
-    {
-    }
-}
-";
-            CreateCompilationWithMscorlib(test).VerifyDiagnostics(
-                // (4,26): error CS4037: Constraint 'concept' may only be used on overrides of methods with concepts.
-                Diagnostic(ErrorCode.ERR_ConceptConstraintOnNonOverride, "concept").WithLocation(4, 26));
-        }
-
-
         [Fact]
         public void CS7000ERR_UnexpectedAliasedName()
         {
