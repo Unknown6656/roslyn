@@ -234,7 +234,7 @@ namespace Microsoft.CodeAnalysis.CSharp
         {
             var ignore = new HashSet<DiagnosticInfo>();
 
-            // Only namespaces and named kinds have named instances.
+            // Only namespaces and named kinds can have named instances.
             if (container.Kind != SymbolKind.Namespace && container.Kind != SymbolKind.NamedType) return;
 
             foreach (var member in ((NamespaceOrTypeSymbol)container).GetTypeMembers())
@@ -242,10 +242,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 if (!binder.IsAccessible(member, ref ignore, binder.ContainingType)) continue;
 
                 // Assuming that instances don't contain sub-instances.
-                if (member.IsInstance)
-                {
-                    instances.Add(member);
-                }
+                if (member.IsInstance) instances.Add(member);
             }
         }
 
@@ -262,10 +259,10 @@ namespace Microsoft.CodeAnalysis.CSharp
         /// either be represented by a null, or a copy of the corresponding
         /// type parameter.
         /// </param>
-        /// <param name="treatEqualAsUnfixed">
-        /// If true, treat type arguments that are equal to their type
-        /// parameters as unfixed.  This should be true for recursive inference
-        /// calls, but nothing else as it harms completeness.
+        /// <param name="treatUnboundAsUnfixed">
+        /// If true, treat type arguments that are unbound type parameters as
+        /// unfixed.  This should be true for recursive inference calls, but
+        /// nothing else as it harms completeness.
         /// </param>
         /// <param name="conceptIndices">
         /// The outgoing array of unfixed concept witnesses.
@@ -283,12 +280,16 @@ namespace Microsoft.CodeAnalysis.CSharp
         internal bool PartitionTypeParameters(
             ImmutableArray<TypeParameterSymbol> typeParameters,
             ImmutableArray<TypeSymbol> typeArguments,
-            bool treatEqualAsUnfixed,
+            bool treatUnboundAsUnfixed,
             out ImmutableArray<int> conceptIndices,
             out ImmutableArray<int> associatedIndices,
             out ImmutableTypeMap fixedParamMap
         )
         {
+            // @t-mawind
+            //   It's no longer certain whether treatUnboundIsUnfixed is
+            //   needed, but I ran out of time to check.
+
             Debug.Assert(typeParameters.Length == typeArguments.Length,
                 "There should be as many type parameters as arguments.");
 
@@ -299,43 +300,77 @@ namespace Microsoft.CodeAnalysis.CSharp
 
             for (int i = 0; i < typeParameters.Length; i++)
             {
-                // TODO: Is this sufficient for unfixed checking?
-
-                // @t-mawind:
-                // A type argument is unfixed if it is null, or it is
-                // both the same as its parameter _and_ not the same as
-                // a bound type parameter in the current scope...
-                // I think(!).
-                if (typeArguments[i] == null ||
-                    (treatEqualAsUnfixed
-                     && typeArguments[i].Kind == SymbolKind.TypeParameter
-                     && !(_boundParams.Contains(typeArguments[i] as TypeParameterSymbol))))
+                if (TypeArgumentIsFixed(typeArguments[i], treatUnboundAsUnfixed))
                 {
-                    if (typeParameters[i].IsConceptWitness)
-                    {
-                        wBuilder.Add(i);
-                        continue;
-                    }
-                    else if (typeParameters[i].IsAssociatedType)
-                    {
-                        aBuilder.Add(i);
-                        continue;
-                    }
+                    fixedMapB.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
+                    continue;
+                }
+                // If we got here, the parameter is unfixed.
 
+                if (typeParameters[i].IsConceptWitness) wBuilder.Add(i);
+                else if (typeParameters[i].IsAssociatedType) aBuilder.Add(i);
+                else
+                {
+
+                    // If we got here, the type parameter is unfixed, but is
+                    // neither a concept witness nor an associated type.  Our
+                    // inferrer can't possibly fix these, so we give up. 
                     wBuilder.Free();
                     aBuilder.Free();
                     conceptIndices = ImmutableArray<int>.Empty;
                     associatedIndices = ImmutableArray<int>.Empty;
                     return false;
                 }
-                // If we got here, the parameter is fixed.
-                fixedMapB.Add(typeParameters[i], new TypeWithModifiers(typeArguments[i]));
             }
 
             conceptIndices = wBuilder.ToImmutableAndFree();
             associatedIndices = aBuilder.ToImmutableAndFree();
             fixedParamMap = fixedMapB.ToUnification();
             return true;
+        }
+
+        /// <summary>
+        /// Decides whether a given type argument is fixed (successfully
+        /// inferred).
+        /// </summary>
+        /// <param name="typeArgument">
+        /// The type argument to check.
+        /// </param>
+        /// <param name="treatUnboundAsUnfixed">
+        /// If true, treat type arguments that are unbound type parameters as
+        /// unfixed.  This should be true for recursive inference calls, but
+        /// nothing else as it harms completeness.
+        /// </param>
+        /// <returns>
+        /// True if the argument is fixed.  This method may sometimes
+        /// return false negatives, which affects completeness
+        /// (some valid type inference may fail) but not soundness.
+        /// </returns>
+        private bool TypeArgumentIsFixed(TypeSymbol typeArgument, bool treatUnboundAsUnfixed)
+        {
+            // @t-mawind
+            //   This is slightly ad-hoc and needs checking.
+            //   The intuition is that:
+            //   1) In some places (eg. method inference), unfixed type
+            //      arguments are always null, so we can just check for null.
+            if (typeArgument == null) return false;
+            //   2) In other places, they are some type parameter; currently
+            //      we filter on those places with treatUnboundAsUnfixed, but
+            //      it is unclear whether we need this.
+            if (!treatUnboundAsUnfixed) return true;
+            if (typeArgument.Kind != SymbolKind.TypeParameter) return true;
+            //      We assume that, once the type argument becomes something
+            //      other than a type parameter, it's been fixed.  However,
+            //      that parameter might _not_ be the same as the corresponding
+            //      type parameter of the argument, because it may have been
+            //      unified with another unfixed type argument!  (This happens
+            //      when we're in the middle of associated type inference).
+            //
+            //      For now, we just assume that any type parameter that is not
+            //      one of the 'bound' parameters (ie universally quantified
+            //      instead of existential) is evidence of being unfixed.
+            //      This is probably wrong.
+            return _boundParams.Contains(typeArgument as TypeParameterSymbol);
         }
 
 
