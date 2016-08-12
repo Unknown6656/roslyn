@@ -56,57 +56,44 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         }
 
         /// <summary>
-        /// Merges two unifications, creating a new unification.
+        /// Sequentially composes two unifications, creating a new unification.
         /// </summary>
         /// <param name="other">
-        /// The other unification to merge.</param>
+        /// The RHS of the sequential composition.</param>
         /// <returns>
-        /// Null if the unifications are not disjoint (and any overlapping
-        /// unifications conflict); the merged unification otherwise.
+        /// The composed unification (this; <paramref name="other"/>). 
         /// </returns>
-        internal ImmutableTypeMap Merge(ImmutableTypeMap other) => MergeDict(other.Mapping);
+        internal ImmutableTypeMap Compose(ImmutableTypeMap other) => ComposeDict(other.Mapping);
 
         /// <summary>
-        /// Merges a unification with a dictionary, creating a new unification.
+        /// Sequentially composes a unification with a dictionary, creating a new unification.
         /// </summary>
         /// <param name="dict">
         /// The dictionary representing another unification to merge.</param>
         /// <returns>
-        /// Null if the unifications are not disjoint (and any overlapping
-        /// unifications conflict); the merged unification otherwise.
+        /// The composed unification (this; <paramref name="dict"/>). 
         /// </returns>
 
-        internal ImmutableTypeMap MergeDict(SmallDictionary<TypeParameterSymbol, TypeWithModifiers> dict)
+        internal ImmutableTypeMap ComposeDict(SmallDictionary<TypeParameterSymbol, TypeWithModifiers> dict)
         {
-            var result = new ImmutableTypeMap();
-
-            // Used for transitivity later.
+            // TODO: efficiency
             var dictM = new ImmutableTypeMap(dict);
 
-            // We have to merge the dictionaries in a way such that transitivity
-            // is respected.  We assume that previous merges have handled this,
-            // so all we need to do is ensure each entry from each dictionary is
-            // substituted using the other dictionary first.
-            //
-            // If at any point we try to add an existing key with a different
-            // value, bail.  (TODO: handle properly.)
-            foreach (var theirKey in dict.Keys)
-            {
-                if (result.Mapping.ContainsKey(theirKey))
-                {
-                    if (result.Mapping[theirKey] == dict[theirKey]) continue;
-                    return null;
-                }
-                result.Mapping.Add(theirKey, dict[theirKey].CustomModifiers.IsEmpty ? SubstituteType(dict[theirKey].AsTypeSymbolOnly()) : dict[theirKey]);
-            }
+            var result = new ImmutableTypeMap();
+
+            // We want the resulting mapping to be dict(this(x)).
+            // Thus:
+            // 1) For all mappings in this (this(x) != x), take our mapping, substitute with dict, and store the resulting mapping;
+            // 2) For all mappings in dict, add them back in if they are not already in the new mapping.
             foreach (var ourKey in Mapping.Keys)
             {
-                if (result.Mapping.ContainsKey(ourKey))
-                {
-                    if (result.Mapping[ourKey] == Mapping[ourKey]) continue;
-                    return null;
-                }
                 result.Mapping.Add(ourKey, Mapping[ourKey].CustomModifiers.IsEmpty ? dictM.SubstituteType(Mapping[ourKey].AsTypeSymbolOnly()) : Mapping[ourKey]);
+            }
+            foreach (var theirKey in dict.Keys)
+            {
+                // This means the other mapping contained this, 
+                if (result.Mapping.ContainsKey(theirKey)) continue;
+                result.Mapping.Add(theirKey, dict[theirKey]);
             }
 
             return result;
@@ -122,15 +109,15 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         /// The value of the mapping to add.
         /// </param>
         /// <returns>
-        /// Null if the unifications are not disjoint (and any overlapping
-        /// unifications conflict); the merged unification otherwise.
+        /// The result of adding, which will ignore this mapping if there is
+        /// already a present mapping for <paramref name="key"/>. 
         /// </returns>
 
         internal ImmutableTypeMap Add(TypeParameterSymbol key, TypeWithModifiers value)
         {
             var sd = new SmallDictionary<TypeParameterSymbol, TypeWithModifiers>();
             sd.Add(key, value);
-            return MergeDict(sd);
+            return ComposeDict(sd);
         }
     }
 }

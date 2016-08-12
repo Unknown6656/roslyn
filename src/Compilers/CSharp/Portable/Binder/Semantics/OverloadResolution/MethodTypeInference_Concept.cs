@@ -536,7 +536,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                 destination[conceptIndices[i]] = maybeFixed[i].Instance;
 
                 // TODO: not a graceful way to handle errors from Merge...
-                currentSubstitution = currentSubstitution?.Merge(maybeFixed[i].Unification);
+                currentSubstitution = currentSubstitution?.Compose(maybeFixed[i].Unification);
                 if (currentSubstitution == null) return conceptIndices;
             }
             return newConceptIndices.ToImmutableAndFree();
@@ -1015,7 +1015,7 @@ namespace Microsoft.CodeAnalysis.CSharp
                     fixedInstance = InferRecursively(nt,
                        conceptIndices,
                        associatedIndices,
-                       candidate.Unification.Merge(fixedMap),
+                       candidate.Unification.Compose(fixedMap),
                        chain);
                 }
                 if (fixedInstance.Instance != null) secondPassInstanceBuilder.Add(fixedInstance);
@@ -1070,7 +1070,7 @@ namespace Microsoft.CodeAnalysis.CSharp
             // it may have fallen victim to this. 
             foreach (int a in associatedIndices) recurSubstMap.Add((instance.TypeArguments[a] as TypeParameterSymbol) ?? instance.TypeParameters[a], new TypeWithModifiers(inferred[a]));
 
-            var unification = recurSubstMap.ToUnification().Merge(fixedMap);
+            var unification = fixedMap.Compose(recurSubstMap.ToUnification());
             if (unification == null) return default(Candidate);
 
             return new Candidate(unification.SubstituteType(instance).AsTypeSymbolOnly(), unification);
