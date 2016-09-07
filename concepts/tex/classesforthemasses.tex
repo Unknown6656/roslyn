@@ -45,7 +45,7 @@
 %
 % For tracking purposes - this is V2.0 - May 2012
 
-\documentclass[preprint]{sig-alternate-05-2015}
+\documentclass[9pt]{sig-alternate-05-2015}
 
 
 
@@ -81,7 +81,7 @@
                           alsolanguage=threeextensions,
                           alsolanguage=fourextensions,
 					alsolanguage=fiveextensions,
-                          basicstyle=\color{black}\ttfamily,
+                          basicstyle=\color{black}\ttfamily\small,
                           showstringspaces=false,
                           keywordstyle=\color{KeywordBlue},
                           commentstyle=\color{CommentGreen},
@@ -99,7 +99,7 @@ includerangemarker=false,
 \lstdefinelanguage{FSharp}
                          {language={Caml}, %
                           alsolanguage=conceptextensions,
-                          basicstyle=\color{black}\ttfamily,
+                          basicstyle=\color{black}\ttfamily\small,
                           showstringspaces=false,
                           keywordstyle=\color{KeywordBlue},
                           commentstyle=\color{CommentGreen},
@@ -162,7 +162,7 @@ includerangemarker=false,
 % without further effort on your part as the last section in
 % the body of your article BEFORE References or any Appendices.
 
-\numberofauthors{2} %  in this sample file, there are a *total*
+\numberofauthors{5} %  in this sample file, there are a *total*
 % of EIGHT authors. SIX appear on the 'first-page' (for formatting
 % reasons) and the remaining two appear in the \additionalauthors section.
 %
@@ -179,11 +179,38 @@ includerangemarker=false,
 %
 % 1st. author
 \alignauthor
-Claudio Russo \affaddr{(Microsoft Research)}\\
+Claudio Russo\\ \affaddr{(Microsoft Research)}
 % 2nd. author
 \alignauthor
-Matt Windsor \affaddr{(University of York)}\\
+Matt Windsor\\ \affaddr{(University of York)}
+\and
+\alignauthor
+Don Syme\\  \affaddr{(Microsoft Research)}
+\alignauthor
+Rupert Horlick\\   \affaddr{(University of Cambridge)}
+\alignauthor
+James Clarke\\ \affaddr{(University of Cambridge)}
 }
+%\alignauthor
+%Claudio Russo\\
+%% 2nd. author
+%\alignauthor
+%Matt Windsor\\
+%\alignauthor
+%Don Syme\\
+%\alignauthor
+%Rupert Horlick\\
+%\alignauthor
+%James Clarke\\
+%% 2nd. author
+%\and
+%\alignauthor
+% \affaddr{(Microsoft Research)}\\
+%\alignauthor
+%  \affaddr{(University of Cambridge)}\\
+%\alignauthor
+% \affaddr{(University of Cambridge)}\\
+%}
 
 
 \makeatletter
@@ -193,12 +220,12 @@ Matt Windsor \affaddr{(University of York)}\\
 
 
 \maketitle
+
 \begin{abstract}
 Type classes are an immensely popular and productive feature of Haskell. They have since been adopted in, and adapted to, numerous other languages, including theorem provers.
-This talk will sketch that type classes have a natural and efficient representation in .NET. 
-This paves the way for the extension of F\# and other .NET languages with Haskell style type classes. 
-The representation is type preserving and promises easy and safe cross-language inter-operation.
-We have extended the open source C\# compiler and language service, Roslyn, with pervasive support for type and  have prototyped a similar extension, with a more minimalist design, for F\#.
+We show that type classes have a natural and efficient representation in .NET that paves the way for the extension of F\#, C\# and other .NET languages with type classes. 
+Our encoding  is type preserving and promises easy and safe cross-language inter-operation.
+We have extended the open source C\# compiler and language service, Roslyn, with pervasive support for type classes and  have prototyped a more minimalist design  for F\#.
 \end{abstract}
 
 
@@ -211,17 +238,18 @@ We have extended the open source C\# compiler and language service, Roslyn, with
 
 
 Haskell's \emph{type classes} \cite{peytonjones:h98,WadlerBlott} are a powerful abstraction mechanism for describing generic algorithms applicable to types that have different representations but common interfaces.
-A \emph{type class} is a predicate on types that specifies a set of required operations by their type signatures.
+A \emph{type class} is a predicate on types that specifies a set of required operations by their type signatures with  optional, default code.
 A type may be declared to be an \emph{instance} of a type class, and must supply an implementation for each of the class' operations. 
-Type classes may be arranged hierarchically, permitting subsumption and inheritance. A default method may also be associated with an operation allowing its implementations to be omitted.
+Type classes may be arranged hierarchically, permitting subsumption and inheritance. 
+%A default implementation may also be associated with an operation. % allowing its implementations to be omitted.
 
-Many modern language have adopted features inspired
+Many modern languages have adopted features inspired
 by type classes, with different implementation techniques.  Scala has
 \emph{implicits}\cite{scalaimplicits}, implicit method arguments denoting dictionaries, that
 are inferred by the compiler but represented, at run-time, as additional
 heap-allocated arguments to methods (with commensurate overhead).  C++ came very
 close to adopting \emph{concepts}\cite{cppconcepts}, a rather different extension of the template mechanism, 
-directly inspired by Haskell's type classes but enforcing  compile-time code specialization for performance. Rust has \emph{traits}\cite{Rust} and Swift has
+directly inspired by Haskell's type classes but enforcing  compile-time code specialization for performance. Rust has \emph{traits}\cite{Rust}. Swift has
 \emph{protocols}\cite{Swift}.
 
 {\bf Contribution} We describe a simple encoding that allows us to add type classes to
@@ -264,24 +292,22 @@ This section sketches our representation of the Haskell'98 type classes on .NET 
 For each example, we give the Haskell code, underlying .NET code in vanilla C\#, and proposed F\# syntax.
 We use vanilla C\# as a more readable proxy for .NET intermediate bytecode and metadata.
 
-\subsection{Haskell Type Classes}
+%\subsection{Haskell Type Classes}
 
-A Haskell type class, for example:
+{\bf Type Classes} A Haskell type class, for example:
 \lstset{language={CSharpLatest}}
 
 {
+\small
 \lstset{language={Haskell}}
 \begin{lstlisting}
   class Eq a where 
     (==) :: a -> a -> Bool
-\end{lstlisting}
-}
-Is naturally represented in C\# as:
+\end{lstlisting}}
+\noindent is naturally represented in C\# as:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
-  interface Eq<A> {
-    bool Equals(A a, A b);
-  }
+  interface Eq<A> {  bool Equals(A a, A b);  }
 \end{lstlisting}
 
 \ifclassic
@@ -301,18 +327,17 @@ For F\#, we use a  \lstinline{Trait}-attributed interface declaration:
 \end{lstlisting}
 \fi
  
-\subsection{Haskell Overloads}
-
-The Haskell declaration of class \lstinline{Eq a} implicitly declares the overloaded 
-operations induced by class' members.
+%\subsection{Haskell Overloads}
+{\bf  Haskell Overloads} Haskell's declaration of class \lstinline{Eq a} implicitly declares its members as overloaded 
+operations:
 
 \lstset{language={Haskell}}
 \begin{lstlisting}
     (==) :: (Eq a) => a -> a -> Bool 
 \end{lstlisting}
-Observe that the overload operation has a more general constrained type \lstinline{(Eq a) => ...}.
+Observe that the overloaded operation has a more general constrained type \lstinline{(Eq a) => ...}.
 
-This generic operation can be represent in C\# by the method:
+This generic operation is captured in C\# by the method:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
    public static bool Equals<A,EqA>(A a, A b) 
@@ -332,35 +357,36 @@ by calling the method on the struct's default value.
 
 Thus an operation over some class can be represented as a static generic method, 
 parameterized by an additional dictionary type parameter (here \lstinline{EqA}).
-Similarly, derived operations with type class constraints can be represented by generic methods with suitably constrained type parameters.
-
-So a Haskell dictionary \emph{value} corresponds to a  C\# dictionary \emph{type}.
+Derived operations with type class constraints can be represented by generic methods with suitably constrained type parameters.
+Finally, Haskell dictionary \emph{values} correspond to  C\# dictionary \emph{types}.
 
 
 %The dictionary type parameter is marked \lstinline{struct} (so stack allocated):
 %we can access its operations through a default value (no need to pass dictionary values).
 
 
-\subsection{Haskell Instances}
-
+%\subsection{Haskell Instances}
+{\bf Instances}
 A Haskell instance declaration is represented by the declaration of an empty (field-less) .NET  struct that implements the associated type class (itself an interface).
 This gives us a cheap representation of Haskell instances. 
 %A Haskell instance declaration can be represented by the declaration of a C\# struct type.
 %Moreover, the dictionary parameter corresponding to a Haskell type constraint can just be represented by a C\# type parameter; in particular, by a type parameter that is both a struct and implements the corresponding C\# interface.
 
 For example, the Haskell instance declaration:
+
+
 \lstset{language={Haskell}}
+{\small
 \begin{lstlisting}
 instance Eq Integer where 
   x == y  =  x `integerEq` y
 \end{lstlisting}
-
+}
 can be represented by the C\# structure:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
-struct EqInt : Eq<int>  {
-  public bool Equals(int a, int b)  => a == b;   
-}
+struct EqInt : Eq<int>  
+{  public bool Equals(int a, int b)  => a == b;   }
 \end{lstlisting}
 
 \ifclassic
@@ -389,17 +415,19 @@ Note that the F\# syntax, unlike Haskell, names the instance as in the  C\# repr
 In Haskell, instances are anonymous but names are useful for explicit disambiguation and interoperation with languages that cannot always rely on type argument inference (such as C\#).
 \fi
 
-\subsection{Derived Instances}
+%\subsection{Derived Instances}
 
+{\bf Derived Instances}
 This Haskell code defines a family of derived instances: given an equality  type \lstinline{a}, it defines equality over lists of \lstinline{a}.
 \lstset{language={Haskell}}
+{\small
 \begin{lstlisting}
 instance (Eq a) => Eq ([a]) where 
     nil == nil   = true
    a:as == b:bs  = (a == b) && (as == bs)
       _ == _     = false
 \end{lstlisting}
-
+}
 
 We can represent such a Haskell parameterized instance as a \emph{generic} struct:
 
@@ -419,13 +447,12 @@ We can represent such a Haskell parameterized instance as a \emph{generic} struc
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
 struct EqList<A, EqA> : Eq<List<A>>
-       where EqA : struct, Eq<A>  {
-  public bool Equals(List<A> a, List<A> b)  =>
-        (a.IsNull && b.IsNull)
-     || (a.IsCons && b.IsCons 
-          && default(EqA).Equals(a.Head,b.Head) 
-          && Equals(a.Tail,b.Tail));
-}
+  where EqA : struct, Eq<A>  {
+    public bool Equals(List<A> a, List<A> b)  =>
+          (a.IsNull && b.IsNull)
+      || (a.IsCons && b.IsCons 
+           && default(EqA).Equals(a.Head,b.Head) 
+           && Equals(a.Tail,b.Tail)); }
 \end{lstlisting}
 
 This struct implements the interface \lstinline{Eq<List<A>>}, but only when instantiated with a suitable type argument and evidence for constraint \lstinline{Eq<A>}.
@@ -448,19 +475,18 @@ For F\# we use a parameterized \lstinline{Witness}-declaration:
 
 \lstset{language={FSharp}}
 \begin{lstlisting}
-[<Witness>] type EqList<'A,'EqA when 'EqA :> Eq<'A>>
+[<Witness>] type EqList<'A,'EqA when 'EqA :> Eq<'A>> =
   interface Eq<List<'A>> with
   member Equals(a,b) = match a,b with
    | [],[] -> true
    | (a::l),(b::m) -> Eq.Equals(a,b) && Equals(l,m)
    | _,_ -> false
 \end{lstlisting}
-For F\#, we use do not overload a top-level \lstinline{equals} bindings, but 
-instead allow qualifed access to trait members via the (uninstantiated) trait name (e.g.\ \lstinline{Eq.equals}).
+For F\#, we do not overload a top-level \lstinline{equals} binding, but use qualifed access to trait members (e.g.\ \lstinline{Eq.equals}).
 
 \fi
-\subsection{Other features}
-
+%\subsection{Other features}
+{\bf Other features}
 We do not have space to describe the representations of other features but suffice to say that we can encode \cite{natural}:
 type class operations that themselves have constrained types in their signatures (using interface methods that are generic);
 type class hierarchies  using interface inheritance; default operations using shared static methods; instances requiring 
@@ -468,16 +494,19 @@ polymorphic recursion; instances as data (to constrained term constructors) and 
 explicit as well as implicit evidence when preferable. 
 We cannot support  higher-kinded type classes (like \lstinline{Monad}), because .NET lacks higher-kinded abstraction.
 First-order associated types are in reach.
-
-Much of the concision of Haskell comes not only from the declaration of type class hierarchies but from the implicit solution of constraints during type inference.
-For C\#, we envision evidence inference to be a mild generalization of type argument inference, with instantiations derived from the pervasive and locally assumed concept hierarchy.
+%Much of the concision of Haskell comes not only from the declaration of type class hierarchies but from the implicit solution of constraints during type inference.
+For C\#, evidence inference is a mild generalization of type argument inference, with instantiations derived from the pervasive and locally assumed concept hierarchy.
 For F\#, we have adapted Haskell's more elaborate techniques for not only solving but also implicitly propagating inferred type class constraints, by extension of F\#'s existing constraint system.
-\section{Implementation}
 
-We prioritized our efforts on designing and implementing concepts for C\# in a fork\cite{Roslynfork}  of  Microsoft's open source Roslyn compiler\cite{Roslyn}, adopting a dedicated syntax loosely inspired  by C++ concepts\cite{cppconcepts}.
+%\section{Implementation}
+{\bf Implementations} We prioritized our efforts on designing and implementing type classes for C\# in a fork\cite{Roslynfork}  of  Microsoft's open source Roslyn compiler\cite{Roslyn}, adopting a dedicated syntax loosely inspired  by C++ concepts\cite{cppconcepts}.
 %This is primarily because of interest from the C\# team, because C\# still has wider reach than F\# and because C\# is arguably in greater need of abstraction facilities.
-The F\# design and implementation was the result of a three day hackathon aiming for a minimal viable product to demonstrate type classes in F\#.
-
+The F\# design and implementation~\cite{fshack} was the result of a 3-day hackathon aiming for a minimal viable product (with suboptimal syntax).
+Performance results are promising - we anticipated  .NET's code specialization to turn virtual calls to dictionary members into direct calls, but the JIT exceeded expectations and aggressively inlined those calls. 
+The JIT failed to eliminate  dictionary arguments that became dead after inlining; hoist dictionary allocations out of loops or do CSE on dictionary values. Fortunately, the latter two are suitable compiler optimizations.
+\vspace{-1em}
+\small
 \bibliographystyle{abbrv}
+
 \bibliography{sigproc} 
 \end{document}

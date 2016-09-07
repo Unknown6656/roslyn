@@ -735,7 +735,8 @@
  \let\maketitle\relax
  \let\@maketitle\relax
  \gdef\@thanks{}\gdef\@author{}\gdef\@title{}\gdef\@subtitle{}\let\thanks\relax
- \@copyrightspace}
+% \@copyrightspace
+}
 
 %% CHANGES ON NEXT LINES
 \newif\if@ll % to record which version of LaTeX is in use
@@ -867,10 +868,10 @@
  \null
  \setbox\@acmtitlebox\vbox{%
 \baselineskip 20pt
-\vskip 2em                   % Vertical space above title.
+%<<\vskip 2em                   % Vertical space above title.
    \begin{center}
     {\ttlfnt \@title\par}       % Title set in 18pt Helvetica (Arial) bold size.
-    \vskip 1.5em                % Vertical space after title.
+%<<    \vskip 1.5em                % Vertical space after title.
 %This should be the subtitle.
 {\subttlfnt \the\subtitletext\par}\vskip 1.25em%\fi
     {\baselineskip 16pt\aufnt   % each author set in \12 pt Arial, in a
@@ -880,7 +881,8 @@
     \vskip 1.5em               % Vertical space after author.
    \end{center}}
  \dimen0=\ht\@acmtitlebox
- \advance\dimen0 by -12.75pc\relax % Increased space for title box -- KBT
+ %\advance\dimen0 by -12.75pc\relax % Increased space for title box -- KBT
+ \advance\dimen0 by -0.75pc\relax % Increased space for title box -- KBT
  \unvbox\@acmtitlebox
  \ifdim\dimen0<0.0pt\relax\vskip-\dimen0\fi}
 \fi
@@ -1500,8 +1502,8 @@
 \bibindent=0em
 \def\thebibliography#1{% 
 \ifnum\addauflag=0\addauthorsection\global\addauflag=1\fi
-     \section[References]{%    <=== OPTIONAL ARGUMENT ADDED HERE
-        {References} % was uppercased but this affects pdf bookmarks (SP/GM October 2004)
+     \section*{%    <=== OPTIONAL ARGUMENT ADDED HERE
+        {} % was uppercased but this affects pdf bookmarks (SP/GM October 2004)
           {\vskip -9pt plus 1pt} % GM Nov. 2006 / GM July 2000 (for somewhat tighter spacing) 
          \@mkboth{{\refname}}{{\refname}}%
      }%
