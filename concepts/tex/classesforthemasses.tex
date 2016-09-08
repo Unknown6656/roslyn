@@ -61,7 +61,7 @@
 \definecolor{UserTypeTeal}{rgb}{0.1679,0.5664,0.6836}
 
 \lstdefinelanguage{threeextensions}%
-  {morekeywords={var,from,select,where,orderby,yield,let,join,on,into,equals,group,by,ascending,descending,
+  {morekeywords={var,from,select,where,orderby,yield,let,join,on,into,Equal,group,by,ascending,descending,
                  try,catch,finally},
    sensitive,
   }[keywords]%
@@ -93,7 +93,7 @@ includerangemarker=false,
                          }
 
 \lstdefinelanguage{conceptextensions}
-   {morekeywords={instance,concept,interface,member,Witness,Trait,abstract},
+   {morekeywords={instance,concept,interface,member,Witness,Trait,abstract,struct},
     sensitive
    }[keywords]
 \lstdefinelanguage{FSharp}
@@ -307,7 +307,7 @@ We use vanilla C\# as a more readable proxy for .NET intermediate bytecode and m
 \noindent is naturally represented in C\# as:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
-  interface Eq<A> {  bool Equals(A a, A b);  }
+  interface Eq<A> {  bool Equal(A a, A b);  }
 \end{lstlisting}
 
 \ifclassic
@@ -322,8 +322,9 @@ concept Eq 'a where
 For F\#, we use a  \lstinline{Trait}-attributed interface declaration:
 \lstset{language={FSharp}}
 \begin{lstlisting}
-[<Trait>] type  Eq<'A> = 
-   abstract  equals: 'A -> 'A -> bool
+[<Trait>] type Eq<'A> = interface 
+     abstract equals: 'A -> 'A -> bool 
+ end
 \end{lstlisting}
 \fi
  
@@ -340,9 +341,9 @@ Observe that the overloaded operation has a more general constrained type \lstin
 This generic operation is captured in C\# by the method:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
-   public static bool Equals<A,EqA>(A a, A b) 
+   public static bool Equal<A,EqA>(A a, A b) 
       where EqA : struct, Eq<A>  =>
-         default(EqA).Equals(a, b)
+         default(EqA).Equal(a, b)
 \end{lstlisting}
 This method has not one, but \emph{two}, type parameters. The first, \lstinline{A}, is just the type parameter from the declaration.
 The second, \lstinline{EqA}, is a type parameter that is constrained to be a struct and is evidence for the constraint that \lstinline{A} supports interface \lstinline{Eq<A>}.
@@ -386,7 +387,7 @@ can be represented by the C\# structure:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
 struct EqInt : Eq<int>  
-{  public bool Equals(int a, int b)  => a == b;   }
+{  public bool Equal(int a, int b)  => a == b;   }
 \end{lstlisting}
 
 \ifclassic
@@ -395,20 +396,20 @@ For F\#, we introduce the shorter \lstinline{instance} declaration:
 \lstset{language={FSharp}}
 \begin{lstlisting}
 instance Eq int where 
-  Equals (a, b) = a = b
+  Equal (a, b) = a = b
 \end{lstlisting}
 
 Note that the F\# syntax, like Haskell, elides the name of the instance in the more explicit C\# representation.
 In Haskell, instances are anonymous.
 
 \else
-For F\#, we use a \lstinline{Witness}-attributed (struct) declaration:
+For F\#, we use a \lstinline{Witness}-attributed struct declaration:
 
 \lstset{language={FSharp}}
 \begin{lstlisting}
-[<Witness>] type EqInt =
-  interface Eq<int> with 
-  member Equals (a, b) = a = b
+ [<Witness>] type EqInt = struct 
+     interface Eq<int> with member equals a b = a = b
+ end 
 \end{lstlisting}
 
 Note that the F\# syntax, unlike Haskell, names the instance as in the  C\# representation.
@@ -435,11 +436,11 @@ We can represent such a Haskell parameterized instance as a \emph{generic} struc
 %\begin{lstlisting}
 %struct EqList<A, EqA> : Eq<List<A>>
 %       where EqA : struct, Eq<A>  {
-%  public bool Equals(List<A> a, List<A> b) {
+%  public bool Equal(List<A> a, List<A> b) {
 %    if (a.IsNull != b.IsNull) return true;
 %    else if (a.IsCons & b.IsCons) 
-%         return default(EqA).Equals(a.Head,b.Head) 
-%                && Equals(a.Tail,b.Tail);
+%         return default(EqA).Equal(a.Head,b.Head) 
+%                && Equal(a.Tail,b.Tail);
 %         else false;
 %  }}
 %\end{lstlisting}
@@ -448,11 +449,11 @@ We can represent such a Haskell parameterized instance as a \emph{generic} struc
 \begin{lstlisting}
 struct EqList<A, EqA> : Eq<List<A>>
   where EqA : struct, Eq<A>  {
-    public bool Equals(List<A> a, List<A> b)  =>
+    public bool Equal(List<A> a, List<A> b)  =>
           (a.IsNull && b.IsNull)
       || (a.IsCons && b.IsCons 
-           && default(EqA).Equals(a.Head,b.Head) 
-           && Equals(a.Tail,b.Tail)); }
+           && default(EqA).Equal(a.Head,b.Head) 
+           && Equal(a.Tail,b.Tail)); }
 \end{lstlisting}
 
 This struct implements the interface \lstinline{Eq<List<A>>}, but only when instantiated with a suitable type argument and evidence for constraint \lstinline{Eq<A>}.
@@ -465,24 +466,23 @@ For F\# we adopt the more concise, nameless declaration:
 \lstset{language={FSharp}}
 \begin{lstlisting}
 instance Eq 'a => Eq (List 'a) where 
-  Equals(a,b) = match a,b with
-    | [],[] -> true
-    | (a::l),(b::m) -> Equals(a,b) && Equals(l,m)
-    | _,_ -> false
+  Equal(a,b) = match a,b with
+    | (a::l),(b::m) -> Equal(a,b) && Equal(l,m)
+    | [],[] -> true | _,_ -> false
 \end{lstlisting}
 \else
 For F\# we use a parameterized \lstinline{Witness}-declaration:
-
 \lstset{language={FSharp}}
 \begin{lstlisting}
-[<Witness>] type EqList<'A,'EqA when 'EqA :> Eq<'A>> =
-  interface Eq<List<'A>> with
-  member Equals(a,b) = match a,b with
-   | [],[] -> true
-   | (a::l),(b::m) -> Eq.Equals(a,b) && Equals(l,m)
-   | _,_ -> false
+ [<Witness>] 
+ type EqList<'A,'EqA when 'EqA :> Eq<'A>> =  struct
+    interface Eq<'A list> with
+     member equals a b = match a,b with
+      | a::l,b::m -> Eq.equals a b && Eq.equals l m
+      | [],[] -> true | _ ,_ -> false
+ end 
 \end{lstlisting}
-For F\#, we do not overload a top-level \lstinline{equals} binding, but use qualifed access to trait members (e.g.\ \lstinline{Eq.equals}).
+For F\#, we do not overload a top-level \lstinline{Equal} binding, but use qualifed access to trait members (e.g.\ \lstinline{Eq.equal}).
 
 \fi
 %\subsection{Other features}
@@ -496,7 +496,7 @@ We cannot support  higher-kinded type classes (like \lstinline{Monad}), because 
 First-order associated types are in reach.
 %Much of the concision of Haskell comes not only from the declaration of type class hierarchies but from the implicit solution of constraints during type inference.
 For C\#, evidence inference is a mild generalization of type argument inference, with instantiations derived from the pervasive and locally assumed concept hierarchy.
-For F\#, we have adapted Haskell's more elaborate techniques for not only solving but also implicitly propagating inferred type class constraints, by extension of F\#'s existing constraint system.
+For F\#, we have adapted Haskell's more elaborate techniques for propagating inferred type class constraints, by extension of F\#'s existing constraint system.
 
 %\section{Implementation}
 {\bf Implementations} We prioritized our efforts on designing and implementing type classes for C\# in a fork\cite{Roslynfork}  of  Microsoft's open source Roslyn compiler\cite{Roslyn}, adopting a dedicated syntax loosely inspired  by C++ concepts\cite{cppconcepts}.
