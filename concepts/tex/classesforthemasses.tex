@@ -319,12 +319,12 @@ concept Eq 'a where
     (==): 'a -> 'a -> bool
 \end{lstlisting}
 \else
-For F\#, we use a  \lstinline{Trait}-attributed interface declaration:
+\noindent\ For F\#, we use a  \lstinline{Trait}-attributed interface declaration:
 \lstset{language={FSharp}}
 \begin{lstlisting}
-[<Trait>] type Eq<'A> = interface 
-     abstract equals: 'A -> 'A -> bool 
- end
+ [<Trait>] 
+ type Eq<'A> = (* an interface *)
+   abstract equal: 'A -> 'A -> bool
 \end{lstlisting}
 \fi
  
@@ -341,9 +341,8 @@ Observe that the overloaded operation has a more general constrained type \lstin
 This generic operation is captured in C\# by the method:
 \lstset{language={CSharpLatest}}
 \begin{lstlisting}
-   public static bool Equal<A,EqA>(A a, A b) 
-      where EqA : struct, Eq<A>  =>
-         default(EqA).Equal(a, b)
+static bool Equal<A,EqA>(A a, A b)   EqA: struct, Eq<A>
+               =>  default(EqA).Equal(a, b);
 \end{lstlisting}
 This method has not one, but \emph{two}, type parameters. The first, \lstinline{A}, is just the type parameter from the declaration.
 The second, \lstinline{EqA}, is a type parameter that is constrained to be a struct and is evidence for the constraint that \lstinline{A} supports interface \lstinline{Eq<A>}.
@@ -351,7 +350,6 @@ The second, \lstinline{EqA}, is a type parameter that is constrained to be a str
 The use of the \lstinline{struct} constraint on \lstinline{EqA} is significant and subtle. Structs are stack-allocated so essentially free to create, especially when they contain no fields.
 Moreover, every struct type, including a type parameter \lstinline{T} of kind struct, has a default (all-zero) value denoted by
  expression \lstinline{default(T)}.
-
 Invoking a method on a default value of reference type would simply raise a null-reference exception because the receiver is \lstinline{null}.
 However, methods on structs (including interface methods) can always be properly invoked
 by calling the method on the struct's default value. 
@@ -360,6 +358,12 @@ Thus an operation over some class can be represented as a static generic method,
 parameterized by an additional dictionary type parameter (here \lstinline{EqA}).
 Derived operations with type class constraints can be represented by generic methods with suitably constrained type parameters.
 Finally, Haskell dictionary \emph{values} correspond to  C\# dictionary \emph{types}.
+
+For F\#, we do not overload a top-level \lstinline{Equal} binding but, instead, allow qualifed access to trait members (e.g.\ \lstinline{Eq.equal}), as in:
+\lstset{language={FSharp}}
+\begin{lstlisting}
+ let equal = Eq.equal  (* defines overloaded equal *)
+\end{lstlisting}
 
 
 %The dictionary type parameter is marked \lstinline{struct} (so stack allocated):
@@ -407,9 +411,9 @@ For F\#, we use a \lstinline{Witness}-attributed struct declaration:
 
 \lstset{language={FSharp}}
 \begin{lstlisting}
- [<Witness>] type EqInt = struct 
-     interface Eq<int> with member equals a b = a = b
- end 
+ [<Witness>] 
+ type EqInt = (* a struct *)
+   interface Eq<int> with  member equal a b = a = b
 \end{lstlisting}
 
 Note that the F\# syntax, unlike Haskell, names the instance as in the  C\# representation.
@@ -475,14 +479,12 @@ For F\# we use a parameterized \lstinline{Witness}-declaration:
 \lstset{language={FSharp}}
 \begin{lstlisting}
  [<Witness>] 
- type EqList<'A,'EqA when 'EqA :> Eq<'A>> =  struct
-    interface Eq<'A list> with
-     member equals a b = match a,b with
-      | a::l,b::m -> Eq.equals a b && Eq.equals l m
-      | [],[] -> true | _ ,_ -> false
- end 
+ type EqList<'A,'EqA when 'EqA :> Eq<'A>> =  (* a struct *)
+   interface Eq<'A list> with
+     member equal a b =  match a,b with
+       | a::l,b::m -> Eq.equal a b && Eq.equal l m
+       | [],[] -> true | _,_ -> false
 \end{lstlisting}
-For F\#, we do not overload a top-level \lstinline{Equal} binding, but use qualifed access to trait members (e.g.\ \lstinline{Eq.equal}).
 
 \fi
 %\subsection{Other features}
