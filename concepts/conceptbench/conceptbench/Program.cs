@@ -171,14 +171,42 @@ namespace conceptbench {
 
 
 
+
     struct NumVec3 : Num<Vec3> {
-        public Vec3 FromInteger(int v) => new Vec3(v, v, v);
+        public Vec3 FromInteger(int v) => new Vec3(v);
         public Vec3 Mult(Vec3 a, Vec3 b) => a * b;
 
         public Vec3 Plus(Vec3 a, Vec3 b) => a + b;
     }
 
 
+    public struct Vec1 {
+        readonly float v1;
+
+       
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        public Vec1(float f) {
+            this.v1 = f;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vec1 operator +(Vec1 a, Vec1 b) => new Vec1(a.v1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vec1 operator *(Vec1 a, Vec1 b) => new Vec1(a.v1);
+
+    }
+
+
+
+
+    struct NumVec1 : Num<Vec1> {
+        public Vec1 FromInteger(int v) => new Vec1(v);
+        public Vec1 Mult(Vec1 a, Vec1 b) => a * b;
+
+        public Vec1 Plus(Vec1 a, Vec1 b) => a + b;
+    }
 
     public class ClassVec3 {
         readonly float v1;
@@ -225,11 +253,65 @@ namespace conceptbench {
         public override int Mult(int a, int b) => a * b;
         public override int Plus(int a, int b) => a + b;
     }
+    class NumDoubleSubClass : AbstractNum<double> {
+        public override double FromInteger(int v) => v;
+        public override double Mult(double a, double b) => a * b;
+        public override double Plus(double a, double b) => a + b;
+    }
+
+
+
+    class NumClassVec3SubClass : AbstractNum<ClassVec3> {
+        public override ClassVec3 FromInteger(int v) => new ClassVec3(v);
+        public override ClassVec3 Mult(ClassVec3 a, ClassVec3 b) => a * b;
+        public override ClassVec3 Plus(ClassVec3 a, ClassVec3 b) => a + b;
+    }
+
+    class NumVec3SubClass : AbstractNum<Vec3> {
+        public override Vec3 FromInteger(int v) => new Vec3(v);
+        public override Vec3 Mult(Vec3 a, Vec3 b) => a * b;
+        public override Vec3 Plus(Vec3 a, Vec3 b) => a + b;
+    }
+
+
+
+    class NumVec1SubClass : AbstractNum<Vec1> {
+        public override Vec1 FromInteger(int v) => new Vec1(v);
+        public override Vec1 Mult(Vec1 a, Vec1 b) => a * b;
+        public override Vec1 Plus(Vec1 a, Vec1 b) => a + b;
+    }
+
 
     class NumIntImplemention : Num<int> {
         public int FromInteger(int v) => v;
         public int Mult(int a, int b) => a * b;
         public int Plus(int a, int b) => a + b;
+    }
+
+
+    class NumDoubleImplemention : Num<double> {
+        public double FromInteger(int v) => v;
+        public double Mult(double a, double b) => a * b;
+        public double Plus(double a, double b) => a + b;
+    }
+    class NumClassVec3Implemention : Num<ClassVec3> {
+        public ClassVec3 FromInteger(int v) => new ClassVec3(v);
+        public ClassVec3 Mult(ClassVec3 a, ClassVec3 b) => a * b;
+        public ClassVec3 Plus(ClassVec3 a, ClassVec3 b) => a + b;
+    }
+
+
+
+    class NumVec3Implemention : Num<Vec3> {
+        public Vec3 FromInteger(int v) => new Vec3(v);
+        public Vec3 Mult(Vec3 a, Vec3 b) => a * b;
+        public Vec3 Plus(Vec3 a, Vec3 b) => a + b;
+    }
+
+    class NumVec1Implemention : Num<Vec1> {
+        public Vec1 FromInteger(int v) => new Vec1(v);
+        public Vec1 Mult(Vec1 a, Vec1 b) => a * b;
+        public Vec1 Plus(Vec1 a, Vec1 b) => a + b;
     }
 
 
@@ -293,21 +375,34 @@ namespace conceptbench {
             return y;
         }
 
-        [Benchmark]
+        //[Benchmark]
         public Vec3 Vec3() {
-            var y = new Vec3(0, 0, 0);
+            System.Diagnostics.Debugger.Break();
+            var y = new Vec3(0);
             var c = new Vec3(666); 
             for (int i = 0; i < n; i++) {
-                var x = new Vec3(i, i, i);
+                var x = new Vec3(i);
                 y = ((x * x) + x) + c;
             }
             return y;
         }
 
 
-        [Benchmark]
+        //[Benchmark]
+        public Vec1 Vec1() {
+            var y = new Vec1(0);
+            var c = new Vec1(666);
+            for (int i = 0; i < n; i++) {
+                var x = new Vec1(i);
+                y = ((x * x) + x) + c;
+            }
+            return y;
+        }
+
+
+        //[Benchmark]
         public ClassVec3 ClassVec3() {
-            var y = new ClassVec3(0, 0, 0);
+            var y = new ClassVec3(0);
             var c = new ClassVec3(666);
             for (int i = 0; i < n; i++) {
                 var x = new ClassVec3(i, i, i);
@@ -327,7 +422,7 @@ namespace conceptbench {
             new Tuple<float, float, float>(a.Item1 * b.Item1,
                                            a.Item2 * b.Item2,
                                            a.Item3 * b.Item3);
-        [Benchmark]
+        //[Benchmark]
         public Tuple<float,float,float> Tuple() {
             var y = new Tuple<float,float,float>(0, 0, 0);
             var c = new Tuple<float,float,float>(666,666,666);
@@ -433,53 +528,84 @@ namespace conceptbench {
             return ConceptGenericOpt<Vector3, NumVector3>();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public Vec3 ConceptInstanceVec3() {
             return ConceptGeneric<Vec3, NumVec3>();
         }
 
-        [Benchmark]
-        public Vec3 ConceptOptInstanceVect3() {
+        //[Benchmark]
+        public Vec3 ConceptOptInstanceVec3() {
             return ConceptGenericOpt<Vec3, NumVec3>();
         }
 
+        //[Benchmark]
+        public Vec1 ConceptInstanceVec1() {
+            return ConceptGeneric<Vec1, NumVec1>();
+        }
 
-        [Benchmark]
+        //[Benchmark]
+        public Vec1 ConceptOptInstanceVec1() {
+            return ConceptGenericOpt<Vec1, NumVec1>();
+        }
+
+        //[Benchmark]
         public ClassVec3 ConceptInstanceClassVec3() {
             return ConceptGeneric<ClassVec3, NumClassVec3>();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public ClassVec3 ConceptOptInstanceClassVec3() {
             return ConceptGenericOpt<ClassVec3, NumClassVec3>();
         }
 
 
 
-        [Benchmark]
+        //[Benchmark]
         public Tuple<float,float,float> ConceptInstanceTuple() {
             return ConceptGeneric<Tuple<float,float,float>, NumTuple<float,float,float,NumFloat,NumFloat,NumFloat>>();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public Tuple<float, float, float> ConceptOptInstanceTuple() {
             return ConceptGenericOpt<Tuple<float, float, float>, NumTuple<float, float, float, NumFloat, NumFloat, NumFloat>>();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public Tuple<float, float, float> ConceptOptInstanceTupleOpt() {
             return ConceptGenericOpt<Tuple<float, float, float>, NumTuple<float, NumFloat>>();
         }
 
-        [Benchmark]
+        //[Benchmark]
         public Tuple<float, float, float> ConceptOptInstanceTupleOptOpt() {
             return ConceptGenericOpt<Tuple<float, float, float>, NumTupleOpt<float, NumFloat>>();
         }
 
         //[Benchmark]
-        public int AbstractClass() {
+        public int AbstractClassInt() {
             return AbstractClass<int>(new NumIntSubClass());
         }
+
+        //[Benchmark]
+        public double AbstractClassDouble() {
+            return AbstractClass<double>(new NumDoubleSubClass());
+        }
+
+        //[Benchmark]
+        public ClassVec3 AbstractClassClassVec3() {
+            return AbstractClass<ClassVec3>(new NumClassVec3SubClass());
+        }
+
+        //[Benchmark]
+        public Vec3 AbstractClassVec3() {
+            return AbstractClass<Vec3>(new NumVec3SubClass());
+        }
+
+
+        //[Benchmark]
+        public Vec1 AbstractClassVec1() {
+            return AbstractClass<Vec1>(new NumVec1SubClass());
+        }
+
         T AbstractClass<T>(AbstractNum<T> NI) {
             var y = NI.FromInteger(0);
             var c = NI.FromInteger(666);
@@ -492,9 +618,31 @@ namespace conceptbench {
 
 
         //[Benchmark]
-        public int Interface() {
+        public int InterfaceInt() {
             return Interface<int>(new NumIntImplemention());
         }
+
+        //[Benchmark]
+        public double InterfaceDouble() {
+            return Interface<double>(new NumDoubleImplemention());
+        }
+
+        //[Benchmark]
+        public ClassVec3 InterfaceClassVec3() {
+            return Interface<ClassVec3>(new NumClassVec3Implemention());
+        }
+
+        //[Benchmark]
+        public Vec3 InterfaceVec3() {
+            return Interface<Vec3>(new NumVec3Implemention());
+        }
+
+
+        //[Benchmark]
+        public Vec1 InterfaceVec1() {
+            return Interface<Vec1>(new NumVec1Implemention());
+        }
+
         T Interface<T>(Num<T> NI) {
             var y = NI.FromInteger(0);
             var c = NI.FromInteger(666);
@@ -509,16 +657,17 @@ namespace conceptbench {
 
         T ConceptGeneric<T, NumT>() where NumT : struct, Num<T> {
             var y = default(NumT).FromInteger(0);
+            var c = default(NumT).FromInteger(666);
             for (int i = 0; i < n; i++) {
                 var x = default(NumT).FromInteger(i);
-                y = default(NumT).Plus(default(NumT).Plus(default(NumT).Mult(x, x), x),
-                                        default(NumT).FromInteger(666));
+                y = default(NumT).Plus(default(NumT).Plus(default(NumT).Mult(x, x), x),c);
             }
             return y;
         }
 
 
         T ConceptGenericOpt<T, NumT>() where NumT : struct, Num<T> {
+            System.Diagnostics.Debugger.Break();
             NumT NI = default(NumT);
             T y = NI.FromInteger(0);
             T c = NI.FromInteger(666);
@@ -531,9 +680,33 @@ namespace conceptbench {
 
 
         //[Benchmark]
-        public int Delegates() {
+        public int DelegatesInt() {
             return Delegates<int>(i => i, (a, b) => a + b, (a, b) => a * b);
         }
+
+
+
+        //[Benchmark]
+        public double DelegatesDouble() {
+            return Delegates<double>(i => i, (a, b) => a + b, (a, b) => a * b);
+        }
+
+        //[Benchmark]
+        public ClassVec3 DelegatesClassVec3() {
+            return Delegates<ClassVec3>(i => new ClassVec3(i), (a, b) => a + b, (a, b) => a * b);
+        }
+
+        //[Benchmark]
+        public Vec3 DelegatesVec3() {
+            return Delegates<Vec3>(i => new Vec3(i), (a, b) => a + b, (a, b) => a * b);
+        }
+
+
+        //[Benchmark]
+        public Vec1 DelegatesVec1() {
+            return Delegates<Vec1>(i => new Vec1(i), (a, b) => a + b, (a, b) => a * b);
+        }
+
         T Delegates<T>(Func<int, T> FromInteger, Func<T, T, T> Plus, Func<T, T, T> Mult) {
             T y = FromInteger(0);
             T c = FromInteger(666);
@@ -549,11 +722,142 @@ namespace conceptbench {
     }
 
 
+    public class IntegerBenchmarks : Benchmarks {
+
+        [Benchmark(Baseline = true)]
+        public int Specialised() => base.Int();
+
+        [Benchmark]
+        public int AbstractClass() => base.AbstractClassInt();
+
+        [Benchmark]
+        public int Interface() => base.InterfaceInt();
+
+        [Benchmark]
+        public int Delegates() => base.DelegatesInt();
+
+        [Benchmark]
+        public int Instance() => base.ConceptInstanceInt();
+
+        [Benchmark]
+        public int OptimizedInstance() => base.ConceptOptInstanceInt();
+    }
+
+
+    public class DoubleBenchmarks : Benchmarks {
+
+        [Benchmark(Baseline = true)]
+        public double Specialised() => base.Double();
+
+        [Benchmark]
+        public double AbstractClass() => base.AbstractClassDouble();
+
+        [Benchmark]
+        public double Interface() => base.InterfaceDouble();
+
+        [Benchmark]
+        public double Delegates() => base.DelegatesDouble();
+
+        [Benchmark]
+        public double Instance() => base.ConceptInstanceDouble();
+
+        [Benchmark]
+        public double OptimizedInstance() => base.ConceptOptInstanceDouble();
+    }
+
+    public class ClassBenchmarks : Benchmarks {
+
+        [Benchmark(Baseline = true)]
+        public ClassVec3 Specialised() => base.ClassVec3();
+
+        [Benchmark]
+        public ClassVec3 AbstractClass() => base.AbstractClassClassVec3();
+
+        [Benchmark]
+        public ClassVec3 Interface() => base.InterfaceClassVec3();
+
+        [Benchmark]
+        public ClassVec3 Delegates() => base.DelegatesClassVec3();
+
+        [Benchmark]
+        public ClassVec3 Instance() => base.ConceptInstanceClassVec3();
+
+        [Benchmark]
+        public ClassVec3 OptimizedInstance() => base.ConceptOptInstanceClassVec3();
+    }
+
+    public class StructBenchmarks : Benchmarks {
+
+        [Benchmark(Baseline = true)]
+        public Vec3 Specialised() => base.Vec3();
+
+        [Benchmark]
+        public Vec3 AbstractClass() => base.AbstractClassVec3();
+
+        [Benchmark]
+        public Vec3 Interface() => base.InterfaceVec3();
+
+        [Benchmark]
+        public Vec3 Delegates() => base.DelegatesVec3();
+
+        [Benchmark]
+        public Vec3 Instance() => base.ConceptInstanceVec3();
+
+        [Benchmark]
+        public Vec3 OptimizedInstance() => base.ConceptOptInstanceVec3();
+    }
+
+
+    public class SingleStructBenchmarks : Benchmarks {
+
+        [Benchmark(Baseline = true)]
+        public Vec1 Specialised() => base.Vec1();
+
+        [Benchmark]
+        public Vec1 AbstractClass() => base.AbstractClassVec1();
+
+        [Benchmark]
+        public Vec1 Interface() => base.InterfaceVec1();
+
+        [Benchmark]
+        public Vec1 Delegates() => base.DelegatesVec1();
+
+        [Benchmark]
+        public Vec1 Instance() => base.ConceptInstanceVec1();
+
+        [Benchmark]
+        public Vec1 OptimizedInstance() => base.ConceptOptInstanceVec1();
+    }
+
+
+
     class Program {
 
         static void Main() {
             System.Console.WriteLine(System.Numerics.Vector.IsHardwareAccelerated);
-            var summary = BenchmarkRunner.Run<Benchmarks>();
+            // var summary = BenchmarkRunner.Run<Benchmarks>();
+
+
+            //System.Diagnostics.Debugger.Launch();
+            //new StructBenchmarks().OptimizedInstance();
+
+
+            System.Diagnostics.Debugger.Launch();
+            new StructBenchmarks().Specialised();
+
+            return;
+
+            var summary1 = BenchmarkRunner.Run<IntegerBenchmarks>();
+
+            var summary2 = BenchmarkRunner.Run<DoubleBenchmarks>();
+
+            var summary3 = BenchmarkRunner.Run<ClassBenchmarks>();
+
+            var summary4 = BenchmarkRunner.Run<StructBenchmarks>();
+
+            var summary5 = BenchmarkRunner.Run<SingleStructBenchmarks>();
+
+
 
         }
 
@@ -561,8 +865,8 @@ namespace conceptbench {
     }
 
 
-
-
-
-
 }
+
+
+
+
