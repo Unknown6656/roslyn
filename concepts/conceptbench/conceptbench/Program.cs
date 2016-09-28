@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 namespace conceptbench {
 
 
-    interface Num<T> {
+    public interface Num<T> {
         T FromInteger(int v);
         T Plus(T a, T b);
 
@@ -141,9 +141,9 @@ namespace conceptbench {
     }
 
     public struct Vec3 {
-        readonly float v1;
-        readonly float v2;
-        readonly float v3;
+        public readonly float v1;
+        public readonly float v2;
+        public readonly float v3;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -156,7 +156,7 @@ namespace conceptbench {
 
         public Vec3(int v) {
             float f = v;
-            this.v1 = f; this.v2 = f; this.v3 = f;
+            this.v1 = f; this.v2 = f+1; this.v3 = f+2;
         }
 
 
@@ -172,16 +172,28 @@ namespace conceptbench {
 
 
 
-    struct NumVec3 : Num<Vec3> {
+    struct NumVec3Inlined : Num<Vec3> {
         public Vec3 FromInteger(int v) => new Vec3(v);
-        public Vec3 Mult(Vec3 a, Vec3 b) => a * b;
+        public Vec3 Mult(Vec3 a, Vec3 b) => //a * b;
+          new Vec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3);
+        public Vec3 Plus(Vec3 a, Vec3 b) =>// a + b;
+          new Vec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3);
+    }
+
+        struct NumVec3 : Num<Vec3> {
+            public Vec3 FromInteger(int v) => new Vec3(v);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
+        public Vec3 Mult(Vec3 a, Vec3 b) =>
+                a * b;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 
         public Vec3 Plus(Vec3 a, Vec3 b) => a + b;
-    }
+        }
 
 
     public struct Vec1 {
-        readonly float v1;
+        public readonly float v1;
 
        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -191,10 +203,10 @@ namespace conceptbench {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vec1 operator +(Vec1 a, Vec1 b) => new Vec1(a.v1);
+        public static Vec1 operator +(Vec1 a, Vec1 b) => new Vec1(a.v1+b.v1);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vec1 operator *(Vec1 a, Vec1 b) => new Vec1(a.v1);
+        public static Vec1 operator *(Vec1 a, Vec1 b) => new Vec1(a.v1*b.v1);
 
     }
 
@@ -203,15 +215,15 @@ namespace conceptbench {
 
     struct NumVec1 : Num<Vec1> {
         public Vec1 FromInteger(int v) => new Vec1(v);
-        public Vec1 Mult(Vec1 a, Vec1 b) => a * b;
+        public Vec1 Mult(Vec1 a, Vec1 b) => new Vec1(a.v1 * b.v1);
 
-        public Vec1 Plus(Vec1 a, Vec1 b) => a + b;
+        public Vec1 Plus(Vec1 a, Vec1 b) => new Vec1(a.v1 + b.v1);
     }
 
     public class ClassVec3 {
-        readonly float v1;
-        readonly float v2;
-        readonly float v3;
+        public readonly float v1;
+        public readonly float v2;
+        public readonly float v3;
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -235,9 +247,9 @@ namespace conceptbench {
 
     public struct NumClassVec3 : Num<ClassVec3> {
         public ClassVec3 FromInteger(int v) => new ClassVec3(v, v, v);
-        public ClassVec3 Mult(ClassVec3 a, ClassVec3 b) => a * b;
+        public ClassVec3 Mult(ClassVec3 a, ClassVec3 b) => new ClassVec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3);
 
-        public ClassVec3 Plus(ClassVec3 a, ClassVec3 b) => a + b;
+        public ClassVec3 Plus(ClassVec3 a, ClassVec3 b) => new ClassVec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3);
     }
 
 
@@ -269,16 +281,16 @@ namespace conceptbench {
 
     class NumVec3SubClass : AbstractNum<Vec3> {
         public override Vec3 FromInteger(int v) => new Vec3(v);
-        public override Vec3 Mult(Vec3 a, Vec3 b) => a * b;
-        public override Vec3 Plus(Vec3 a, Vec3 b) => a + b;
+        public override Vec3 Mult(Vec3 a, Vec3 b) => new Vec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3);
+        public override Vec3 Plus(Vec3 a, Vec3 b) => new Vec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3);
     }
 
 
 
     class NumVec1SubClass : AbstractNum<Vec1> {
         public override Vec1 FromInteger(int v) => new Vec1(v);
-        public override Vec1 Mult(Vec1 a, Vec1 b) => a * b;
-        public override Vec1 Plus(Vec1 a, Vec1 b) => a + b;
+        public override Vec1 Mult(Vec1 a, Vec1 b) => new Vec1(a.v1 * b.v1);
+        public override Vec1 Plus(Vec1 a, Vec1 b) => new Vec1(a.v1 + b.v1);
     }
 
 
@@ -296,22 +308,22 @@ namespace conceptbench {
     }
     class NumClassVec3Implemention : Num<ClassVec3> {
         public ClassVec3 FromInteger(int v) => new ClassVec3(v);
-        public ClassVec3 Mult(ClassVec3 a, ClassVec3 b) => a * b;
-        public ClassVec3 Plus(ClassVec3 a, ClassVec3 b) => a + b;
+        public ClassVec3 Mult(ClassVec3 a, ClassVec3 b) => new ClassVec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3);
+        public ClassVec3 Plus(ClassVec3 a, ClassVec3 b) => new ClassVec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3);
     }
 
 
 
     class NumVec3Implemention : Num<Vec3> {
         public Vec3 FromInteger(int v) => new Vec3(v);
-        public Vec3 Mult(Vec3 a, Vec3 b) => a * b;
-        public Vec3 Plus(Vec3 a, Vec3 b) => a + b;
+        public Vec3 Mult(Vec3 a, Vec3 b) => new Vec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3);
+        public Vec3 Plus(Vec3 a, Vec3 b) => new Vec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3);
     }
 
     class NumVec1Implemention : Num<Vec1> {
         public Vec1 FromInteger(int v) => new Vec1(v);
-        public Vec1 Mult(Vec1 a, Vec1 b) => a * b;
-        public Vec1 Plus(Vec1 a, Vec1 b) => a + b;
+        public Vec1 Mult(Vec1 a, Vec1 b) => new Vec1(a.v1 * b.v1);
+        public Vec1 Plus(Vec1 a, Vec1 b) => new Vec1(a.v1 + b.v1);
     }
 
 
@@ -377,7 +389,7 @@ namespace conceptbench {
 
         //[Benchmark]
         public Vec3 Vec3() {
-            System.Diagnostics.Debugger.Break();
+            //System.Diagnostics.Debugger.Break();
             var y = new Vec3(0);
             var c = new Vec3(666); 
             for (int i = 0; i < n; i++) {
@@ -538,6 +550,18 @@ namespace conceptbench {
             return ConceptGenericOpt<Vec3, NumVec3>();
         }
 
+
+        //[Benchmark]
+        public Vec3 ConceptOptInstanceVec3Inlined() {
+             return ConceptGenericOpt<Vec3, NumVec3Inlined>();
+        }
+
+            //[Benchmark]
+        public Vec3 ConceptOptInstanceAltVec3() {
+            return Class<Vec3, NumVec3>.ConceptGenericOpt();
+        }
+
+
         //[Benchmark]
         public Vec1 ConceptInstanceVec1() {
             return ConceptGeneric<Vec1, NumVec1>();
@@ -547,6 +571,7 @@ namespace conceptbench {
         public Vec1 ConceptOptInstanceVec1() {
             return ConceptGenericOpt<Vec1, NumVec1>();
         }
+
 
         //[Benchmark]
         public ClassVec3 ConceptInstanceClassVec3() {
@@ -667,7 +692,7 @@ namespace conceptbench {
 
 
         T ConceptGenericOpt<T, NumT>() where NumT : struct, Num<T> {
-            System.Diagnostics.Debugger.Break();
+            //System.Diagnostics.Debugger.Break();
             NumT NI = default(NumT);
             T y = NI.FromInteger(0);
             T c = NI.FromInteger(666);
@@ -676,6 +701,19 @@ namespace conceptbench {
                 y = NI.Plus(NI.Plus(NI.Mult(x,x),x), c);
             }
             return y;
+        }
+
+        public class Class<T, NumT> where NumT : struct, Num<T> {
+            static NumT NI;
+            public static T ConceptGenericOpt() {
+                T y = NI.FromInteger(0);
+                T c = NI.FromInteger(666);
+                for (int i = 0; i < n; i++) {
+                    T x = NI.FromInteger(i);
+                    y = NI.Plus(NI.Plus(NI.Mult(x, x), x), c);
+                }
+                return y;
+            }
         }
 
 
@@ -693,18 +731,22 @@ namespace conceptbench {
 
         //[Benchmark]
         public ClassVec3 DelegatesClassVec3() {
-            return Delegates<ClassVec3>(i => new ClassVec3(i), (a, b) => a + b, (a, b) => a * b);
+            return Delegates<ClassVec3>(i => new ClassVec3(i), (a, b) => new ClassVec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3),
+                                (a, b) => new ClassVec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3));
         }
 
         //[Benchmark]
         public Vec3 DelegatesVec3() {
-            return Delegates<Vec3>(i => new Vec3(i), (a, b) => a + b, (a, b) => a * b);
+            return Delegates<Vec3>(i => new Vec3(i), 
+                                (a, b) => new Vec3(a.v1 + b.v1, a.v2 + b.v2, a.v3 + b.v3),
+                                (a, b) => new Vec3(a.v1 * b.v1, a.v2 * b.v2, a.v3 * b.v3)
+);
         }
 
 
         //[Benchmark]
         public Vec1 DelegatesVec1() {
-            return Delegates<Vec1>(i => new Vec1(i), (a, b) => a + b, (a, b) => a * b);
+            return Delegates<Vec1>(i => new Vec1(i), (a, b) => new Vec1(a.v1 + b.v1), (a, b) => new Vec1(a.v1 + b.v1));
         }
 
         T Delegates<T>(Func<int, T> FromInteger, Func<T, T, T> Plus, Func<T, T, T> Mult) {
@@ -805,6 +847,12 @@ namespace conceptbench {
 
         [Benchmark]
         public Vec3 OptimizedInstance() => base.ConceptOptInstanceVec3();
+
+        [Benchmark]
+        public Vec3 OptimizedInstanceInlined() => base.ConceptOptInstanceVec3Inlined();
+
+        [Benchmark]
+        public Vec3 AltOptimizedInstance() => base.ConceptOptInstanceAltVec3();
     }
 
 
@@ -839,13 +887,13 @@ namespace conceptbench {
 
 
             //System.Diagnostics.Debugger.Launch();
-            //new StructBenchmarks().OptimizedInstance();
+            //  new StructBenchmarks().OptimizedInstanceInlined();
 
 
-            System.Diagnostics.Debugger.Launch();
-            new StructBenchmarks().Specialised();
+            //  System.Diagnostics.Debugger.Launch();
+            //  new StructBenchmarks().Specialised();
 
-            return;
+            // return;
 
             var summary1 = BenchmarkRunner.Run<IntegerBenchmarks>();
 
