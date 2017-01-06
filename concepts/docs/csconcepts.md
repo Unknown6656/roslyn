@@ -288,7 +288,9 @@ Using `default(T)`, we can create dictionary values on demand, when required for
 Doing so explicitly is gross, so in Concept C#, we allow unqualified calls to methods on
 "dictionary" type parameters that are in scope.
 
-(The `struct` constraints ensure dictionary values are never 'null'; no call can fail.)
+So instead of `default(EqA).Equal(a, b)` we can write `EqA.Equal(a, b)` or even `Equal(a,b)`.
+
+(The `struct` constraints ensure dictionary values are never `null`; no call can fail.)
 
 ---
 
@@ -416,13 +418,13 @@ In C#, dictionary type arguments cannot be inferred... they usually don't occur 
    Equal( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) 
      // type error, C# can't infer type arguments!
    
-   Equal< EqArray<int[],EqArray<int,EqInt>>,int[]> , int[][]>
+   Equal<int[][], EqArray<int[],EqArray<int,EqInt>> >
    	( {{1},{1,2},{1,2,3}}, {{1,2,3},{1,2},{1}} ) 
      // typechecks (but kills the programmer)
 ```
 
 
-Programming in the encoding requires intolerable degree of explicit type abstraction and instantiation.
+Programming in the encoding requires an intolerable amount of explicit type instantiation.
 
 ---
 
@@ -485,6 +487,7 @@ static bool Elem<A,implicit EqA>(A x, A[] ys) where EqA : Eq<A> {
   }
   return false;
 }
+```
 ---
 
 ##  Example: Numeric types
